@@ -64,6 +64,7 @@
       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <Publicize Include="Assembly-CSharp" />
+    <Publicize Include="Vehicles" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompMechanitorControl.cs" />
@@ -77,10 +78,15 @@
     <Compile Include="MechanitorUtility_InMechanitorCommandRange_Patch.cs" />
     <Compile Include="PawnComponentsUtility_AddAndRemoveDynamicComponents_Patch.cs" />
     <Compile Include="PawnComponentsUtility_CreateInitialComponents_Patch.cs" />
+    <Compile Include="PawnRelationWorker_Overseer_OnRelationCreated_Patch.cs" />
+    <Compile Include="PawnRelationWorker_Overseer_OnRelationRemoved_Patch.cs" />
     <Compile Include="Pawn_IsColonyMech_Patch.cs" />
+    <Compile Include="Pawn_MechanitorTracker_CanCommandTo_Patch.cs" />
+    <Compile Include="Pawn_MechanitorTracker_CanControlMechs_Patch.cs" />
     <Compile Include="Pawn_OverseerSubject_Patch.cs" />
     <Compile Include="VehicleMechanitorControlMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Vehicle_IgnitionController_GetGizmos_Patch.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
