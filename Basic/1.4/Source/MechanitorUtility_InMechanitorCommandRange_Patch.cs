@@ -18,12 +18,12 @@ namespace VehicleMechanitorControl
                 {
                     foreach (var pawn in overseer.mechanitor.ControlledPawns)
                     {
-                        if (pawn.OverseerSubject.Overseer == overseer && pawn is VehiclePawn vehicle)
+                        if (pawn.OverseerSubject.Overseer == overseer && pawn is VehiclePawn vehicle && vehicle.Map == mech.Map)
                         {
                             var comp = vehicle.GetComp<CompMechanitorControl>();
-                            if (comp != null && comp.Props.mechControlRange > 0 && vehicle.Map == mech.Map)
+                            if (comp != null && comp.Props.mechControlRange > 0)
                             {
-                                if (vehicle.Position.DistanceTo(mech.Position) <= comp.Props.mechControlRange)
+                                if (vehicle.Position.DistanceTo(target.Cell) <= comp.Props.mechControlRange)
                                 {
                                     __result = true;
                                     return;

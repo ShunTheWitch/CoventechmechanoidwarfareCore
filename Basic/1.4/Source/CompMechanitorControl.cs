@@ -45,10 +45,15 @@ namespace VehicleMechanitorControl
                         }
                     }
                 }
+
+                if (this.Props.mechControlRange > 0 && overseer.mechanitor.AnySelectedDraftedMechs)
+                {
+                    GenDraw.DrawRadiusRing(parent.Position, this.Props.mechControlRange, Color.white, (IntVec3 c) => 
+                    parent.Position.DistanceTo(c) <= this.Props.mechControlRange);
+                }
             }
-
-
         }
+
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
             foreach (Gizmo mechGizmo in MechanitorUtility.GetMechGizmos(this.Vehicle))
