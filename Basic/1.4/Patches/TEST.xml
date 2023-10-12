@@ -6,7 +6,7 @@
     <value>
       <li Class="VehicleMechanitorControl.CompProperties_MechanitorControl">
 		<bandwidthGain>2</bandwidthGain>
-		<mechControlRange>15</mechControlRange>
+		<mechControlRange>40</mechControlRange>
       </li>
       <li Class="CompProperties_OverseerSubject"></li>
     </value>
