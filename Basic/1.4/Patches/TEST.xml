@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Patch>
 
+	<!-- Example of patching other vehicles
   <Operation Class="PatchOperationAdd">
     <xpath>/Defs/Vehicles.VehicleDef[defName="VVE_BangBus"]/comps</xpath>
     <value>
@@ -19,5 +20,5 @@
 		<ControlTakingTime>5</ControlTakingTime>
     </value>
   </Operation>
-  
+  -->
 </Patch>
