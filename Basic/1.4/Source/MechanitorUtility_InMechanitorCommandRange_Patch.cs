@@ -1,4 +1,7 @@
 ﻿using HarmonyLib;
+using System.Linq;
+using UnityEngine;
+using Vehicles;
 using Verse;
 
 namespace VehicleMechanitorControl
@@ -8,20 +11,31 @@ namespace VehicleMechanitorControl
     {
         public static void Postfix(Pawn mech, LocalTargetInfo target, ref bool __result)
         {
-            Pawn overseer = mech.GetOverseer();
-            if (overseer != null)
+            if (!__result)
             {
-                foreach (var pawn in overseer.mechanitor.ControlledPawns)
+                Pawn overseer = mech.GetOverseer();
+                if (overseer != null)
                 {
-                    if (pawn.OverseerSubject.Overseer == overseer)
+                    foreach (var pawn in overseer.mechanitor.ControlledPawns)
                     {
-                        var comp = pawn.GetComp<CompMechanitorControl>();
-                        if (comp != null && comp.Props.mechControlRange > 0 && pawn.Map == mech.Map)
+                        if (pawn.OverseerSubject.Overseer == overseer && pawn is VehiclePawn vehicle)
                         {
-                            if (pawn.Position.DistanceTo(mech.Position) <= comp.Props.mechControlRange)
+                            var comp = vehicle.GetComp<CompMechanitorControl>();
+                            if (comp != null && comp.Props.mechControlRange > 0 && vehicle.Map == mech.Map)
                             {
-                                __result = true;
-                                return;
+                                if (vehicle.Position.DistanceTo(mech.Position) <= comp.Props.mechControlRange)
+                                {
+                                    __result = true;
+                                    return;
+                                }
+                            }
+                            foreach (var passenger in vehicle.handlers.SelectMany(x => x.handlers.OfType<Pawn>()))
+                            {
+                                if (passenger == overseer && overseer.mechanitor.CanCommandTo(target))
+                                {
+                                    __result = true;
+                                    return;
+                                }
                             }
                         }
                     }
