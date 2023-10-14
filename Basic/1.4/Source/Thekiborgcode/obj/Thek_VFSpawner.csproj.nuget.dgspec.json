@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\Thek_VFSpawner.csproj": {}
+    "C:\\Users\\David\\Downloads\\CoventechmechanoidwarfareCore-main\\Basic\\1.4\\Source\\Thekiborgcode\\Thek_VFSpawner.csproj": {}
   },
   "projects": {
-    "D:\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\Thek_VFSpawner.csproj": {
+    "C:\\Users\\David\\Downloads\\CoventechmechanoidwarfareCore-main\\Basic\\1.4\\Source\\Thekiborgcode\\Thek_VFSpawner.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\Thek_VFSpawner.csproj",
+        "projectUniqueName": "C:\\Users\\David\\Downloads\\CoventechmechanoidwarfareCore-main\\Basic\\1.4\\Source\\Thekiborgcode\\Thek_VFSpawner.csproj",
         "projectName": "Thek_VFSpawner",
-        "projectPath": "D:\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\Thek_VFSpawner.csproj",
+        "projectPath": "C:\\Users\\David\\Downloads\\CoventechmechanoidwarfareCore-main\\Basic\\1.4\\Source\\Thekiborgcode\\Thek_VFSpawner.csproj",
         "packagesPath": "C:\\Users\\David\\.nuget\\packages\\",
-        "outputPath": "D:\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\obj\\",
+        "outputPath": "C:\\Users\\David\\Downloads\\CoventechmechanoidwarfareCore-main\\Basic\\1.4\\Source\\Thekiborgcode\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\David\\AppData\\Roaming\\NuGet\\NuGet.Config",

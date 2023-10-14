@@ -62,13 +62,8 @@
 		<!-- Details with wiki here: https://github.com/Zetrith/Prepatcher -->
 	</ItemGroup>
 	<ItemGroup>
-	  <Reference Include="SmashTools">
-	    <HintPath>..\..\..\..\..\..\workshop\content\294100\3014915404\1.4\Assemblies\SmashTools.dll</HintPath>
-	    <Private>False</Private>
-	  </Reference>
 	  <Reference Include="Vehicles">
-	    <HintPath>..\..\..\..\..\..\workshop\content\294100\3014915404\1.4\Assemblies\Vehicles.dll</HintPath>
-	    <Private>False</Private>
+	    <HintPath>D:\Steam\steamapps\workshop\content\294100\3014915404\1.4\Assemblies\Vehicles.dll</HintPath>
 	  </Reference>
 	</ItemGroup>
 </Project>

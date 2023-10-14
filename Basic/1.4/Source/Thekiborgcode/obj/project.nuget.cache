@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "yg3zDoBJTlFMHBNR7tAChwyKu5cVgabGrcQmwao355SLxQS+/PPU9khACY02UjBPSr1yPZmwA/0q3ZeZk1J0vw==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\David\\Downloads\\CoventechmechanoidwarfareCore-main\\Basic\\1.4\\Source\\Thekiborgcode\\Thek_VFSpawner.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\David\\.nuget\\packages\\krafs.rimworld.ref\\1.4.3704\\krafs.rimworld.ref.1.4.3704.nupkg.sha512"
+  ],
+  "logs": []
+}

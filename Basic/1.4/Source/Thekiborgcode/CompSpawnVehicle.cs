@@ -104,6 +104,16 @@ namespace Thek_VFSpawner
                 action: (LocalTargetInfo target) =>
                 {
                     VehiclePawn genVehicle = (VehiclePawn)GenSpawn.Spawn(generatedVehicle, Vehicle.Position, Vehicle.Map);
+                    if (this.parent is Pawn pawn)
+                    {
+                        var overseerSubject = pawn.OverseerSubject;
+                        if (overseerSubject != null)
+                        {
+                            genVehicle.GetOverseer()?.relations.RemoveDirectRelation(PawnRelationDefOf.Overseer, genVehicle);
+                            pawn.relations.AddDirectRelation(PawnRelationDefOf.Overseer, genVehicle);
+                        }
+                    }
+
                     ///This spawns the vehicle that gets animated, as MakeFlyer requires something to despawn before doing it's thing
                     PawnFlyer droneFlyer = PawnFlyer.MakeFlyer(ThingDefOf.PawnJumper, genVehicle, Vehicle.Position, EffecterDefOf.Interceptor_BlockedProjectile, SoundDefOf.TurretAcquireTarget);
                     //Then, we make the flyer, that will despawn the vehicle spawned before.
