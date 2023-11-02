@@ -1,11 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ModMetaData>
   <name>CVN Mechanoid Warfare Core</name>
+  <packageId>ShunTheWitch.CVNmechanoidwarfarecore</packageId>
   <author>ShunTheWitch</author>
-  <url>
-  </url>
+  <url>https://steamcommunity.com/sharedfiles/filedetails/?id=3047564391</url>
   <description>Coventech Mechanoid Warfare Core</description>
-  <packageId>CVNmechanoidwarfarecore</packageId>
   <supportedVersions>
     <li>1.4</li>
   </supportedVersions>
