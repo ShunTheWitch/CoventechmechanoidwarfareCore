@@ -1,0 +1,9 @@
+D:\Steam\steamapps\common\RimWorld\Mods\GuardingPawns\1.4\Source\obj\Debug\net48\Thek_GuardingPawns.csproj.AssemblyReference.cache
+D:\Steam\steamapps\common\RimWorld\Mods\GuardingPawns\1.4\Source\obj\Debug\net48\Thek_GuardingPawns.GeneratedMSBuildEditorConfig.editorconfig
+D:\Steam\steamapps\common\RimWorld\Mods\GuardingPawns\1.4\Source\obj\Debug\net48\Thek_GuardingPawns.AssemblyInfoInputs.cache
+D:\Steam\steamapps\common\RimWorld\Mods\GuardingPawns\1.4\Source\obj\Debug\net48\Thek_GuardingPawns.AssemblyInfo.cs
+D:\Steam\steamapps\common\RimWorld\Mods\GuardingPawns\1.4\Source\obj\Debug\net48\Thek_GuardingPawns.csproj.CoreCompileInputs.cache
+D:\Steam\steamapps\common\RimWorld\Mods\GuardingPawns\1.4\Assemblies\Thek_GuardingPawns.dll
+D:\Steam\steamapps\common\RimWorld\Mods\GuardingPawns\1.4\Assemblies\Thek_GuardingPawns.pdb
+D:\Steam\steamapps\common\RimWorld\Mods\GuardingPawns\1.4\Source\obj\Debug\net48\Thek_GuardingPawns.dll
+D:\Steam\steamapps\common\RimWorld\Mods\GuardingPawns\1.4\Source\obj\Debug\net48\Thek_GuardingPawns.pdb

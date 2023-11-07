@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "QRFENEMNqTTi0+l2T8XwNYGMh74BCNMVPfPvdzHsUu5BwgtuFmdES+QCzVa1teb07c4dlWvajEsgKp0vI3cm0Q==",
+  "success": true,
+  "projectFilePath": "D:\\Steam\\steamapps\\common\\RimWorld\\Mods\\HediffArea\\1.4\\Source\\Thek_HediffArea.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\David\\.nuget\\packages\\krafs.rimworld.ref\\1.4.3901\\krafs.rimworld.ref.1.4.3901.nupkg.sha512",
+    "C:\\Users\\David\\.nuget\\packages\\lib.harmony\\2.2.2\\lib.harmony.2.2.2.nupkg.sha512"
+  ],
+  "logs": []
+}
