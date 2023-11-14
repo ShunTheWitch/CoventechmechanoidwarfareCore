@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+  <ThingDef ParentName="ResourceBase">
+    <defName>CVNMechComposite</defName>
+    <label>Mech Composite materials</label>
+    <description>Carefully layered steel plasteel composite plates made to cover the majority of a large mechanoid's hull, made to compress the cost to save time for when assembly of a large mechanoid is needed.</description>
+    <graphicData>
+      <texPath>Things/universal/Resources/PlasteelComposite/SuperMetal</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+    </graphicData>
+    <resourceReadoutPriority>Middle</resourceReadoutPriority>
+    <soundInteract>Metal_Drop</soundInteract>
+    <soundDrop>Metal_Drop</soundDrop>
+    <stackLimit>75</stackLimit>
+    <useHitPoints>false</useHitPoints>
+    <statBases>
+      <MarketValue>560</MarketValue>
+      <Mass>55</Mass>
+      <Flammability>0.0</Flammability>
+      <WorkToMake>100</WorkToMake>
+    </statBases>
+    <thingCategories>
+      <li>ItemsMisc</li>
+    </thingCategories>
+    <drawGUIOverlay>true</drawGUIOverlay>
+    <techLevel>Spacer</techLevel>
+    <tradeTags>
+      <li>ExoticMisc</li>
+    </tradeTags>
+    <recipeMaker>
+      <researchPrerequisite>BasicMechtech</researchPrerequisite>
+      <workSpeedStat>SubcoreEncodingSpeed</workSpeedStat>
+      <workSkill>Crafting</workSkill>
+      <recipeUsers>
+        <li>SubcoreEncoder</li>
+      </recipeUsers>
+      <mechanitorOnlyRecipe>true</mechanitorOnlyRecipe>
+      <unfinishedThingDef>UnfinishedSubcore</unfinishedThingDef>
+      <soundWorking>SubcoreEncoder_Working</soundWorking>
+    </recipeMaker>
+    <costList>
+      <Steel>200</Steel>
+      <Plasteel>20</Plasteel>
+    </costList>
+  </ThingDef>
+
+
+  <ThingDef ParentName="ResourceBase">
+    <defName>CVNAmmoAPStandard</defName>
+    <label>Mech Stanardized AP Rounds</label>
+    <description>Ammunition rounds standardized for mechanoid kenetic weaponry, boasting high armor penetration and cheap manufacturing costs.</description>
+    <graphicData>
+      <texPath>Things/universal/Resources/MechAmmo_5.56</texPath>
+      <graphicClass>Graphic_StackCount</graphicClass>
+    </graphicData>
+    <resourceReadoutPriority>Middle</resourceReadoutPriority>
+    <soundInteract>Metal_Drop</soundInteract>
+    <soundDrop>Metal_Drop</soundDrop>
+    <stackLimit>500</stackLimit>
+    <useHitPoints>false</useHitPoints>
+    <statBases>
+      <MarketValue>0.32</MarketValue>
+      <Mass>0.01</Mass>
+      <Flammability>0.0</Flammability>
+      <WorkToMake>100</WorkToMake>
+    </statBases>
+    <thingCategories>
+      <li>ItemsMisc</li>
+    </thingCategories>
+    <drawGUIOverlay>true</drawGUIOverlay>
+    <techLevel>Spacer</techLevel>
+    <tradeTags>
+      <li>ExoticMisc</li>
+    </tradeTags>
+    <recipeMaker>
+      <researchPrerequisite>BasicMechtech</researchPrerequisite>
+      <workSpeedStat>SubcoreEncodingSpeed</workSpeedStat>
+      <workSkill>Crafting</workSkill>
+      <recipeUsers>
+        <li>SubcoreEncoder</li>
+      </recipeUsers>
+      <mechanitorOnlyRecipe>true</mechanitorOnlyRecipe>
+      <unfinishedThingDef>UnfinishedSubcore</unfinishedThingDef>
+      <soundWorking>SubcoreEncoder_Working</soundWorking>
+        <productCount>50</productCount>
+    </recipeMaker>
+    <costList>
+      <Steel>10</Steel>
+    </costList>
+  </ThingDef>
+
+  <ThingDef ParentName="ResourceBase">
+    <defName>CVNAmmoBluestandard</defName>
+    <label>Mech Low Energy Canister</label>
+    <description>Ammunition used by large mechanoid energy weapons, stable and safe yet not all that effective in the grand scheme of things, powers most charge weaponry.</description>
+    <graphicData>
+      <texPath>Things/universal/Resources/MechAmmo_EnergyBlue</texPath>
+      <graphicClass>Graphic_StackCount</graphicClass>
+    </graphicData>
+    <resourceReadoutPriority>Middle</resourceReadoutPriority>
+    <soundInteract>Metal_Drop</soundInteract>
+    <soundDrop>Metal_Drop</soundDrop>
+    <stackLimit>500</stackLimit>
+    <useHitPoints>false</useHitPoints>
+    <statBases>
+      <MarketValue>0.64</MarketValue>
+      <Mass>0.05</Mass>
+      <Flammability>0.0</Flammability>
+      <WorkToMake>100</WorkToMake>
+    </statBases>
+    <thingCategories>
+      <li>ItemsMisc</li>
+    </thingCategories>
+    <drawGUIOverlay>true</drawGUIOverlay>
+    <techLevel>Spacer</techLevel>
+    <tradeTags>
+      <li>ExoticMisc</li>
+    </tradeTags>
+    <recipeMaker>
+      <researchPrerequisite>BasicMechtech</researchPrerequisite>
+      <workSpeedStat>SubcoreEncodingSpeed</workSpeedStat>
+      <workSkill>Crafting</workSkill>
+      <recipeUsers>
+        <li>SubcoreEncoder</li>
+      </recipeUsers>
+      <mechanitorOnlyRecipe>true</mechanitorOnlyRecipe>
+      <unfinishedThingDef>UnfinishedSubcore</unfinishedThingDef>
+      <soundWorking>SubcoreEncoder_Working</soundWorking>
+        <productCount>50</productCount>
+    </recipeMaker>
+    <costList>
+      <ComponentIndustrial>5</ComponentIndustrial>
+    </costList>
+  </ThingDef>
+
+  <ThingDef ParentName="ResourceBase">
+    <defName>CVNAmmoRedstandard</defName>
+    <label>Mech High Energy Canister</label>
+    <description>Ammunition used by large mechanoid energy weapons, stable, yet exeedingly dangerous these power cells power and fill some of the most dangerous energy weapons.</description>
+    <graphicData>
+      <texPath>Things/universal/Resources/MechAmmo_EnergyRed</texPath>
+      <graphicClass>Graphic_StackCount</graphicClass>
+    </graphicData>
+    <resourceReadoutPriority>Middle</resourceReadoutPriority>
+    <soundInteract>Metal_Drop</soundInteract>
+    <soundDrop>Metal_Drop</soundDrop>
+    <stackLimit>500</stackLimit>
+    <useHitPoints>false</useHitPoints>
+    <statBases>
+      <MarketValue>4.16</MarketValue>
+      <Mass>0.05</Mass>
+      <Flammability>0.0</Flammability>
+      <WorkToMake>100</WorkToMake>
+    </statBases>
+    <thingCategories>
+      <li>ItemsMisc</li>
+    </thingCategories>
+    <drawGUIOverlay>true</drawGUIOverlay>
+    <techLevel>Spacer</techLevel>
+    <tradeTags>
+      <li>ExoticMisc</li>
+    </tradeTags>
+    <recipeMaker>
+      <researchPrerequisite>BasicMechtech</researchPrerequisite>
+      <workSpeedStat>SubcoreEncodingSpeed</workSpeedStat>
+      <workSkill>Crafting</workSkill>
+      <recipeUsers>
+        <li>SubcoreEncoder</li>
+      </recipeUsers>
+      <mechanitorOnlyRecipe>true</mechanitorOnlyRecipe>
+      <unfinishedThingDef>UnfinishedSubcore</unfinishedThingDef>
+      <soundWorking>SubcoreEncoder_Working</soundWorking>
+        <productCount>80</productCount>
+    </recipeMaker>
+    <costList>
+      <ComponentSpacer>1</ComponentSpacer>
+      <Steel>20</Steel>
+    </costList>
+  </ThingDef>
+
+  <ThingDef ParentName="ResourceBase">
+    <defName>CVNAmmoMissile</defName>
+    <label>Mech Missile Hull</label>
+    <description>An empty missile hull which within the auto loading system of large mechanoid units will supply their own reactor plasma or energy.</description>
+    <graphicData>
+      <texPath>Things/universal/Resources/Missile</texPath>
+      <graphicClass>Graphic_StackCount</graphicClass>
+    </graphicData>
+    <resourceReadoutPriority>Middle</resourceReadoutPriority>
+    <soundInteract>Metal_Drop</soundInteract>
+    <soundDrop>Metal_Drop</soundDrop>
+    <stackLimit>500</stackLimit>
+    <useHitPoints>false</useHitPoints>
+    <statBases>
+      <MarketValue>29.5</MarketValue>
+      <Mass>5</Mass>
+      <Flammability>0.0</Flammability>
+      <WorkToMake>100</WorkToMake>
+    </statBases>
+    <thingCategories>
+      <li>ItemsMisc</li>
+    </thingCategories>
+    <drawGUIOverlay>true</drawGUIOverlay>
+    <techLevel>Spacer</techLevel>
+    <tradeTags>
+      <li>ExoticMisc</li>
+    </tradeTags>
+    <recipeMaker>
+      <researchPrerequisite>BasicMechtech</researchPrerequisite>
+      <workSpeedStat>SubcoreEncodingSpeed</workSpeedStat>
+      <workSkill>Crafting</workSkill>
+      <recipeUsers>
+        <li>SubcoreEncoder</li>
+      </recipeUsers>
+      <mechanitorOnlyRecipe>true</mechanitorOnlyRecipe>
+      <unfinishedThingDef>UnfinishedSubcore</unfinishedThingDef>
+      <soundWorking>SubcoreEncoder_Working</soundWorking>
+        <productCount>50</productCount>
+    </recipeMaker>
+    <costList>
+      <Chemfuel>50</Chemfuel>
+      <Plasteel>20</Plasteel>
+    </costList>
+  </ThingDef>
+
+  <ThingDef ParentName="ResourceBase">
+    <defName>CVNAmmoMortar</defName>
+    <label>Mech Mortar Shell</label>
+    <description>An empty mortar shell hull which within the auto loading system of large mechanoid units will supply their own reactor waste or energy to prepare it's deadly armaments.</description>
+    <graphicData>
+      <texPath>Things/universal/Resources/MortarAmmo</texPath>
+      <graphicClass>Graphic_StackCount</graphicClass>
+    </graphicData>
+    <resourceReadoutPriority>Middle</resourceReadoutPriority>
+    <soundInteract>Metal_Drop</soundInteract>
+    <soundDrop>Metal_Drop</soundDrop>
+    <stackLimit>500</stackLimit>
+    <useHitPoints>false</useHitPoints>
+    <statBases>
+      <MarketValue>2.32</MarketValue>
+      <Mass>5</Mass>
+      <Flammability>0.0</Flammability>
+      <WorkToMake>100</WorkToMake>
+    </statBases>
+    <thingCategories>
+      <li>ItemsMisc</li>
+    </thingCategories>
+    <drawGUIOverlay>true</drawGUIOverlay>
+    <techLevel>Spacer</techLevel>
+    <tradeTags>
+      <li>ExoticMisc</li>
+    </tradeTags>
+    <recipeMaker>
+      <researchPrerequisite>BasicMechtech</researchPrerequisite>
+      <workSpeedStat>SubcoreEncodingSpeed</workSpeedStat>
+      <workSkill>Crafting</workSkill>
+      <recipeUsers>
+        <li>SubcoreEncoder</li>
+      </recipeUsers>
+      <mechanitorOnlyRecipe>true</mechanitorOnlyRecipe>
+      <unfinishedThingDef>UnfinishedSubcore</unfinishedThingDef>
+      <soundWorking>SubcoreEncoder_Working</soundWorking>
+        <productCount>50</productCount>
+    </recipeMaker>
+    <costList>
+      <Chemfuel>50</Chemfuel>
+      <Steel>50</Steel>
+    </costList>
+  </ThingDef>
+</Defs>
