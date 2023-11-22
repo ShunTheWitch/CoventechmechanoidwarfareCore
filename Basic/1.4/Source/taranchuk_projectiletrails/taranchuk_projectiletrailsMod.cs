@@ -6,6 +6,10 @@ using Verse;
 
 namespace taranchuk_projectiletrails
 {
+    public class RocketExtension : DefModExtension
+    {
+        public float archHeightMultiplier = 1f;
+    }
     [DefOf]
     public static class TPT_DefOf
     {
@@ -14,7 +18,7 @@ namespace taranchuk_projectiletrails
     }
     public class RocketWithTrails : Projectile_Explosive
     {
-        public const float ArchHeightMultiplier = 4;
+        public float ArchHeightMultiplier => def.GetModExtension<RocketExtension>()?.archHeightMultiplier ?? 1f;
         private Vector3 LookTowards =>
             new(this.destination.x - this.origin.x, this.def.Altitude, this.destination.z - this.origin.z +
                 (this.ArcHeightFactor * ArchHeightMultiplier) * (4 - 8 * this.DistanceCoveredFraction));
