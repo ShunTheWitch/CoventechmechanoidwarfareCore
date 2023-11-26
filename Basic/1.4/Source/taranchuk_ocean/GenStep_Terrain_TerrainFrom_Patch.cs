@@ -11,14 +11,7 @@ namespace taranchuk_ocean
         {
             if (map.Biome.IsWaterBiome())
             {
-                if (c.OnEdge(map))
-                {
-                    __result = TerrainDefOf.WaterOceanDeep;
-                }
-                else
-                {
-                    __result = TerrainDefOf.WaterOceanShallow;
-                }
+                __result = TerrainDefOf.WaterOceanShallow;
                 return false;
             }
             return true;

@@ -70,8 +70,11 @@
     <Compile Include="EnterMapUtilityVehicles_FindNearEdgeCell_Patch.cs" />
     <Compile Include="GenStep_FindPlayerStartSpot_Generate_Patch.cs" />
     <Compile Include="GenStep_Terrain_TerrainFrom_Patch.cs" />
+    <Compile Include="IncidentWorker_NeutralGroup_TryResolveParmsGeneral_Patch.cs" />
+    <Compile Include="IncidentWorker_Raid_ResolveRaidArriveMode_Patch.cs" />
     <Compile Include="MapGenerator_GenerateMap_Patch.cs" />
     <Compile Include="MapParent_MapGeneratorDef_Patch.cs" />
+    <Compile Include="PawnsArrivalModeWorker_CanUseWith_Patch.cs" />
     <Compile Include="QuestNode_GetMap_IsAcceptableMap_Patch.cs" />
     <Compile Include="QuestNode_GetWaterTile.cs" />
     <Compile Include="SettleInEmptyTileUtility_SettleCommand_Patch.cs" />
