@@ -66,12 +66,17 @@
     <Publicize Include="Assembly-CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Command_ActionWithCooldown.cs" />
+    <Compile Include="CompMineralExtractor.cs" />
+    <Compile Include="CompSpawnerCommand.cs" />
+    <Compile Include="CompSpawnerCustom.cs" />
     <Compile Include="CVN_DefOf.cs" />
     <Compile Include="EnterMapUtilityVehicles_FindNearEdgeCell_Patch.cs" />
     <Compile Include="GenStep_FindPlayerStartSpot_Generate_Patch.cs" />
     <Compile Include="GenStep_Terrain_TerrainFrom_Patch.cs" />
     <Compile Include="IncidentWorker_NeutralGroup_TryResolveParmsGeneral_Patch.cs" />
     <Compile Include="IncidentWorker_Raid_ResolveRaidArriveMode_Patch.cs" />
+    <Compile Include="JobDriver_OperateMineralExtractor.cs" />
     <Compile Include="MapGenerator_GenerateMap_Patch.cs" />
     <Compile Include="MapParent_MapGeneratorDef_Patch.cs" />
     <Compile Include="PawnsArrivalModeWorker_CanUseWith_Patch.cs" />
@@ -81,7 +86,9 @@
     <Compile Include="Settlement_MapGeneratorDef_Patch.cs" />
     <Compile Include="taranchuk_oceanMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ThingCountWeighted.cs" />
     <Compile Include="TileFinder_IsValidTileForNewSettlement_Patch.cs" />
+    <Compile Include="WorkGiver_DrillAtMineralExtractor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
