@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using RimWorld;
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -23,7 +24,7 @@ namespace taranchuk_ocean
         {
             if (CanOperate)
             {
-                yield return new Command_ActionWithCooldown(lastSpawnedTicks, Props.cooldownTicks)
+                var command = new Command_ActionWithCooldown(lastSpawnedTicks, Props.cooldownTicks)
                 {
                     defaultLabel = Props.label,
                     defaultDesc = Props.description,
@@ -33,6 +34,11 @@ namespace taranchuk_ocean
                         TryDoSpawn();
                     }
                 };
+                if (lastSpawnedTicks > 0 && Find.TickManager.TicksGame - lastSpawnedTicks < Props.cooldownTicks)
+                {
+                    command.Disable("CVN_OnCooldown".Translate(((lastSpawnedTicks + Props.cooldownTicks) - Find.TickManager.TicksGame).ToStringTicksToPeriod()));
+                }
+                yield return command;
             }
         }
     }
