@@ -6,6 +6,7 @@
     <genSteps>
       <li>Terrain</li>
       <li>FindPlayerStartSpot</li>
+      <li MayRequire="Ludeon.Rimworld.Biotech">Pollution</li>
       <li>Fog</li>
     </genSteps>
   </MapGeneratorDef>
