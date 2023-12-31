@@ -16,6 +16,7 @@ namespace taranchuk_flightcombat
             var comp = turret.vehicle.GetComp<CompFlightMode>();
             if (comp != null && turret.vehicle.InFlightModeOrNonStandardAngle(comp))
             {
+                rot = Rot8.West;
                 DrawTurret(comp, turret, drawPos, rot);
                 return false;
             }
@@ -26,7 +27,7 @@ namespace taranchuk_flightcombat
         {
             try
             {
-                Vector3 turretDrawLoc = turret.TurretDrawLocFor(rot).RotatedBy(comp.AngleAdjusted(comp.CurAngle));
+                Vector3 turretDrawLoc = turret.TurretDrawLocFor(rot).RotatedBy(comp.CurAngle);
                 Vector3 rootPos = drawPos + turretDrawLoc;
                 Vector3 recoilOffset = Vector3.zero;
                 Vector3 parentRecoilOffset = Vector3.zero;
