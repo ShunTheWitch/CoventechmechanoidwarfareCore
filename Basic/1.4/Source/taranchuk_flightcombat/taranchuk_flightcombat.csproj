@@ -74,6 +74,7 @@
     <Compile Include="HotSwappableAttribute.cs" />
     <Compile Include="taranchuk_flightcombatMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VehicleGraphics_DrawTurret_Patch.cs" />
     <Compile Include="VehiclePathing_StartVehiclePath_Patch.cs" />
     <Compile Include="VehiclePawn_UpdateRotation_Patch.cs" />
     <Compile Include="VehiclePawn_VehicleGraphic_Patch.cs" />

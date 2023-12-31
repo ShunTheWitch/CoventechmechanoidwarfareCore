@@ -9,12 +9,17 @@ namespace taranchuk_flightcombat
         public static bool Prefix(VehiclePawn __instance)
         {
             var comp = __instance.GetComp<CompFlightMode>();
-            if (comp != null && comp.flightMode)
+            if (comp != null && __instance.InFlightModeOrNonStandardAngle(comp))
             {
                 comp.UpdateRotation();
                 return false;
             }
             return true;
+        }
+
+        public static bool InFlightModeOrNonStandardAngle(this VehiclePawn __instance, CompFlightMode comp)
+        {
+            return comp.flightMode || (__instance.Angle != 0 && __instance.Angle != -45 && __instance.Angle != 45);
         }
     }
 }

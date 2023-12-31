@@ -8,7 +8,7 @@ namespace taranchuk_flightcombat
     [HarmonyPatch(typeof(VehiclePathing), nameof(VehiclePathing.StartVehiclePath))]
     public static class VehiclePathing_StartVehiclePath_Patch
     {
-        public static bool Prefix(LocalTargetInfo __0, PathEndMode __1, Pawn __2)
+        public static bool Prefix(LocalTargetInfo __0, PathEndMode __1, Pawn __2, ref bool __result)
         {
             if (__2 is VehiclePawn vehicle)
             {
@@ -16,6 +16,7 @@ namespace taranchuk_flightcombat
                 if (comp != null && comp.flightMode)
                 {
                     comp.SetTarget(__0);
+                    __result = false;
                     return false;
                 }
             }

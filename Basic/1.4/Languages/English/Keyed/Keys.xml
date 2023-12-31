@@ -3,5 +3,5 @@
 
 	<CVN_UncontrolledByMechanitor>Uncontrolled by mechanitor.</CVN_UncontrolledByMechanitor>
 	<CVN_OnCooldown>On cooldown. It will be available in {0}.</CVN_OnCooldown>
-
+	<CVN_CannotLandOnImpassableTiles>Cannot land on impassable tiles.</CVN_CannotLandOnImpassableTiles>
 </LanguageData>
