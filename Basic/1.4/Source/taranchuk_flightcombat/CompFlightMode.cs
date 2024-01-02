@@ -20,7 +20,7 @@ namespace taranchuk_flightcombat
         public float turnAngleCirclingPerTick;
         public float distanceFromTargetToStartTurning;
         public float fuelConsumptionPerTick;
-        public GraphicData flightGraphicData;
+        public GraphicDataRGB flightGraphicData;
         public CompProperties_FlightMode()
         {
             this.compClass = typeof(CompFlightMode);
@@ -28,7 +28,7 @@ namespace taranchuk_flightcombat
     }
 
     [HotSwappable]
-    public class CompFlightMode : ThingComp
+    public class CompFlightMode : ThingComp, IMaterialCacheTarget
     {
         public bool flightMode;
 
@@ -58,41 +58,28 @@ namespace taranchuk_flightcombat
         public Vector3 curPosition;
 
         public VehiclePawn Vehicle => parent as VehiclePawn;
-        private Graphic_Vehicle graphicInt;
+
+        protected Graphic_Vehicle cachedGraphic;
+
         public Graphic_Vehicle FlightGraphic
         {
             get
             {
-                if (graphicInt == null)
+                if (cachedGraphic == null)
                 {
-                    Props.flightGraphicData.Init();
-                    GraphicDataRGB graphicData = new GraphicDataRGB();
-                    graphicData.CopyFrom(Props.flightGraphicData);
-
-                    graphicData.color = Vehicle.patternData.color;
-                    graphicData.colorTwo = Vehicle.patternData.colorTwo;
-                    graphicData.colorThree = Vehicle.patternData.colorThree;
-                    graphicData.tiles = Vehicle.patternData.tiles;
-                    graphicData.displacement = Vehicle.patternData.displacement;
-                    graphicData.pattern = Vehicle.patternData.patternDef;
-
-                    if (graphicData.shaderType.Shader.SupportsRGBMaskTex())
-                    {
-                        RGBMaterialPool.CacheMaterialsFor(Vehicle);
-                        graphicData.Init(Vehicle);
-                        graphicInt = graphicData.Graphic as Graphic_Vehicle;
-                        RGBMaterialPool.SetProperties(Vehicle, Vehicle.patternData, graphicInt.TexAt, graphicInt.MaskAt);
-                    }
-                    else
-                    {
-                        graphicInt = ((GraphicData)graphicData).Graphic as Graphic_Vehicle; //Triggers vanilla Init call for normal material caching
-                    }
+                    cachedGraphic = GenerateGraphicData(this, Props.flightGraphicData);
                 }
-                return graphicInt;
+                return cachedGraphic;
             }
         }
 
         public CompProperties_FlightMode Props => base.props as CompProperties_FlightMode;
+
+        public int MaterialCount => 1;
+
+        public PatternDef PatternDef => Vehicle.PatternDef;
+
+        public string Name => $"CompFlightMode_{Vehicle.ThingID}";
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
@@ -287,6 +274,41 @@ namespace taranchuk_flightcombat
         {
             Log.Message(prefix + " - Vehicle.Position: " + Vehicle.Position + " - Vehicle.Rotation: " + Vehicle.Rotation.ToStringHuman()
                 + " - Vehicle.Angle: " + Vehicle.Angle);
+        }
+
+        public override void PostDestroy(DestroyMode mode, Map previousMap)
+        {
+            base.PostDestroy(mode, previousMap);
+            DestroyFlightGraphic();
+        }
+
+        private void DestroyFlightGraphic()
+        {
+            RGBMaterialPool.Release(this);
+            cachedGraphic = null;
+        }
+
+        private static Graphic_Vehicle GenerateGraphicData(IMaterialCacheTarget cacheTarget, GraphicDataRGB copyGraphicData)
+        {
+            var graphicData = new GraphicDataRGB();
+            graphicData.CopyFrom(copyGraphicData);
+            Graphic_Vehicle graphic;
+            if ((graphicData.shaderType.Shader.SupportsMaskTex() || graphicData.shaderType.Shader.SupportsRGBMaskTex()))
+            {
+                graphicData.CopyDrawData(copyGraphicData);
+            }
+            if (graphicData.shaderType != null && graphicData.shaderType.Shader.SupportsRGBMaskTex())
+            {
+                RGBMaterialPool.CacheMaterialsFor(cacheTarget);
+                graphicData.Init(cacheTarget);
+                graphic = graphicData.Graphic as Graphic_Vehicle;
+                RGBMaterialPool.SetProperties(cacheTarget, graphicData, graphic.TexAt, graphic.MaskAt);
+            }
+            else
+            {
+                graphic = ((GraphicData)graphicData).Graphic as Graphic_Vehicle;
+            }
+            return graphic;
         }
 
         public override void PostExposeData()
