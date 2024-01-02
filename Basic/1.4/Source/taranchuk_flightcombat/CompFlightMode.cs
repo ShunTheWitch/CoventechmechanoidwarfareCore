@@ -75,7 +75,7 @@ namespace taranchuk_flightcombat
 
         public CompProperties_FlightMode Props => base.props as CompProperties_FlightMode;
 
-        public int MaterialCount => 1;
+        public int MaterialCount => 8;
 
         public PatternDef PatternDef => Vehicle.PatternDef;
 
