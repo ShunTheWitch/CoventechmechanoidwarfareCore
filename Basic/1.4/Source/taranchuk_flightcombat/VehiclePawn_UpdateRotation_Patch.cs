@@ -19,7 +19,7 @@ namespace taranchuk_flightcombat
 
         public static bool InFlightModeOrNonStandardAngle(this VehiclePawn __instance, CompFlightMode comp)
         {
-            return comp.flightMode || (__instance.Angle != 0 && __instance.Angle != -45 && __instance.Angle != 45);
+            return comp.InAir || (__instance.Angle != 0 && __instance.Angle != -45 && __instance.Angle != 45);
         }
     }
 }
