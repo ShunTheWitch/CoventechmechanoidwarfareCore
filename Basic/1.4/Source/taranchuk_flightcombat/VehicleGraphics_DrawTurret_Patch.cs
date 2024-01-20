@@ -7,7 +7,6 @@ using Verse;
 
 namespace taranchuk_flightcombat
 {
-    [HotSwappable]
     [HarmonyPatch(typeof(VehicleGraphics), nameof(VehicleGraphics.DrawTurret), new Type[] { typeof(VehicleTurret), typeof(Vector3), typeof(Rot8)})]
     public static class VehicleGraphics_DrawTurret_Patch
     {

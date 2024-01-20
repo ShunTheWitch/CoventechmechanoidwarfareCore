@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using RimWorld;
 using Vehicles;
 using Verse;
 
@@ -15,6 +16,10 @@ namespace taranchuk_flightcombat
                 if (comp != null && comp.InAir)
                 {
                     comp.SetTarget(__0);
+                    if (comp.Props.waypointFleck != null)
+                    {
+                        FleckMaker.Static(__0, __1.Map, comp.Props.waypointFleck);
+                    }
                     __result = false;
                     return false;
                 }
