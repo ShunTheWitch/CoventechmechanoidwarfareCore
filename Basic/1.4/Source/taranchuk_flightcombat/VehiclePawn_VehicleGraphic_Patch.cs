@@ -13,7 +13,6 @@ namespace taranchuk_flightcombat
             if (comp != null && comp.InAir && comp.Props.flightGraphicData != null)
             {
                 __result = comp.FlightGraphic;
-                
                 return false;
             }
             return true;
