@@ -1,5 +1,7 @@
-﻿using RimWorld;
+﻿using HarmonyLib;
+using RimWorld;
 using SmashTools;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -10,15 +12,7 @@ namespace taranchuk_flightcombat
 {
     public class CompProperties_FlightMode : CompProperties
     {
-        public string flightModeLabel = "Flight mode";
-        public string flightModeDesc = "Toggle flight mode.";
-        public string flightModeUITexPath = "UI/FlightMode";
-        public string hoverModeLabel;
-        public string hoverModeDesc;
-        public string hoverModeUITexPath;
-        public string faceTargetLabel;
-        public string faceTargetDesc;
-        public string faceTargetUITexPath;
+        public FlightCommands flightCommands;
         public int takeoffTicks;
         public int landingTicks;
         public bool moveWhileTakingOff;
@@ -27,7 +21,8 @@ namespace taranchuk_flightcombat
         public float flightSpeedTurningPerTick;
         public float turnAnglePerTick;
         public float turnAngleCirclingPerTick;
-        public float distanceFromTargetToStartTurning;
+        public float distanceFromTargetToStartTurningCircleMode;
+        public float distanceFromTargetToStartTurningChaseMode;
         public float fuelConsumptionPerTick;
         public GraphicDataRGB flightGraphicData;
         public List<FlightFleckData> flightFlecks;
@@ -47,6 +42,7 @@ namespace taranchuk_flightcombat
         private bool Flying => flightMode != FlightMode.Off;
         private LocalTargetInfo target;
         private LocalTargetInfo targetToFace;
+        private LocalTargetInfo targetToChase;
         private LocalTargetInfo initialTarget;
         private float takeoffProgress;
         private bool TakingOff => flightMode != FlightMode.Off && takeoffProgress < 1f;
@@ -74,6 +70,8 @@ namespace taranchuk_flightcombat
         }
 
         public Vector3 curPosition;
+        private bool? clockwiseTurn;
+        private bool continueRotating;
 
         public VehiclePawn Vehicle => parent as VehiclePawn;
 
@@ -115,89 +113,92 @@ namespace taranchuk_flightcombat
         {
             if (Vehicle.Faction == Faction.OfPlayer)
             {
-                var flightModeCommand = new Command_FlightMode
+                if (Props.flightCommands.flightMode != null)
                 {
-                    defaultLabel = Props.flightModeLabel,
-                    defaultDesc = Props.flightModeDesc,
-                    icon = ContentFinder<Texture2D>.Get(Props.flightModeUITexPath),
-                    isActive = () => Flying,
-                    toggleAction = () => 
+                    var flightModeCommand = Props.flightCommands.flightMode.GetCommand();
+                    flightModeCommand.isActive = () => Flying;
+                    flightModeCommand.toggleAction = () =>
                     {
                         SetFlightMode(this.flightMode != FlightMode.Flight);
-                    }
-                };
-                if (Props.moveWhileTakingOff)
-                {
-                    flightModeCommand.onHover = () =>
-                    {
-                        if ((TakingOff || flightMode == FlightMode.Off) && Landing is false)
-                        {
-                            DrawRunway(takingOff: true);
-                        }
-                        else
-                        {
-                            DrawRunway(takingOff: false);
-                        }
                     };
-                    if (flightMode == FlightMode.Off && Landing is false)
+                    if (Props.moveWhileTakingOff)
                     {
-                        var blockingCells = GetBlockingCells(takingOff: true);
-                        if (blockingCells.Any())
+                        flightModeCommand.onHover = () =>
                         {
-                            flightModeCommand.Disable("CVN_CannotTakeoff".Translate());
-                        }
-                    }
-                    else if (InAir)
-                    {
-                        var blockingCells = GetBlockingCells(takingOff: false);
-                        if (blockingCells.Any())
-                        {
-                            flightModeCommand.Disable("CVN_CannotLand".Translate());
-                        }
-                    }
-                }
-                else if (InAir && !CanLand())
-                {
-                    flightModeCommand.Disable("CVN_CannotLandOnImpassableTiles".Translate());
-                }
-                yield return flightModeCommand;
-                if (Props.hoverModeLabel.NullOrEmpty() is false)
-                {
-                    var hoverMode = new Command_FlightMode
-                    {
-                        defaultLabel = Props.hoverModeLabel,
-                        defaultDesc = Props.hoverModeDesc,
-                        icon = ContentFinder<Texture2D>.Get(Props.hoverModeUITexPath),
-                        isActive = () => this.flightMode == FlightMode.Hover,
-                        toggleAction = () =>
-                        {
-                            SetHoverMode(this.flightMode != FlightMode.Hover);
-                        }
-                    };
-                    yield return hoverMode;
-                }
-                if (Props.faceTargetLabel.NullOrEmpty() is false)
-                {
-                    var faceTarget = new Command_Action
-                    {
-                        defaultLabel = Props.faceTargetLabel,
-                        defaultDesc = Props.faceTargetDesc,
-                        icon = ContentFinder<Texture2D>.Get(Props.faceTargetUITexPath),
-                        action = () =>
-                        {
-                            Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
+                            if ((TakingOff || flightMode == FlightMode.Off) && Landing is false)
                             {
-                                if (Hovering)
-                                {
-                                    targetToFace = x;
-                                }
-                                else
-                                {
-                                    target = x;
-                                    initialTarget = x;
-                                }
-                            });
+                                DrawRunway(takingOff: true);
+                            }
+                            else
+                            {
+                                DrawRunway(takingOff: false);
+                            }
+                        };
+                        if (flightMode == FlightMode.Off && Landing is false)
+                        {
+                            var blockingCells = GetBlockingCells(takingOff: true);
+                            if (blockingCells.Any())
+                            {
+                                flightModeCommand.Disable("CVN_CannotTakeoff".Translate());
+                            }
                         }
+                        else if (InAir)
+                        {
+                            var blockingCells = GetBlockingCells(takingOff: false);
+                            if (blockingCells.Any())
+                            {
+                                flightModeCommand.Disable("CVN_CannotLand".Translate());
+                            }
+                        }
+                    }
+                    else if (InAir && !CanLand())
+                    {
+                        flightModeCommand.Disable("CVN_CannotLandOnImpassableTiles".Translate());
+                    }
+                    yield return flightModeCommand;
+                }
+
+                if (Props.flightCommands.hoverMode != null)
+                {
+                    var hoverModeCommand = Props.flightCommands.hoverMode.GetCommand();
+                    hoverModeCommand.isActive = () => this.flightMode == FlightMode.Hover;
+                    hoverModeCommand.toggleAction = () =>
+                    {
+                        SetHoverMode(this.flightMode != FlightMode.Hover);
+                    };
+                    yield return hoverModeCommand;
+                }
+
+                if (Props.flightCommands.faceTarget != null)
+                {
+                    var faceTargetCommand = Props.flightCommands.faceTarget.GetCommand();
+                    faceTargetCommand.action = () =>
+                    {
+                        Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
+                        {
+                            if (Hovering is false)
+                            {
+                                SetHoverMode(true);
+                            }
+                            targetToFace = x;
+                        });
+                    };
+                    yield return faceTargetCommand;
+                }
+
+                if (Props.flightCommands.chaseTarget != null)
+                {
+                    var faceTarget = Props.flightCommands.chaseTarget.GetCommand();
+                    faceTarget.action = () =>
+                    {
+                        Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
+                        {
+                            if (Hovering)
+                            {
+                                SetFlightMode(true);
+                            }
+                            targetToChase = x;
+                        });
                     };
                     yield return faceTarget;
                 }
@@ -253,6 +254,7 @@ namespace taranchuk_flightcombat
                 Vehicle.FullRotation = Rot8.FromAngle(CurAngle);
                 Vehicle.UpdateAngle();
             }
+            targetToFace = null;
             this.flightMode = flightMode ? FlightMode.Flight : FlightMode.Off;
         }
 
@@ -271,6 +273,7 @@ namespace taranchuk_flightcombat
                     Vehicle.vehiclePather.StopDead();
                 }
             }
+            targetToChase = null;
             this.flightMode = hoverMode ? FlightMode.Hover : FlightMode.Flight; 
         }
 
@@ -446,7 +449,7 @@ namespace taranchuk_flightcombat
             return cells;
         }
 
-        private static IntVec3 AdjustPos(Rot8 rot, IntVec3 pos)
+        private IntVec3 AdjustPos(Rot8 rot, IntVec3 pos)
         {
             if (rot == Rot8.South || rot == Rot8.NorthEast || rot == Rot8.East)
             {
@@ -514,13 +517,33 @@ namespace taranchuk_flightcombat
 
         private void Flight()
         {
-            var targetDistance = target.Cell.DistanceTo(Vehicle.Position);
             if (initialTarget.IsValid)
             {
                 bool rotated = RotateTowards(initialTarget.CenterVector3);
                 MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
             }
-            else if (targetDistance < Props.distanceFromTargetToStartTurning)
+            else if (targetToChase.IsValid)
+            {
+                var shouldRotate = targetToChase.Cell.DistanceTo(Vehicle.Position) > Props.distanceFromTargetToStartTurningChaseMode;
+                if (shouldRotate)
+                {
+                    continueRotating = true;
+                }
+                if (shouldRotate || continueRotating)
+                {
+                    bool rotated = RotateTowards(targetToChase.CenterVector3);
+                    if (rotated is false)
+                    {
+                        continueRotating = false;
+                    }
+                    MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                }
+                else
+                {
+                    MoveFurther(Props.flightSpeedPerTick);
+                }
+            }
+            else if (target.Cell.DistanceTo(Vehicle.Position) < Props.distanceFromTargetToStartTurningCircleMode)
             {
                 MoveFurther(Props.flightSpeedPerTick);
             }
@@ -593,7 +616,6 @@ namespace taranchuk_flightcombat
             curPosition = new Vector3(newPosition.x, Altitudes.AltitudeFor(AltitudeLayer.MetaOverlays), newPosition.z);
         }
 
-        private bool? clockwiseTurn;
         private void RotatePerperticular(Vector3 target)
         {
             float targetAngle = GetAngleFromTarget(target);
@@ -711,8 +733,10 @@ namespace taranchuk_flightcombat
             Scribe_Values.Look(ref curAngleInt, "curAngle");
             Scribe_TargetInfo.Look(ref target, "target");
             Scribe_TargetInfo.Look(ref targetToFace, "targetToFace");
+            Scribe_TargetInfo.Look(ref targetToChase, "targetToChase");
             Scribe_TargetInfo.Look(ref initialTarget, "initialTarget");
             Scribe_Values.Look(ref clockwiseTurn, "clockwiseTurn");
+            Scribe_Values.Look(ref continueRotating, "continueRotating");
             Scribe_Values.Look(ref takeoffProgress, "takeoffProgress");
         }
     }
