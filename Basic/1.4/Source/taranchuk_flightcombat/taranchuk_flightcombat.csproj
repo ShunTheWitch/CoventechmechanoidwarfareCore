@@ -72,19 +72,24 @@
   <ItemGroup>
     <Compile Include="Command_FlightMode.cs" />
     <Compile Include="CompFlightMode.cs" />
+    <Compile Include="FlightCommand.cs" />
+    <Compile Include="FlightCommands.cs" />
+    <Compile Include="FlightCommand_Action.cs" />
+    <Compile Include="FlightCommand_Toggle.cs" />
     <Compile Include="FlightFleckData.cs" />
     <Compile Include="FlightMode.cs" />
     <Compile Include="HotSwappableAttribute.cs" />
     <Compile Include="taranchuk_flightcombatMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VehicleGraphics_DrawAngleLines_Patch.cs" />
-    <Compile Include="VehicleGraphics_DrawTurret_Patch.cs" />
+    <Compile Include="VehicleTurret_TurretOffset_Patch.cs" />
     <Compile Include="VehiclePathing_GotoLocationVehicles_Patch.cs" />
     <Compile Include="VehiclePathing_StartVehiclePath_Patch.cs" />
     <Compile Include="VehiclePawn_Notify_ColorChanged_Patch.cs" />
     <Compile Include="VehiclePawn_UpdateRotation_Patch.cs" />
     <Compile Include="VehiclePawn_VehicleGraphic_Patch.cs" />
     <Compile Include="VehicleTurret_DrawTargeter_Patch.cs" />
+    <Compile Include="VehicleTurret_TurretDrawLocFor_Patch.cs" />
     <Compile Include="Vehicle_DrawTracker_DrawPos_Patch.cs" />
     <Compile Include="Vehicle_PathFollower_StartPath_Patch.cs" />
   </ItemGroup>
