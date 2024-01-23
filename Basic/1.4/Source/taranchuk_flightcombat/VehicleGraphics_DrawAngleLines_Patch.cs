@@ -14,7 +14,7 @@ namespace taranchuk_flightcombat
                 var comp = VehicleTurret_DrawTargeter_Patch.curTurret.vehicle.GetComp<CompFlightMode>();
                 if (comp != null && comp.InAir) 
                 {
-                    additionalAngle = comp.AngleAdjusted(comp.CurAngle - 90);
+                    additionalAngle = comp.AngleAdjusted(comp.CurAngle + comp.FlightAngleOffset);
                 }
             }
         }

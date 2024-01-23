@@ -70,6 +70,9 @@
     <Publicize Include="Assembly-CSharp;Vehicles" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bomb.cs" />
+    <Compile Include="BombOption.cs" />
+    <Compile Include="Command_Bomb.cs" />
     <Compile Include="Command_FlightMode.cs" />
     <Compile Include="CompFlightMode.cs" />
     <Compile Include="FlightCommand.cs" />
