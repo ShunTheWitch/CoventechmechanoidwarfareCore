@@ -24,6 +24,7 @@ namespace taranchuk_flightcombat
         public float distanceFromTargetToStartTurningCircleMode;
         public float distanceFromTargetToStartTurningChaseMode;
         public float fuelConsumptionPerTick;
+        public List<BombOption> bombOptions;
         public GraphicDataRGB flightGraphicData;
         public List<FlightFleckData> flightFlecks;
         public List<FlightFleckData> hoverFlecks;
@@ -35,6 +36,7 @@ namespace taranchuk_flightcombat
             this.compClass = typeof(CompFlightMode);
         }
     }
+
     [HotSwappable]
     public class CompFlightMode : ThingComp, IMaterialCacheTarget
     {
@@ -44,11 +46,16 @@ namespace taranchuk_flightcombat
         private LocalTargetInfo targetToFace;
         private LocalTargetInfo targetToChase;
         private LocalTargetInfo initialTarget;
+        private int bombardmentOptionInd;
+        private int lastBombardmentTick;
+        private int? tickToStartFiring;
         private float takeoffProgress;
         private bool TakingOff => flightMode != FlightMode.Off && takeoffProgress < 1f;
         private bool Hovering => flightMode == FlightMode.Hover;
         private bool Landing => flightMode == FlightMode.Off && takeoffProgress > 0f;
-        public bool InAir => Flying || TakingOff || Landing;
+        public bool InAir => Vehicle.Spawned && (Flying || TakingOff || Landing);
+        public Rot4 FlightRotation => Rot4.West;
+        public float FlightAngleOffset => -90;
         private float curAngleInt;
 
         public float CurAngle
@@ -108,6 +115,8 @@ namespace taranchuk_flightcombat
         public PatternDef PatternDef => Vehicle.PatternDef;
 
         public string Name => $"CompFlightMode_{Vehicle.ThingID}";
+
+        private BombOption BombOption => Props.bombOptions.FirstOrDefault(x => Props.bombOptions.IndexOf(x) == bombardmentOptionInd);
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
@@ -188,8 +197,8 @@ namespace taranchuk_flightcombat
 
                 if (Props.flightCommands.chaseTarget != null)
                 {
-                    var faceTarget = Props.flightCommands.chaseTarget.GetCommand();
-                    faceTarget.action = () =>
+                    var chaseTargetcommand = Props.flightCommands.chaseTarget.GetCommand();
+                    chaseTargetcommand.action = () =>
                     {
                         Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
                         {
@@ -200,10 +209,36 @@ namespace taranchuk_flightcombat
                             targetToChase = x;
                         });
                     };
-                    yield return faceTarget;
+                    yield return chaseTargetcommand;
+                }
+
+                if (Props.bombOptions.NullOrEmpty() is false)
+                {
+                    var list = new List<FloatMenuOption>();
+                    foreach (var option in Props.bombOptions)
+                    {
+                        list.Add(new FloatMenuOption(option.label, delegate
+                        {
+                            bombardmentOptionInd = Props.bombOptions.IndexOf(option);
+                            tickToStartFiring = null;
+                        }, itemIcon: ContentFinder<Texture2D>.Get(option.texPath), iconColor: Color.white));
+                    }
+
+                    BombOption bombOption = BombOption;
+                    yield return new Command_Bomb(lastBombardmentTick, bombOption.cooldownTicks)
+                    {
+                        defaultLabel = bombOption.label,
+                        icon = ContentFinder<Texture2D>.Get(bombOption.texPath),
+                        action = () =>
+                        {
+                            DropBomb(bombOption);
+                        },
+                        bombOptions = list
+                    };
                 }
             }
         }
+
 
         private TargetingParameters TargetingParamsForFacing => new TargetingParameters
         {
@@ -241,7 +276,7 @@ namespace taranchuk_flightcombat
             {
                 SetTarget(Vehicle.vehiclePather.Moving ? Vehicle.vehiclePather.Destination : Vehicle.Position);
                 curPosition = Vehicle.Drawer.DrawPos;
-                CurAngle = Vehicle.FullRotation.AsAngle + 90;
+                CurAngle = Vehicle.FullRotation.AsAngle - FlightAngleOffset;
                 if (Vehicle.vehiclePather.Moving)
                 {
                     Vehicle.vehiclePather.StopDead();
@@ -266,7 +301,7 @@ namespace taranchuk_flightcombat
                 if (InAir is false)
                 {
                     curPosition = Vehicle.Drawer.DrawPos;
-                    CurAngle = Vehicle.FullRotation.AsAngle - 90;
+                    CurAngle = Vehicle.FullRotation.AsAngle - FlightAngleOffset;
                 }
                 if (Vehicle.vehiclePather.Moving)
                 {
@@ -323,8 +358,9 @@ namespace taranchuk_flightcombat
                 }
                 else if (Flying)
                 {
-                    Flight();
+                    Flight(); 
                 }
+
                 SpawnFlecks();
 
                 var curPositionIntVec = curPosition.ToIntVec3();
@@ -340,6 +376,31 @@ namespace taranchuk_flightcombat
                 UpdateVehicleAngleAndRotation();
             }
             //LogData("flightMode: " + flightMode);
+        }
+
+        private void DropBomb(BombOption bombOption)
+        {
+            if (bombOption.costList.All(thingCost => Vehicle.inventory.GetDirectlyHeldThings()
+                .Where(invThing => invThing.def == thingCost.thingDef).Sum(invThing => invThing.stackCount) >= thingCost.count))
+            {
+                foreach (var thingCost in bombOption.costList)
+                {
+                    var countToTake = thingCost.count;
+                    foreach (var thing in Vehicle.inventory.GetDirectlyHeldThings().Where(x => x.def == thingCost.thingDef).ToList())
+                    {
+                        var thingToConsume = thing.SplitOff(Mathf.Min(countToTake, thing.stackCount));
+                        countToTake -= thingToConsume.stackCount;
+                        thingToConsume.Destroy();
+                        if (countToTake <= 0)
+                        {
+                            break;
+                        }
+                    }
+                }
+                var bomb = (Projectile)GenSpawn.Spawn(bombOption.projectile, Vehicle.Position + IntVec3.North, Vehicle.Map);
+                bomb.Launch(Vehicle, Vehicle.Position, Vehicle.Position, ProjectileHitFlags.IntendedTarget, equipment: Vehicle);
+                lastBombardmentTick = Find.TickManager.TicksGame;
+            }
         }
 
         private void SpawnFlecks()
@@ -400,6 +461,7 @@ namespace taranchuk_flightcombat
         private void UpdateVehicleAngleAndRotation()
         {
             Vehicle.Angle = CurAngle;
+
             UpdateRotation();
         }
 
@@ -409,7 +471,7 @@ namespace taranchuk_flightcombat
             var vehicle = Vehicle;
             var position = vehicle.Position;
             var rot = Vehicle.FullRotation;
-            var angle = InAir ? AngleAdjusted(vehicle.Angle - 90) : rot.AsAngle;
+            var angle = InAir ? AngleAdjusted(vehicle.Angle + FlightAngleOffset) : rot.AsAngle;
             var distance = 0f;
             if (takingOff)
             {
@@ -432,7 +494,7 @@ namespace taranchuk_flightcombat
 
             var width = vehicle.def.Size.x;
             var north = IntVec3.North.ToVector3();
-            var rotInAir = Rot8.FromAngle(CurAngle - 90);
+            var rotInAir = Rot8.FromAngle(CurAngle + FlightAngleOffset);
             for (var i = 1; i <= width; i++)
             {
                 var pos = CellOffset(position, i, width, angle);
@@ -574,9 +636,9 @@ namespace taranchuk_flightcombat
 
         public void UpdateRotation()
         {
-            if (Vehicle.rotationInt != Rot4.West)
+            if (Vehicle.rotationInt != FlightRotation)
             {
-                Vehicle.rotationInt = Rot4.West;
+                Vehicle.rotationInt = FlightRotation;
             }
         }
 
@@ -585,7 +647,7 @@ namespace taranchuk_flightcombat
             if (InAir)
             {
                 var vehicle = Vehicle;
-                var angle = AngleAdjusted(CurAngle - 90);
+                var angle = AngleAdjusted(CurAngle + FlightAngleOffset);
                 vehicle.rotationInt = Rot8.FromAngle(angle);
                 var cells = Vehicle.VehicleRect().Cells.ToList();
                 UpdateRotation();
@@ -606,7 +668,7 @@ namespace taranchuk_flightcombat
 
         private void MoveFurther(float speed)
         {
-            var newTarget = curPosition + (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.forward).RotatedBy(-90);
+            var newTarget = curPosition + (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.forward).RotatedBy(FlightAngleOffset);
             MoveTowards(newTarget, speed);
         }
 
@@ -619,7 +681,7 @@ namespace taranchuk_flightcombat
         private void RotatePerperticular(Vector3 target)
         {
             float targetAngle = GetAngleFromTarget(target);
-            var curAnglePerpendicular = AngleAdjusted(CurAngle + 90);
+            var curAnglePerpendicular = AngleAdjusted(CurAngle - FlightAngleOffset);
             float diff = targetAngle - curAnglePerpendicular;
             if (diff > 0 ? diff > 180f : diff >= -180f)
             {
@@ -668,7 +730,7 @@ namespace taranchuk_flightcombat
 
         private float GetAngleFromTarget(Vector3 target)
         {
-            var targetAngle = (curPosition.Yto0() - target.Yto0()).AngleFlat() - 90f;
+            var targetAngle = (curPosition.Yto0() - target.Yto0()).AngleFlat() + FlightAngleOffset;
             return AngleAdjusted(targetAngle);
         }
 
@@ -738,6 +800,9 @@ namespace taranchuk_flightcombat
             Scribe_Values.Look(ref clockwiseTurn, "clockwiseTurn");
             Scribe_Values.Look(ref continueRotating, "continueRotating");
             Scribe_Values.Look(ref takeoffProgress, "takeoffProgress");
+            Scribe_Values.Look(ref bombardmentOptionInd, "bombardmentOptionInd");
+            Scribe_Values.Look(ref lastBombardmentTick, "lastBombardmentTick");
+            Scribe_Values.Look(ref tickToStartFiring, "tickToStartFiring");
         }
     }
 }

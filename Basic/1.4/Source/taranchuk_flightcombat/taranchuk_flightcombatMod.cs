@@ -11,6 +11,4 @@ namespace taranchuk_flightcombat
 			new Harmony("taranchuk_flightcombatMod").PatchAll();
         }
     }
-
-
 }
