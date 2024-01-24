@@ -6,6 +6,7 @@ using Verse;
 
 namespace taranchuk_flightcombat
 {
+    [HotSwappable]
     [HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.TurretDrawLocFor))]
     public static class VehicleTurret_TurretDrawLocFor_Patch
     {
@@ -15,7 +16,7 @@ namespace taranchuk_flightcombat
             if (comp != null && __instance.vehicle.InFlightModeOrNonStandardAngle(comp))
             {
                 __state = comp;
-                rot = Rot8.West;
+                rot = comp.FlightRotation;
             }
             else
             {
