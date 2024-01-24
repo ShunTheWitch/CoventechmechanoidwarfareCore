@@ -10,6 +10,16 @@ using Verse;
 
 namespace taranchuk_flightcombat
 {
+    //[HotSwappable]
+    //[HarmonyPatch(typeof(Rendering), nameof(Rendering.DrawSelectionBracketsVehicles))]
+    //public static class Rendering_DrawSelectionBracketsVehicles_Patch
+    //{
+    //    public static void Prefix(ref bool __result, object obj, Material overrideMat)
+    //    {
+    //
+    //    }
+    //}
+
     public class CompProperties_FlightMode : CompProperties
     {
         public FlightCommands flightCommands;
@@ -54,7 +64,7 @@ namespace taranchuk_flightcombat
         private bool Hovering => flightMode == FlightMode.Hover;
         private bool Landing => flightMode == FlightMode.Off && takeoffProgress > 0f;
         public bool InAir => Vehicle.Spawned && (Flying || TakingOff || Landing);
-        public Rot4 FlightRotation => Rot4.West;
+        public Rot4 FlightRotation => Rot4.North;
         public float FlightAngleOffset => -90;
         private float curAngleInt;
 
@@ -458,10 +468,10 @@ namespace taranchuk_flightcombat
             dataStatic.velocitySpeed = fleckData.velocitySpeed;
             Vehicle.Map.flecks.CreateFleck(dataStatic);
         }
+
         private void UpdateVehicleAngleAndRotation()
         {
-            Vehicle.Angle = CurAngle;
-
+            Vehicle.Angle = CurAngle - FlightAngleOffset;
             UpdateRotation();
         }
 
@@ -471,7 +481,7 @@ namespace taranchuk_flightcombat
             var vehicle = Vehicle;
             var position = vehicle.Position;
             var rot = Vehicle.FullRotation;
-            var angle = InAir ? AngleAdjusted(vehicle.Angle + FlightAngleOffset) : rot.AsAngle;
+            var angle = InAir ? AngleAdjusted(CurAngle + FlightAngleOffset) : rot.AsAngle;
             var distance = 0f;
             if (takingOff)
             {

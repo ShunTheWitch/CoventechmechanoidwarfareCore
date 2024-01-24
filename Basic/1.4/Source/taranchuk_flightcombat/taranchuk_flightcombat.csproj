@@ -82,9 +82,11 @@
     <Compile Include="FlightFleckData.cs" />
     <Compile Include="FlightMode.cs" />
     <Compile Include="HotSwappableAttribute.cs" />
+    <Compile Include="PathingHelper_CalculateAngle_Patch.cs" />
     <Compile Include="taranchuk_flightcombatMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VehicleGraphics_DrawAngleLines_Patch.cs" />
+    <Compile Include="VehicleTurret_AngleBetween_Patch.cs" />
     <Compile Include="VehicleTurret_TurretOffset_Patch.cs" />
     <Compile Include="VehiclePathing_GotoLocationVehicles_Patch.cs" />
     <Compile Include="VehiclePathing_StartVehiclePath_Patch.cs" />
