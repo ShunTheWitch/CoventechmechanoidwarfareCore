@@ -11,16 +11,6 @@ using Verse;
 
 namespace taranchuk_flightcombat
 {
-    //[HotSwappable]
-    //[HarmonyPatch(typeof(Rendering), nameof(Rendering.DrawSelectionBracketsVehicles))]
-    //public static class Rendering_DrawSelectionBracketsVehicles_Patch
-    //{
-    //    public static void Prefix(ref bool __result, object obj, Material overrideMat)
-    //    {
-    //
-    //    }
-    //}
-
     public class CompProperties_FlightMode : CompProperties
     {
         public FlightCommands flightCommands;
@@ -378,10 +368,31 @@ namespace taranchuk_flightcombat
                 var curPositionIntVec = curPosition.ToIntVec3();
                 if (curPositionIntVec != Vehicle.Position)
                 {
-                    if (Vehicle.OccupiedRect().MovedBy(curPositionIntVec.ToIntVec2 - Vehicle.Position.ToIntVec2).InBounds(Vehicle.Map))
+                    var occupiedRect = Vehicle.OccupiedRect();
+                    if (occupiedRect.MovedBy(curPositionIntVec.ToIntVec2 - Vehicle.Position.ToIntVec2).InBounds(Vehicle.Map))
                     {
                         Vehicle.Position = curPositionIntVec;
                         Vehicle.vehiclePather.nextCell = curPositionIntVec;
+                        bool shouldRefreshCosts = false;
+                        foreach (var cell in occupiedRect.ExpandedBy(Vehicle.RotatedSize.x))
+                        {
+                            if (cell.InBounds(Vehicle.Map))
+                            {
+                                var grid = Vehicle.Map.thingGrid.thingGrid[Vehicle.Map.cellIndices.CellToIndex(cell)];
+                                var vehicle = grid.OfType<VehiclePawn>().Where(x => x == this.Vehicle).FirstOrDefault();
+                                if (vehicle != null && Vehicle.OccupiedRect().Contains(cell) is false)
+                                {
+                                    grid.Remove(vehicle);
+                                    Log.Message("Removing " + vehicle + " from " + cell);
+                                    shouldRefreshCosts = true;
+                                }
+                            }
+                        }
+
+                        if (shouldRefreshCosts)
+                        {
+                            PathingHelper.RecalculateAllPerceivedPathCosts(Vehicle.Map);
+                        }
                     }
                 }
 
