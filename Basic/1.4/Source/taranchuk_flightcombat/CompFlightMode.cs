@@ -3,6 +3,7 @@ using RimWorld;
 using SmashTools;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 using Vehicles;
@@ -279,6 +280,7 @@ namespace taranchuk_flightcombat
                 }
             }
         }
+
 
         public void SetFlightMode(bool flightMode)
         {
@@ -758,6 +760,16 @@ namespace taranchuk_flightcombat
         {
             base.PostDestroy(mode, previousMap);
             DestroyFlightGraphic();
+            foreach (var cell in previousMap.AllCells)
+            {
+                var grid = previousMap.thingGrid.thingGrid[previousMap.cellIndices.CellToIndex(cell)];
+                var vehicle = grid.OfType<VehiclePawn>().Where(x => x == this.Vehicle).FirstOrDefault();
+                if (vehicle != null)
+                {
+                    grid.Remove(vehicle);
+                }
+            }
+            PathingHelper.RecalculateAllPerceivedPathCosts(previousMap);
         }
 
         private void DestroyFlightGraphic()
