@@ -12,8 +12,14 @@ namespace VehicleMechanitorControl
             var comp = pawn.GetComp<CompMechanitorControl>();
             if (comp != null)
             {
-                pawn.relations ??= new Pawn_RelationsTracker(pawn);
+                pawn.AssignMechanitorControlComps();
             }
+        }
+
+        public static void AssignMechanitorControlComps(this Pawn pawn)
+        {
+            pawn.relations ??= new Pawn_RelationsTracker(pawn);
+            pawn.drafter ??= new Pawn_DraftController(pawn);
         }
     }
 
