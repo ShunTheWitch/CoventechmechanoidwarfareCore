@@ -44,9 +44,9 @@ namespace taranchuk_flightcombat
         private FlightMode flightMode;
         private bool Flying => flightMode != FlightMode.Off;
         private LocalTargetInfo target;
-        private LocalTargetInfo targetToFace;
-        private LocalTargetInfo targetToChase;
-        private LocalTargetInfo initialTarget;
+        private LocalTargetInfo targetToFace = LocalTargetInfo.Invalid;
+        private LocalTargetInfo targetToChase = LocalTargetInfo.Invalid;
+        private LocalTargetInfo initialTarget = LocalTargetInfo.Invalid;
         private int bombardmentOptionInd;
         private int lastBombardmentTick;
         private int? tickToStartFiring;
@@ -287,11 +287,11 @@ namespace taranchuk_flightcombat
             }
             else
             {
-                target = null;
+                target = LocalTargetInfo.Invalid;
                 Vehicle.FullRotation = Rot8.FromAngle(CurAngle);
                 Vehicle.UpdateAngle();
             }
-            targetToFace = null;
+            targetToFace = targetToChase = LocalTargetInfo.Invalid;
             this.flightMode = flightMode ? FlightMode.Flight : FlightMode.Off;
         }
 
@@ -310,7 +310,7 @@ namespace taranchuk_flightcombat
                     Vehicle.vehiclePather.StopDead();
                 }
             }
-            targetToChase = null;
+            targetToFace = targetToChase = LocalTargetInfo.Invalid;
             this.flightMode = hoverMode ? FlightMode.Hover : FlightMode.Flight; 
         }
 
@@ -319,7 +319,7 @@ namespace taranchuk_flightcombat
             this.target = targetInfo;
             this.initialTarget = targetInfo.Cell;
             this.clockwiseTurn = null;
-            this.targetToFace = null;
+            targetToFace = targetToChase = LocalTargetInfo.Invalid;
             Vehicle.vehiclePather.PatherFailed();
         }
 
@@ -383,7 +383,6 @@ namespace taranchuk_flightcombat
                                 if (vehicle != null && Vehicle.OccupiedRect().Contains(cell) is false)
                                 {
                                     grid.Remove(vehicle);
-                                    Log.Message("Removing " + vehicle + " from " + cell);
                                     shouldRefreshCosts = true;
                                 }
                             }
@@ -589,7 +588,7 @@ namespace taranchuk_flightcombat
                 bool rotated = RotateTowards(initialTarget.CenterVector3);
                 MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
             }
-            else if (target.Cell != Vehicle.Position)
+            else if (target.IsValid && target.Cell != Vehicle.Position)
             {
                 bool rotated = RotateTowards(target.CenterVector3);
                 MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
@@ -628,15 +627,19 @@ namespace taranchuk_flightcombat
                     MoveFurther(Props.flightSpeedPerTick);
                 }
             }
-            else if (target.Cell.DistanceTo(Vehicle.Position) < Props.distanceFromTargetToStartTurningCircleMode)
+            else if (target.IsValid)
             {
-                MoveFurther(Props.flightSpeedPerTick);
+                if (target.Cell.DistanceTo(Vehicle.Position) < Props.distanceFromTargetToStartTurningCircleMode)
+                {
+                    MoveFurther(Props.flightSpeedPerTick);
+                }
+                else
+                {
+                    RotatePerperticular(target.CenterVector3);
+                    MoveFurther(Props.flightSpeedTurningPerTick);
+                }
             }
-            else
-            {
-                RotatePerperticular(target.CenterVector3);
-                MoveFurther(Props.flightSpeedTurningPerTick);
-            }
+
         }
 
         private void Takeoff()
@@ -759,7 +762,7 @@ namespace taranchuk_flightcombat
 
         private void LogData(string prefix)
         {
-            Log.Message(prefix + " - Vehicle.Position: " + Vehicle.Position + " - takeoffProgress: " + takeoffProgress 
+            Log.Message(this.Vehicle + " - " + prefix + " - Vehicle.Position: " + Vehicle.Position + " - takeoffProgress: " + takeoffProgress 
                 + " - IsFlying: " + Flying + " - IsTakingOff: " + TakingOff + " - IsDescending: " + Landing
                 + " - CurAngle: " + CurAngle + " - Vehicle.Angle: " + Vehicle.Angle
                 + " - FullRotation: " + Vehicle.FullRotation.ToStringNamed() + " - Rotation: " + Vehicle.Rotation.ToStringHuman()
@@ -827,9 +830,9 @@ namespace taranchuk_flightcombat
             Scribe_Values.Look(ref curPosition, "curPosition");
             Scribe_Values.Look(ref curAngleInt, "curAngle");
             Scribe_TargetInfo.Look(ref target, "target");
-            Scribe_TargetInfo.Look(ref targetToFace, "targetToFace");
-            Scribe_TargetInfo.Look(ref targetToChase, "targetToChase");
-            Scribe_TargetInfo.Look(ref initialTarget, "initialTarget");
+            Scribe_TargetInfo.Look(ref targetToFace, "targetToFace", LocalTargetInfo.Invalid);
+            Scribe_TargetInfo.Look(ref targetToChase, "targetToChase", LocalTargetInfo.Invalid);
+            Scribe_TargetInfo.Look(ref initialTarget, "initialTarget", LocalTargetInfo.Invalid);
             Scribe_Values.Look(ref clockwiseTurn, "clockwiseTurn");
             Scribe_Values.Look(ref continueRotating, "continueRotating");
             Scribe_Values.Look(ref takeoffProgress, "takeoffProgress");
