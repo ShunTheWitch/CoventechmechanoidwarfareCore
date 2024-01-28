@@ -93,10 +93,10 @@ namespace taranchuk_flightcombat
                     {
                         floatList.Add(new FloatMenuOption(vehicle.LabelCap, delegate
                         {
-                            Vehicle.inventory.innerContainer.TryDrop(vehicle, ThingPlaceMode.Near, out var other);
+                            Vehicle.inventory.innerContainer.TryDrop(vehicle, ThingPlaceMode.Near, out _);
                             if (compFlightMode != null && compFlightMode.InAir)
                             {
-                                var otherComp = other.TryGetComp<CompFlightMode>();
+                                var otherComp = vehicle.TryGetComp<CompFlightMode>();
                                 if (otherComp != null)
                                 {
                                     otherComp.SetFlightMode(true);
