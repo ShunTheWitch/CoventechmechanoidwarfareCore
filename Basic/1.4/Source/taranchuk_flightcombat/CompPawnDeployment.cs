@@ -100,6 +100,7 @@ namespace taranchuk_flightcombat
                                 if (otherComp != null)
                                 {
                                     otherComp.SetFlightMode(true);
+                                    otherComp.SetTarget(Vehicle.Position);
                                     otherComp.takeoffProgress = 1f;
                                 }
                                 else
