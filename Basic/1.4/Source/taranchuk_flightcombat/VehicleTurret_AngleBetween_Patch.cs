@@ -185,7 +185,7 @@ namespace taranchuk_flightcombat
             if (__instance.angleRestricted != Vector2.zero && __instance.attachedTo is null)
             {
                 var comp = __instance.vehicle.GetComp<CompFlightMode>();
-                if (comp.InAir)
+                if (comp != null && comp.InAir)
                 {
                     __result = AngleBetween(__instance, mousePosition, comp);
                     return false;

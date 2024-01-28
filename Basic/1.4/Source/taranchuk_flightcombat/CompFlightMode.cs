@@ -50,7 +50,7 @@ namespace taranchuk_flightcombat
         private int bombardmentOptionInd;
         private int lastBombardmentTick;
         private int? tickToStartFiring;
-        private float takeoffProgress;
+        public float takeoffProgress;
         private bool TakingOff => flightMode != FlightMode.Off && takeoffProgress < 1f;
         private bool Hovering => flightMode == FlightMode.Hover;
         private bool Landing => flightMode == FlightMode.Off && takeoffProgress > 0f;
