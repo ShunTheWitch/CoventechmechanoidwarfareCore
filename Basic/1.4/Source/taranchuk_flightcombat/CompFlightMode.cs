@@ -326,9 +326,9 @@ namespace taranchuk_flightcombat
         public override void CompTick()
         {
             base.CompTick();
+            //LogData("flightMode: " + flightMode);
             if (InAir)
             {
-                LogData("flightMode: " + flightMode);
                 if (Vehicle.CompFueledTravel != null && Props.fuelConsumptionPerTick > 0)
                 {
                     if (Vehicle.CompFueledTravel.Fuel < Props.fuelConsumptionPerTick)
