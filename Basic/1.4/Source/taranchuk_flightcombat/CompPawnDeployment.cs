@@ -12,6 +12,7 @@ namespace taranchuk_flightcombat
         public float radius;
         public FlightCommand_Action loadCommand;
         public FlightCommand_Action unloadCommand;
+        public bool takePawnsOfAnyFaction;
 
         public CompProperties_PawnDeployment()
         {
@@ -24,6 +25,14 @@ namespace taranchuk_flightcombat
         public CompProperties_PawnDeployment Props => base.props as CompProperties_PawnDeployment;
 
         public VehiclePawn Vehicle => parent as VehiclePawn;
+
+        public CompFlightMode compFlightMode;
+
+        public override void PostSpawnSetup(bool respawningAfterLoad)
+        {
+            base.PostSpawnSetup(respawningAfterLoad);
+            compFlightMode = this.parent.GetComp<CompFlightMode>();
+        }
 
         public override void PostDrawExtraSelectionOverlays()
         {
@@ -43,22 +52,30 @@ namespace taranchuk_flightcombat
                     var passengerHandler = Vehicle.handlers.Find(x => x.role.handlingTypes == HandlingTypeFlags.None);
                     foreach (var pawn in pawns.ToList())
                     {
-                        if (pawn.RaceProps.Humanlike || pawn.RaceProps.IsMechanoid)
+                        if (Props.takePawnsOfAnyFaction || pawn.Faction == Vehicle.Faction)
                         {
-                            if (passengerHandler.AreSlotsAvailable)
+                            if (compFlightMode != null && compFlightMode.InAir && pawn.Position.Roofed(pawn.Map))
                             {
-                                pawn.DeSpawn();
-                                passengerHandler.GetDirectlyHeldThings().TryAddOrTransfer(pawn);
+                                continue;
                             }
-                        }
-                        else if (pawn is VehiclePawn || pawn.RaceProps.Animal)
-                        {
-                            int massAvailable = Mathf.RoundToInt(Vehicle.GetStatValue(VehicleStatDefOf.CargoCapacity)
-                                - MassUtility.GearAndInventoryMass(Vehicle));
-                            if (massAvailable >= pawn.GetStatValue(StatDefOf.Mass))
+
+                            if (pawn.RaceProps.Humanlike || pawn.RaceProps.IsMechanoid)
                             {
-                                pawn.DeSpawn();
-                                Vehicle.inventory.TryAddItemNotForSale(pawn);
+                                if (passengerHandler.AreSlotsAvailable)
+                                {
+                                    pawn.DeSpawn();
+                                    passengerHandler.GetDirectlyHeldThings().TryAddOrTransfer(pawn);
+                                }
+                            }
+                            else if (pawn is VehiclePawn || pawn.RaceProps.Animal)
+                            {
+                                int massAvailable = Mathf.RoundToInt(Vehicle.GetStatValue(VehicleStatDefOf.CargoCapacity)
+                                    - MassUtility.GearAndInventoryMass(Vehicle));
+                                if (massAvailable >= pawn.GetStatValue(StatDefOf.Mass))
+                                {
+                                    pawn.DeSpawn();
+                                    Vehicle.inventory.TryAddItemNotForSale(pawn);
+                                }
                             }
                         }
                     }
@@ -76,7 +93,25 @@ namespace taranchuk_flightcombat
                     {
                         floatList.Add(new FloatMenuOption(vehicle.LabelCap, delegate
                         {
-                            Vehicle.inventory.innerContainer.TryDrop(vehicle, ThingPlaceMode.Near, out _);
+                            Vehicle.inventory.innerContainer.TryDrop(vehicle, ThingPlaceMode.Near, out var other);
+                            if (compFlightMode != null && compFlightMode.InAir)
+                            {
+                                var otherComp = other.TryGetComp<CompFlightMode>();
+                                if (otherComp != null)
+                                {
+                                    otherComp.SetFlightMode(true);
+                                    otherComp.takeoffProgress = 1f;
+                                }
+                                else
+                                {
+                                    var landingThrusters = vehicle.GetComp<CompLandingThrusters>();
+                                    if (landingThrusters is null)
+                                    {
+                                        var damageAmount = vehicle.GetStatValue(StatDefOf.Mass) * vehicle.BodySize;
+                                        vehicle.TakeDamage(new DamageInfo(DamageDefOf.Blunt, damageAmount));
+                                    }
+                                }
+                            }
                         }));
                     }
                     Find.WindowStack.Add(new FloatMenu(floatList));

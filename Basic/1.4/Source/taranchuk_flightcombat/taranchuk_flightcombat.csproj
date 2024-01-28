@@ -75,6 +75,7 @@
     <Compile Include="Command_Bomb.cs" />
     <Compile Include="Command_FlightMode.cs" />
     <Compile Include="CompFlightMode.cs" />
+    <Compile Include="CompLandingThrusters.cs" />
     <Compile Include="CompPawnDeployment.cs" />
     <Compile Include="FlightCommand.cs" />
     <Compile Include="FlightCommands.cs" />
