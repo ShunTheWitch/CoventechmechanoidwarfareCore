@@ -13,7 +13,7 @@ namespace taranchuk_flightcombat
         public FlightCommand_Action loadCommand;
         public FlightCommand_Action unloadCommand;
         public bool takePawnsOfAnyFaction;
-
+        public float? maxPawnMass;
         public CompProperties_PawnDeployment()
         {
             this.compClass = typeof(CompPawnDeployment);
@@ -55,6 +55,10 @@ namespace taranchuk_flightcombat
                         if (Props.takePawnsOfAnyFaction || pawn.Faction == Vehicle.Faction)
                         {
                             if (compFlightMode != null && compFlightMode.InAir && pawn.Position.Roofed(pawn.Map))
+                            {
+                                continue;
+                            }
+                            if (Props.maxPawnMass.HasValue && pawn.GetStatValue(StatDefOf.Mass) > Props.maxPawnMass.Value)
                             {
                                 continue;
                             }
