@@ -284,9 +284,15 @@ namespace taranchuk_flightcombat
                     Vehicle.vehiclePather.StopDead();
                 }
                 UpdateVehicleAngleAndRotation();
+                foreach (var turret in Vehicle.CompVehicleTurrets.turrets)
+                {
+                    turret.parentRotCached = this.FlightRotation;
+                    turret.parentAngleCached = this.CurAngle;
+                }
             }
             else
             {
+
                 target = LocalTargetInfo.Invalid;
                 Vehicle.FullRotation = Rot8.FromAngle(CurAngle);
                 Vehicle.UpdateAngle();
@@ -352,6 +358,14 @@ namespace taranchuk_flightcombat
                     if (Props.moveWhileTakingOff)
                     {
                         MoveFurther(Props.flightSpeedPerTick * takeoffProgress);
+                    }
+                    if (takeoffProgress == 0)
+                    {
+                        foreach (var turret in Vehicle.CompVehicleTurrets.turrets)
+                        {
+                            turret.parentRotCached = Vehicle.Rotation;
+                            turret.parentAngleCached = Vehicle.Angle;
+                        }
                     }
                 }
                 else if (Hovering)
@@ -483,7 +497,7 @@ namespace taranchuk_flightcombat
 
         private void UpdateVehicleAngleAndRotation()
         {
-            Vehicle.Angle = CurAngle - FlightAngleOffset;
+            Vehicle.Angle = AngleAdjusted(CurAngle + FlightAngleOffset);
             UpdateRotation();
         }
 

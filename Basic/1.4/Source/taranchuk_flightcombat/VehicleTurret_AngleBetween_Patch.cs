@@ -1,10 +1,52 @@
 ﻿using HarmonyLib;
+using SmashTools;
+using System;
 using UnityEngine;
 using Vehicles;
 using Verse;
 
 namespace taranchuk_flightcombat
 {
+    [HotSwappable]
+    [HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.AngleBetween))]
+    public static class VehicleTurret_AngleBetween_Patch
+    {
+        public static bool Prefix(VehicleTurret __instance, Vector3 mousePosition, ref bool __result)
+        {
+            if (__instance.angleRestricted != Vector2.zero && __instance.attachedTo is null)
+            {
+                var comp = __instance.vehicle.GetComp<CompFlightMode>();
+                if (comp != null && comp.InAir)
+                {
+                    __result = AngleBetween(__instance, mousePosition, comp);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool AngleBetween(VehicleTurret __instance, Vector3 mousePosition, CompFlightMode comp)
+        {
+            float rotationOffset = comp.AngleAdjusted(comp.CurAngle + comp.FlightAngleOffset);
+            float start = __instance.angleRestricted.x + rotationOffset;
+            float end = __instance.angleRestricted.y + rotationOffset;
+
+            if (start > 360)
+            {
+                start -= 360;
+            }
+            if (end > 360)
+            {
+                end -= 360;
+            }
+            float mid = (mousePosition - __instance.TurretLocation).AngleFlat();
+            end = (end - start) < 0f ? end - start + 360 : end - start;
+            mid = (mid - start) < 0f ? mid - start + 360 : mid - start;
+            var result = mid < end;
+            return result;
+        }
+    }
+
     //[HotSwappable]
     //[HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.TurretRotation), MethodType.Setter)]
     //public static class VehicleTurret_TurretRotation_Patch2
@@ -13,7 +55,7 @@ namespace taranchuk_flightcombat
     //    {
     //        if (__instance.angleRestricted != Vector2.zero)
     //        {
-    //            Log.Message(__instance + " - " + value);
+    //            Log.Message("VehicleTurret_TurretRotation_Patch2: " + __instance + " - " + value);
     //        }
     //    }
     //}
@@ -39,17 +81,86 @@ namespace taranchuk_flightcombat
     //            return __instance.defaultAngleRotated + __instance.vehicle.FullRotation.AsAngle;
     //        }
     //        __instance.ValidateLockStatus();
-    //
     //        __instance.rotation = __instance.rotation.ClampAndWrap(0, 360);
     //
     //        if (__instance.attachedTo != null)
     //        {
     //            Log.Message(__instance + " TurretRotation return 2");
-    //
     //            return __instance.rotation + __instance.attachedTo.TurretRotation;
     //        }
-    //        Log.Message(__instance + " TurretRotation return 3");
+    //        //Log.Message(__instance + " TurretRotation return 3: " + __instance.rotation);
     //        return __instance.rotation;
+    //    }
+    //}
+    //
+    //[HotSwappable]
+    //[HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.TurretRotationTick))]
+    //public static class VehicleTurret_TurretRotationTick_Patch
+    //{
+    //    public static bool Prefix(VehicleTurret __instance, ref bool __result)
+    //    {
+    //        Log.Message("TurretRotationTick: " + __instance.rotation);
+    //        __result = TurretRotationTick(__instance);
+    //        Log.Message("TurretRotationTick2 : " + __instance.rotation);
+    //        return false;
+    //    }
+    //
+    //    public static bool TurretRotationTick(VehicleTurret __instance)
+    //    {
+    //        bool tick = false;
+    //        if (__instance.TargetLocked)
+    //        {
+    //            __instance.AlignToTargetRestricted();
+    //            tick = true;
+    //        }
+    //        if (!__instance.RotationAligned)
+    //        {
+    //            if (__instance.ComponentDisabled)
+    //            {
+    //                __instance.ResetAngle();
+    //                return false;
+    //            }
+    //            if (Math.Abs(__instance.rotation - __instance.TurretRotationTargeted) < __instance.turretDef.rotationSpeed + 0.1f)
+    //            {
+    //                __instance.rotation = __instance.TurretRotationTargeted;
+    //                Log.Message("__instance.rotation = __instance.TurretRotationTargeted: " + __instance.rotation);
+    //            }
+    //            else
+    //            {
+    //                int rotationDir;
+    //                if (__instance.rotation < __instance.TurretRotationTargeted)
+    //                {
+    //                    if (Math.Abs(__instance.rotation - __instance.TurretRotationTargeted) < 180)
+    //                    {
+    //                        rotationDir = 1;
+    //                    }
+    //                    else
+    //                    {
+    //                        rotationDir = -1;
+    //                    }
+    //                }
+    //                else
+    //                {
+    //                    if (Math.Abs(__instance.rotation - __instance.TurretRotationTargeted) < 180)
+    //                    {
+    //                        rotationDir = -1;
+    //                    }
+    //                    else
+    //                    {
+    //                        rotationDir = 1;
+    //                    }
+    //                }
+    //
+    //                __instance.rotation += __instance.turretDef.rotationSpeed * rotationDir;
+    //                Log.Message("__instance.rotation += __instance.turretDef.rotationSpeed * rotationDir: " + __instance.rotation);
+    //                foreach (VehicleTurret turret in __instance.childTurrets)
+    //                {
+    //                    turret.rotation += __instance.turretDef.rotationSpeed * rotationDir;
+    //                }
+    //            }
+    //            return true;
+    //        }
+    //        return tick;
     //    }
     //}
     //
@@ -143,7 +254,10 @@ namespace taranchuk_flightcombat
     //
     //                if (__instance.turretDef.autoSnapTargeting)
     //                {
+    //                    Log.Message("__instance.rotation 1 = __instance.TurretRotationTargeted: " + __instance.rotation);
+    //
     //                    __instance.rotation = __instance.TurretRotationTargeted;
+    //                    Log.Message("__instance.rotation 2 = __instance.TurretRotationTargeted: " + __instance.rotation);
     //                }
     //
     //                if (__instance.TargetLocked && __instance.ReadyToFire)
@@ -175,44 +289,4 @@ namespace taranchuk_flightcombat
     //        return false;
     //    }
     //}
-
-    [HotSwappable]
-    [HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.AngleBetween))]
-    public static class VehicleTurret_AngleBetween_Patch
-    {
-        public static bool Prefix(VehicleTurret __instance, Vector3 mousePosition, ref bool __result)
-        {
-            if (__instance.angleRestricted != Vector2.zero && __instance.attachedTo is null)
-            {
-                var comp = __instance.vehicle.GetComp<CompFlightMode>();
-                if (comp != null && comp.InAir)
-                {
-                    __result = AngleBetween(__instance, mousePosition, comp);
-                    return false;
-                }
-            }
-            return true;
-        }
-    
-        public static bool AngleBetween(VehicleTurret __instance, Vector3 mousePosition, CompFlightMode comp)
-        {
-            float rotationOffset = comp.AngleAdjusted(comp.CurAngle + comp.FlightAngleOffset);
-            float start = __instance.angleRestricted.x + rotationOffset;
-            float end = __instance.angleRestricted.y + rotationOffset;
-    
-            if (start > 360)
-            {
-                start -= 360;
-            }
-            if (end > 360)
-            {
-                end -= 360;
-            }
-            float mid = (mousePosition - __instance.TurretLocation).AngleFlat();
-            end = (end - start) < 0f ? end - start + 360 : end - start;
-            mid = (mid - start) < 0f ? mid - start + 360 : mid - start;
-            var result = mid < end;
-            return result;
-        }
-    }
 }

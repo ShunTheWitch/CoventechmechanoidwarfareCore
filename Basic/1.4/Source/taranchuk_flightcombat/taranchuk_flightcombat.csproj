@@ -97,6 +97,7 @@
     <Compile Include="VehiclePawn_VehicleGraphic_Patch.cs" />
     <Compile Include="VehicleTurret_DrawTargeter_Patch.cs" />
     <Compile Include="VehicleTurret_TurretDrawLocFor_Patch.cs" />
+    <Compile Include="VehicleTurret_ValidateLockStatus_Patch.cs" />
     <Compile Include="Vehicle_DrawTracker_DrawPos_Patch.cs" />
     <Compile Include="Vehicle_PathFollower_StartPath_Patch.cs" />
   </ItemGroup>
