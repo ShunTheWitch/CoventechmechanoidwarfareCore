@@ -9,7 +9,7 @@ namespace taranchuk_flightcombat
 {
     public class CompProperties_PawnDeployment : CompProperties
     {
-        public float radius;
+        public IntVec2 pickupAreaSize;
         public FlightCommand_Action loadCommand;
         public FlightCommand_Action unloadCommand;
         public bool takePawnsOfAnyFaction;
@@ -37,7 +37,27 @@ namespace taranchuk_flightcombat
         public override void PostDrawExtraSelectionOverlays()
         {
             base.PostDrawExtraSelectionOverlays();
-            GenDraw.DrawRadiusRing(parent.Position, Props.radius);
+            GenDraw.DrawFieldEdges(GetPickupCells());
+        }
+
+        public List<IntVec3> GetPickupCells()
+        {
+            var list = new List<IntVec3>();
+            var cellRect = GenAdj.OccupiedRect(Vehicle.Position, Vehicle.Rotation, Props.pickupAreaSize);
+            return cellRect.Where(x => x.InBounds(Vehicle.Map)).ToList();
+        }
+
+        public List<Pawn> GetPawnsInPickupCells()
+        {
+            var list = new List<Pawn>();
+            foreach (var cell in GetPickupCells())
+            {
+                foreach (var pawn in cell.GetThingList(Vehicle.Map).OfType<Pawn>())
+                {
+                    list.Add(pawn);
+                }
+            }
+            return list.Distinct().ToList();
         }
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
@@ -47,8 +67,7 @@ namespace taranchuk_flightcombat
                 var pawnLoad = Props.loadCommand.GetCommand();
                 pawnLoad.action = () =>
                 {
-                    var pawns = GenRadial.RadialDistinctThingsAround(Vehicle.Position, Vehicle.Map, Props.radius, true)
-                    .OfType<Pawn>().Where(x => x != Vehicle).OrderBy(LoadOrder).ToList();
+                    var pawns = GetPawnsInPickupCells().Where(x => x != Vehicle).OrderBy(LoadOrder).ToList();
                     var passengerHandler = Vehicle.handlers.Find(x => x.role.handlingTypes == HandlingTypeFlags.None);
                     foreach (var pawn in pawns.ToList())
                     {
