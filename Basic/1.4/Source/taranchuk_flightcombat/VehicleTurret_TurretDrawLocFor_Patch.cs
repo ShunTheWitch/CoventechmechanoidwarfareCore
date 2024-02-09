@@ -23,11 +23,12 @@ namespace taranchuk_flightcombat
                 __state = null;
             }
         }
+
         public static void Postfix(ref Vector3 __result, CompFlightMode __state)
         {
             if (__state != null)
             {
-                __result = __result.RotatedBy(__state.CurAngle);
+                __result = __result.RotatedBy(__state.AngleAdjusted(__state.CurAngle + __state.FlightAngleOffset));
             }
         }
     }

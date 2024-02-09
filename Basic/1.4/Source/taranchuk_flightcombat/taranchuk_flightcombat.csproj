@@ -70,6 +70,7 @@
     <Publicize Include="Assembly-CSharp;Vehicles" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AntiAirProjectile.cs" />
     <Compile Include="Bomb.cs" />
     <Compile Include="BombOption.cs" />
     <Compile Include="Command_Bomb.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="PathingHelper_CalculateAngle_Patch.cs" />
     <Compile Include="taranchuk_flightcombatMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TurretTargeter_TargetMeetsRequirements_Patch.cs" />
     <Compile Include="VehicleGraphics_DrawAngleLines_Patch.cs" />
     <Compile Include="VehicleTurret_AngleBetween_Patch.cs" />
     <Compile Include="VehicleTurret_TurretOffset_Patch.cs" />
@@ -97,8 +99,10 @@
     <Compile Include="VehiclePawn_VehicleGraphic_Patch.cs" />
     <Compile Include="VehicleTurret_DrawTargeter_Patch.cs" />
     <Compile Include="VehicleTurret_TurretDrawLocFor_Patch.cs" />
+    <Compile Include="VehicleTurret_ValidateLockStatus_Patch.cs" />
     <Compile Include="Vehicle_DrawTracker_DrawPos_Patch.cs" />
     <Compile Include="Vehicle_PathFollower_StartPath_Patch.cs" />
+    <Compile Include="Verb_TryFindShootLineFromTo_Patch.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
