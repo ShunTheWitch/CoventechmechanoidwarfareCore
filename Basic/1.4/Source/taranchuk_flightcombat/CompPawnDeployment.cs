@@ -58,7 +58,7 @@ namespace taranchuk_flightcombat
                             {
                                 continue;
                             }
-                            if (Props.maxPawnMass.HasValue && pawn.GetStatValue(StatDefOf.Mass) > Props.maxPawnMass.Value)
+                            if (Props.maxPawnMass.HasValue && pawn.GetMass() > Props.maxPawnMass.Value)
                             {
                                 continue;
                             }
@@ -75,7 +75,7 @@ namespace taranchuk_flightcombat
                             {
                                 int massAvailable = Mathf.RoundToInt(Vehicle.GetStatValue(VehicleStatDefOf.CargoCapacity)
                                     - MassUtility.GearAndInventoryMass(Vehicle));
-                                if (massAvailable >= pawn.GetStatValue(StatDefOf.Mass))
+                                if (massAvailable >= pawn.GetMass())
                                 {
                                     pawn.DeSpawn();
                                     Vehicle.inventory.TryAddItemNotForSale(pawn);
@@ -112,7 +112,7 @@ namespace taranchuk_flightcombat
                                     var landingThrusters = vehicle.GetComp<CompLandingThrusters>();
                                     if (landingThrusters is null)
                                     {
-                                        var damageAmount = vehicle.GetStatValue(StatDefOf.Mass) * vehicle.BodySize;
+                                        var damageAmount = vehicle.GetMass() * vehicle.BodySize;
                                         vehicle.TakeDamage(new DamageInfo(DamageDefOf.Blunt, damageAmount));
                                     }
                                 }

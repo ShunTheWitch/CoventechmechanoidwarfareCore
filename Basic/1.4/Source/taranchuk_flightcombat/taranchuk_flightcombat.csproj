@@ -89,6 +89,7 @@
     <Compile Include="taranchuk_flightcombatMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TurretTargeter_TargetMeetsRequirements_Patch.cs" />
+    <Compile Include="Utils.cs" />
     <Compile Include="VehicleGraphics_DrawAngleLines_Patch.cs" />
     <Compile Include="VehicleTurret_AngleBetween_Patch.cs" />
     <Compile Include="VehicleTurret_TurretOffset_Patch.cs" />
