@@ -59,7 +59,7 @@ namespace taranchuk_flightcombat
                         var newValue = __instance.rotation;
                         if (oldValue != newValue)
                         {
-                            Log.Message("__instance.rotation: oldValue: " + oldValue + " - newValue: " + (oldValue + rotOffset) + " - rotOffset: " + rotOffset);
+                            //Log.Message("__instance.rotation: oldValue: " + oldValue + " - newValue: " + (oldValue + rotOffset) + " - rotOffset: " + rotOffset);
                         }
                     }
                     __instance.TurretRotationTargeted = __instance.rotation;
