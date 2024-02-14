@@ -14,6 +14,7 @@ namespace taranchuk_homingprojectiles
         public FleckDef tailFleck;
         public ThingDef tailMote;
         public int? effectLifetime;
+        public float effectSize = 1f;
 
         public CompProperties_HomingProjectile()
         {
@@ -56,7 +57,7 @@ namespace taranchuk_homingprojectiles
                 float num = (Projectile.ArcHeightFactor) * GenMath.InverseParabola(Projectile.DistanceCoveredFraction);
                 Vector3 drawPos = Projectile.DrawPos;
                 Vector3 position = drawPos + new Vector3(0f, 0f, 1f) * num;
-                ThrowEffect(position, Projectile.Map, Vector3.Angle(Projectile.origin, position), 1f);
+                ThrowEffect(position, Projectile.Map, Vector3.Angle(Projectile.origin, position), Props.effectSize);
             }
         }
 
