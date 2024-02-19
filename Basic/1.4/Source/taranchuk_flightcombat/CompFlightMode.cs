@@ -1,16 +1,16 @@
 ﻿using RimWorld;
 using SmashTools;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 using Vehicles;
 using Verse;
+using Verse.AI;
 
 namespace taranchuk_flightcombat
 {
-    public class CompProperties_FlightMode : CompProperties
+    public class CompProperties_FlightMode : VehicleCompProperties
     {
         public FlightCommands flightCommands;
         public int takeoffTicks;
@@ -39,7 +39,7 @@ namespace taranchuk_flightcombat
     }
 
     [HotSwappable]
-    public class CompFlightMode : ThingComp, IMaterialCacheTarget
+    public class CompFlightMode : VehicleComp, IMaterialCacheTarget
     {
         private FlightMode flightMode;
         private bool Flying => flightMode != FlightMode.Off;
@@ -85,8 +85,6 @@ namespace taranchuk_flightcombat
         private int bombingRunCount;
         private int bombingCooldownTicks;
 
-        public VehiclePawn Vehicle => parent as VehiclePawn;
-
         public Graphic_Vehicle cachedFlightGraphic;
 
         public Graphic_Vehicle FlightGraphic
@@ -124,6 +122,11 @@ namespace taranchuk_flightcombat
         private BombOption BombOption => Props.bombOptions.FirstOrDefault(x => Props.bombOptions.IndexOf(x) == bombardmentOptionInd);
 
         private bool initialized;
+
+        public override bool IsThreat(IAttackTargetSearcher searcher)
+        {
+            return true;
+        }
 
         public override void PostSpawnSetup(bool respawningAfterLoad)
         {
@@ -483,19 +486,19 @@ namespace taranchuk_flightcombat
 
         private void AITick()
         {
-            foreach (var turret in Vehicle.CompVehicleTurrets.turrets)
-            {
-                if (turret.HasAmmo is false)
-                {
-                    ThingDef ammoType = Vehicle.inventory.innerContainer
-                        .FirstOrDefault(t => turret.turretDef.ammunition.Allows(t) 
-                        || turret.turretDef.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
-                    if (ammoType != null)
-                    {
-                        turret.ReloadInternal(ammoType);
-                    }
-                }
-            }
+            //foreach (var turret in Vehicle.CompVehicleTurrets.turrets)
+            //{
+            //    if (turret.HasAmmo is false)
+            //    {
+            //        ThingDef ammoType = Vehicle.inventory.innerContainer
+            //            .FirstOrDefault(t => turret.turretDef.ammunition.Allows(t) 
+            //            || turret.turretDef.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
+            //        if (ammoType != null)
+            //        {
+            //            turret.ReloadInternal(ammoType);
+            //        }
+            //    }
+            //}
 
             var bomberSettings = Props.AISettings.bomberSettings;
             if (bomberSettings != null)
@@ -507,7 +510,7 @@ namespace taranchuk_flightcombat
                         return;
                     }
                     var curTarget = GetTarget();
-                    if (curTarget.IsValid)
+                    if (curTarget.IsValid && curTarget.HasThing)
                     {
                         targetToChase = curTarget;
                         target = targetToFace = LocalTargetInfo.Invalid;
@@ -530,7 +533,7 @@ namespace taranchuk_flightcombat
             if (gunshipSettings != null)
             {
                 var curTarget = GetTarget();
-                if (curTarget.IsValid)
+                if (curTarget.IsValid && curTarget.HasThing)
                 {
                     if (gunshipSettings.gunshipMode == GunshipMode.Circling)
                     {
@@ -556,7 +559,7 @@ namespace taranchuk_flightcombat
             //{
             //    Log.Message(target + " - NearbyAreaCombatPoints(target): " + (NearbyAreaCombatPoints(target)));
             //}
-            var result = targets.OrderByDescending(x => NearbyAreaCombatPoints(x)).First();
+            var result = targets.OrderByDescending(x => NearbyAreaCombatPoints(x)).FirstOrDefault();
             //Log.Message("Got result: " + result);
             return result;
         }

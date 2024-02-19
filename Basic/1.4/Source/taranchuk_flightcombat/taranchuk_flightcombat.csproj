@@ -93,6 +93,7 @@
     <Compile Include="PawnUtility_PawnsCanShareCellBecauseOfBodySize_Patch.cs" />
     <Compile Include="taranchuk_flightcombatMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="test.cs" />
     <Compile Include="TurretTargeter_TargetMeetsRequirements_Patch.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="VehicleGraphics_DrawAngleLines_Patch.cs" />
