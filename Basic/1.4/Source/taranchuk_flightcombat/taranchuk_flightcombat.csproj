@@ -86,6 +86,8 @@
     <Compile Include="FlightMode.cs" />
     <Compile Include="HotSwappableAttribute.cs" />
     <Compile Include="PathingHelper_CalculateAngle_Patch.cs" />
+    <Compile Include="PawnCollisionTweenerUtility_GetPawnsStandingAtOrAboutToStandAt_Patch.cs" />
+    <Compile Include="PawnUtility_PawnsCanShareCellBecauseOfBodySize_Patch.cs" />
     <Compile Include="taranchuk_flightcombatMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TurretTargeter_TargetMeetsRequirements_Patch.cs" />
