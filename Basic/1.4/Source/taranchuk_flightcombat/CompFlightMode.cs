@@ -1,5 +1,4 @@
-﻿using HarmonyLib;
-using RimWorld;
+﻿using RimWorld;
 using SmashTools;
 using System;
 using System.Collections.Generic;
@@ -32,6 +31,7 @@ namespace taranchuk_flightcombat
         public List<FlightFleckData> takeoffFlecks;
         public List<FlightFleckData> landingFlecks;
         public FleckDef waypointFleck;
+        public AISettings AISettings;
         public CompProperties_FlightMode()
         {
             this.compClass = typeof(CompFlightMode);
@@ -46,6 +46,7 @@ namespace taranchuk_flightcombat
         private LocalTargetInfo target;
         private LocalTargetInfo targetToFace = LocalTargetInfo.Invalid;
         private LocalTargetInfo targetToChase = LocalTargetInfo.Invalid;
+
         private LocalTargetInfo initialTarget = LocalTargetInfo.Invalid;
         private int bombardmentOptionInd;
         private int lastBombardmentTick;
@@ -57,8 +58,8 @@ namespace taranchuk_flightcombat
         public bool InAir => Vehicle.Spawned && (Flying || TakingOff || Landing);
         public Rot4 FlightRotation => Rot4.North;
         public float FlightAngleOffset => -90;
+        public bool InAIMode => Props.AISettings != null && Vehicle.Faction != Faction.OfPlayer;
         private float curAngleInt;
-
         public float CurAngle
         {
             get
@@ -80,6 +81,9 @@ namespace taranchuk_flightcombat
         public Vector3 curPosition;
         private bool? clockwiseTurn;
         private bool continueRotating;
+
+        private int bombingRunCount;
+        private int bombingCooldownTicks;
 
         public VehiclePawn Vehicle => parent as VehiclePawn;
 
@@ -118,6 +122,44 @@ namespace taranchuk_flightcombat
         public string Name => $"CompFlightMode_{Vehicle.ThingID}";
 
         private BombOption BombOption => Props.bombOptions.FirstOrDefault(x => Props.bombOptions.IndexOf(x) == bombardmentOptionInd);
+
+        private bool initialized;
+
+        public override void PostSpawnSetup(bool respawningAfterLoad)
+        {
+            base.PostSpawnSetup(respawningAfterLoad);
+            if (!respawningAfterLoad && initialized is false)
+            {
+                initialized = true;
+                if (Vehicle.Faction != Faction.OfPlayer && Props.AISettings != null)
+                {
+                    if (Props.AISettings.bomberSettings?.npcStock != null)
+                    {
+                        GenerateStock(Props.AISettings.bomberSettings.npcStock);
+                    }
+                    if (Props.AISettings.gunshipSettings?.npcStock != null)
+                    {
+                        GenerateStock(Props.AISettings.gunshipSettings.npcStock);
+                    }
+                }
+            }
+
+        }
+
+        private void GenerateStock(List<ThingDefCountRangeClass> stock)
+        {
+            foreach (var entry in stock)
+            {
+                var stack = entry.countRange.RandomInRange;
+                while (stack > 0)
+                {
+                    var thing = ThingMaker.MakeThing(entry.thingDef);
+                    thing.stackCount = Mathf.Min(stack, thing.def.stackLimit);
+                    stack -= thing.stackCount;
+                    Vehicle.inventory.TryAddItemNotForSale(thing);
+                }
+            }
+        }
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
@@ -181,19 +223,32 @@ namespace taranchuk_flightcombat
 
                 if (Props.flightCommands.faceTarget != null)
                 {
-                    var faceTargetCommand = Props.flightCommands.faceTarget.GetCommand();
-                    faceTargetCommand.action = () =>
+                    if (targetToFace.IsValid && Props.flightCommands.cancelFaceTarget != null)
                     {
-                        Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
+                        var cancelFaceTargetCommand = Props.flightCommands.cancelFaceTarget.GetCommand();
+                        cancelFaceTargetCommand.action = () =>
                         {
-                            if (Hovering is false)
+                            targetToFace = LocalTargetInfo.Invalid;
+                        };
+                        yield return cancelFaceTargetCommand;
+                    }
+                    else
+                    {
+                        var faceTargetCommand = Props.flightCommands.faceTarget.GetCommand();
+                        faceTargetCommand.action = () =>
+                        {
+                            Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
                             {
-                                SetHoverMode(true);
-                            }
-                            targetToFace = x;
-                        });
-                    };
-                    yield return faceTargetCommand;
+                                if (Hovering is false)
+                                {
+                                    SetHoverMode(true);
+                                }
+                                targetToFace = x;
+                            });
+                        };
+                        yield return faceTargetCommand;
+                    }
+
                 }
 
                 if (Props.flightCommands.chaseTarget != null)
@@ -226,20 +281,29 @@ namespace taranchuk_flightcombat
                     }
 
                     BombOption bombOption = BombOption;
-                    yield return new Command_Bomb(lastBombardmentTick, bombOption.cooldownTicks)
+                    var bombCommand = new Command_Bomb(lastBombardmentTick, bombingCooldownTicks)
                     {
                         defaultLabel = bombOption.label,
                         icon = ContentFinder<Texture2D>.Get(bombOption.texPath),
                         action = () =>
                         {
-                            DropBomb(bombOption);
+                            TryDropBomb(bombOption);
                         },
                         bombOptions = list
                     };
+
+                    if (BombCooldownActive())
+                    {
+                        bombCommand.Disable("CVN_OnCooldown".Translate(((lastBombardmentTick + bombingCooldownTicks) - Find.TickManager.TicksGame).ToStringTicksToPeriod()));
+                    }
                 }
             }
         }
 
+        private bool BombCooldownActive()
+        {
+            return lastBombardmentTick > 0 && Find.TickManager.TicksGame - lastBombardmentTick < bombingCooldownTicks;
+        }
 
         private TargetingParameters TargetingParamsForFacing => new TargetingParameters
         {
@@ -270,7 +334,6 @@ namespace taranchuk_flightcombat
                 }
             }
         }
-
 
         public void SetFlightMode(bool flightMode)
         {
@@ -377,6 +440,11 @@ namespace taranchuk_flightcombat
                     Flight(); 
                 }
 
+                if (InAIMode)
+                {
+                    AITick();
+                }
+
                 SpawnFlecks();
 
                 var curPositionIntVec = curPosition.ToIntVec3();
@@ -408,16 +476,133 @@ namespace taranchuk_flightcombat
                         }
                     }
                 }
-
                 UpdateVehicleAngleAndRotation();
             }
             //LogData("flightMode: " + flightMode);
         }
 
-        private void DropBomb(BombOption bombOption)
+        private void AITick()
         {
-            if (bombOption.costList.All(thingCost => Vehicle.inventory.GetDirectlyHeldThings()
-                .Where(invThing => invThing.def == thingCost.thingDef).Sum(invThing => invThing.stackCount) >= thingCost.count))
+            foreach (var turret in Vehicle.CompVehicleTurrets.turrets)
+            {
+                if (turret.HasAmmo is false)
+                {
+                    ThingDef ammoType = Vehicle.inventory.innerContainer
+                        .FirstOrDefault(t => turret.turretDef.ammunition.Allows(t) 
+                        || turret.turretDef.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
+                    if (ammoType != null)
+                    {
+                        turret.ReloadInternal(ammoType);
+                    }
+                }
+            }
+
+            var bomberSettings = Props.AISettings.bomberSettings;
+            if (bomberSettings != null)
+            {
+                if (bomberSettings.maxBombRun.HasValue is false || bombingRunCount < bomberSettings.maxBombRun)
+                {
+                    if (BombCooldownActive())
+                    {
+                        return;
+                    }
+                    var curTarget = GetTarget();
+                    if (curTarget.IsValid)
+                    {
+                        targetToChase = curTarget;
+                        target = targetToFace = LocalTargetInfo.Invalid;
+                    }
+                    if (targetToChase.IsValid)
+                    {
+                        if (Vehicle.Position.DistanceTo(curTarget.Cell) < bomberSettings.minRangeToStartBombing)
+                        {
+                            var bombOption = Props.bombOptions.Where(x => bomberSettings.blacklistedBombs.Contains(x.projectile) is false).RandomElement();
+                            if (TryDropBomb(bombOption))
+                            {
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            var gunshipSettings = Props.AISettings.gunshipSettings;
+            if (gunshipSettings != null)
+            {
+                var curTarget = GetTarget();
+                if (curTarget.IsValid)
+                {
+                    if (gunshipSettings.gunshipMode == GunshipMode.Circling)
+                    {
+                        target = curTarget;
+                        targetToChase = targetToFace = LocalTargetInfo.Invalid;
+                    }
+                    else if (gunshipSettings.gunshipMode == GunshipMode.Chasing)
+                    {
+                        targetToChase = curTarget;
+                        target = targetToFace = LocalTargetInfo.Invalid;
+                    }
+                }
+            }
+        }
+
+        public LocalTargetInfo GetTarget()
+        {
+            var targets = (Vehicle.Map.attackTargetsCache.GetPotentialTargetsFor(Vehicle).Select(x => x.Thing)
+                .Concat(Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.PowerTrader)));
+            targets = targets.Distinct().Where(x => IsValidTarget(x)).OrderByDescending(x => CombatPoints(x)).Take(3);
+            //Log.Message("Got first 3 targets: " + string.Join(", ", targets));
+            //foreach (var target in targets)
+            //{
+            //    Log.Message(target + " - NearbyAreaCombatPoints(target): " + (NearbyAreaCombatPoints(target)));
+            //}
+            var result = targets.OrderByDescending(x => NearbyAreaCombatPoints(x)).First();
+            //Log.Message("Got result: " + result);
+            return result;
+        }
+
+        private bool IsValidTarget(Thing x)
+        {
+            if (x.Position.GetRoof(Vehicle.Map) == RoofDefOf.RoofRockThick)
+            {
+                return false;
+            }
+            if (x is Pawn pawn && (pawn.Downed || pawn.Dead))
+            {
+                return false;
+            }
+            return x.HostileTo(Vehicle) || x.Faction != null && x.Faction.HostileTo(Vehicle.Faction);
+        }
+
+        private float NearbyAreaCombatPoints(Thing x)
+        {
+            return GenRadial.RadialDistinctThingsAround(x.Position, x.Map, 10, true).Where(x => IsValidTarget(x)).Sum(y => CombatPoints(y));
+        }
+
+        private float CombatPoints(Thing thing)
+        {
+            if (thing is Building_Turret)
+            {
+                return 5f;
+            }
+            else if (thing is VehiclePawn)
+            {
+                return 20f;
+            }
+            else if (thing is Pawn)
+            {
+                return 5f;
+            }
+            else if (thing.TryGetComp<CompPowerTrader>() != null)
+            {
+                return 5f;
+            }
+            return 0;
+        }
+
+        private bool TryDropBomb(BombOption bombOption)
+        {
+            if (HasStuffToBomb(bombOption))
             {
                 foreach (var thingCost in bombOption.costList)
                 {
@@ -436,7 +621,16 @@ namespace taranchuk_flightcombat
                 var bomb = (Projectile)GenSpawn.Spawn(bombOption.projectile, Vehicle.Position + IntVec3.North, Vehicle.Map);
                 bomb.Launch(Vehicle, Vehicle.Position, Vehicle.Position, ProjectileHitFlags.IntendedTarget, equipment: Vehicle);
                 lastBombardmentTick = Find.TickManager.TicksGame;
+                bombingCooldownTicks = bombOption.cooldownTicks;
+                return true;
             }
+            return false;
+        }
+
+        private bool HasStuffToBomb(BombOption bombOption)
+        {
+            return bombOption.costList.All(thingCost => Vehicle.inventory.GetDirectlyHeldThings()
+                            .Where(invThing => invThing.def == thingCost.thingDef).Sum(invThing => invThing.stackCount) >= thingCost.count);
         }
 
         private void SpawnFlecks()
@@ -853,6 +1047,9 @@ namespace taranchuk_flightcombat
             Scribe_Values.Look(ref bombardmentOptionInd, "bombardmentOptionInd");
             Scribe_Values.Look(ref lastBombardmentTick, "lastBombardmentTick");
             Scribe_Values.Look(ref tickToStartFiring, "tickToStartFiring");
+            Scribe_Values.Look(ref bombingRunCount, "bombingRunCount");
+            Scribe_Values.Look(ref bombingCooldownTicks, "bombingCooldownTicks");
+            Scribe_Values.Look(ref initialized, "initialized");
         }
     }
 }
