@@ -70,6 +70,7 @@
     <Publicize Include="Assembly-CSharp;Vehicles" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AISettings.cs" />
     <Compile Include="AntiAirProjectile.cs" />
     <Compile Include="Bomb.cs" />
     <Compile Include="BombOption.cs" />
@@ -87,6 +88,8 @@
     <Compile Include="HotSwappableAttribute.cs" />
     <Compile Include="PathingHelper_CalculateAngle_Patch.cs" />
     <Compile Include="PawnCollisionTweenerUtility_GetPawnsStandingAtOrAboutToStandAt_Patch.cs" />
+    <Compile Include="PawnGroupMaker_FlightRaid.cs" />
+    <Compile Include="PawnsArrivalModeWorker_Arrive_Patch.cs" />
     <Compile Include="PawnUtility_PawnsCanShareCellBecauseOfBodySize_Patch.cs" />
     <Compile Include="taranchuk_flightcombatMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
