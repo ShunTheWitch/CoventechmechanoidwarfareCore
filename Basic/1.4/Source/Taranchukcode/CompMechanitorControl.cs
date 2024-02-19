@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using Vehicles;
 using Verse;
+using Verse.AI;
 
 namespace VehicleMechanitorControl
 {
@@ -19,6 +20,11 @@ namespace VehicleMechanitorControl
     public class CompMechanitorControl : VehicleComp
     {
         public CompProperties_MechanitorControl Props => base.props as CompProperties_MechanitorControl;
+
+        public override bool IsThreat(IAttackTargetSearcher searcher)
+        {
+            return true;
+        }
 
         public override void PostDraw()
         {
