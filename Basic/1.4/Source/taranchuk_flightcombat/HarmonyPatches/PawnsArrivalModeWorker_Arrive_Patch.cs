@@ -49,15 +49,22 @@ namespace taranchuk_flightcombat
                     if (comp != null)
                     {
                         var maxSize = Mathf.Max(pawn.def.Size.x, pawn.def.Size.z);
-                        IntVec3 loc = CellFinder.RandomClosewalkCellNear(spawnCenter, map, maxSize * 2, delegate (IntVec3 x)
+                        IntVec3 loc = CellFinder.RandomClosewalkCellNear(spawnCenter, map, Mathf.Max(8, maxSize), delegate (IntVec3 x)
                         {
-                            return GenAdj.OccupiedRect(x, spawnRotation, new IntVec2(maxSize, maxSize)).Cells.All(x => x.InBounds(map));
+                            return GenAdj.OccupiedRect(x, spawnRotation, new IntVec2(maxSize, maxSize)).ExpandedBy(1).Cells.All(x => x.InBounds(map));
                         });
                         GenSpawn.Spawn(pawn, loc, map, spawnRotation);
-                        comp.SetFlightMode(true);
+                        if (comp.Props.AISettings?.gunshipSettings?.gunshipMode == GunshipMode.Hovering)
+                        {
+                            comp.SetHoverMode(true);
+                        }
+                        else
+                        {
+                            comp.SetFlightMode(true);
+                        }
                         comp.takeoffProgress = 1f;
                         pawns.RemoveAt(i);
-                        Log.Message("Spawning " + pawn + " at " + loc);
+                        Log.Message("Spawning " + pawn + " at " + loc + " with mode: " + comp.flightMode);
                     }
                 }
             }

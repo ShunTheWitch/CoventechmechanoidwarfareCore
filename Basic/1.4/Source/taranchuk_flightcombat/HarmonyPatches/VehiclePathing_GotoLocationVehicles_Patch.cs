@@ -10,7 +10,7 @@ namespace taranchuk_flightcombat
     {
         public static bool Prefix(IntVec3 __0, Pawn __1, ref bool __result)
         {
-            if (__1 is VehiclePawn vehicle)
+            if (__1 is VehiclePawn vehicle && vehicle.Faction == Faction.OfPlayer)
             {
                 var comp = vehicle.GetComp<CompFlightMode>();
                 if (comp != null && comp.InAir)

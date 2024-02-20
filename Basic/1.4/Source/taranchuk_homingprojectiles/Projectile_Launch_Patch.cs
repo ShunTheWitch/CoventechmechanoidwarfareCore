@@ -40,9 +40,12 @@ namespace taranchuk_homingprojectiles
             {
                 Vector3 origin = projectile.origin;
                 Vector3 newPos = new Vector3(projectile.ExactPosition.x, origin.y, projectile.ExactPosition.z);
-                projectile.origin = newPos;
-                projectile.destination = destination;
-                projectile.ticksToImpact = Mathf.CeilToInt(projectile.StartingTicksToImpact - 1);
+                if (newPos.InBounds(projectile.Map))
+                {
+                    projectile.origin = newPos;
+                    projectile.destination = destination;
+                    projectile.ticksToImpact = Mathf.CeilToInt(projectile.StartingTicksToImpact - 1);
+                }
             }
         }
 

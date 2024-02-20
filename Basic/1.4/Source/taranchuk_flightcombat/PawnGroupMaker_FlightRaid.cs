@@ -141,7 +141,6 @@ namespace taranchuk_flightcombat
                                                             + chosenOptions.Where(x => IsFlyingVehicle(x.option.kind)).Count());
                             if (flyingVehiclesCount >= __instance.maxAircraftCount)
                             {
-                                Log.Message("Skiping " + option.option.kind + " exceeded max count of " + __instance.maxAircraftCount);
                                 continue;
                             }
                         }
@@ -188,7 +187,6 @@ namespace taranchuk_flightcombat
                     && parms.points < flightRaid.minPoints)
                 {
                     __result = false;
-                    Log.Message("Preventing " + __instance + " because of low points: " + parms.points);
                 }
             }
         }
