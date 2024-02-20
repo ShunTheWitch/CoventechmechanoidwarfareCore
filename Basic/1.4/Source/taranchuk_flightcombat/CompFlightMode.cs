@@ -1,4 +1,5 @@
-﻿using RimWorld;
+﻿using HarmonyLib;
+using RimWorld;
 using SmashTools;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -41,7 +42,7 @@ namespace taranchuk_flightcombat
     [HotSwappable]
     public class CompFlightMode : VehicleComp, IMaterialCacheTarget
     {
-        private FlightMode flightMode;
+        public FlightMode flightMode;
         private bool Flying => flightMode != FlightMode.Off;
         private LocalTargetInfo target;
         private LocalTargetInfo targetToFace = LocalTargetInfo.Invalid;
@@ -363,7 +364,7 @@ namespace taranchuk_flightcombat
                 Vehicle.FullRotation = Rot8.FromAngle(CurAngle);
                 Vehicle.UpdateAngle();
             }
-            targetToFace = targetToChase = LocalTargetInfo.Invalid;
+            targetToChase = LocalTargetInfo.Invalid;
             this.flightMode = flightMode ? FlightMode.Flight : FlightMode.Off;
         }
 
@@ -388,10 +389,11 @@ namespace taranchuk_flightcombat
 
         public void SetTarget(LocalTargetInfo targetInfo)
         {
+            Log.Message("Set target: " + targetInfo);
             this.target = targetInfo;
             this.initialTarget = targetInfo.Cell;
             this.clockwiseTurn = null;
-            targetToFace = targetToChase = LocalTargetInfo.Invalid;
+            targetToChase = LocalTargetInfo.Invalid;
             Vehicle.vehiclePather.PatherFailed();
         }
 
@@ -403,6 +405,10 @@ namespace taranchuk_flightcombat
             {
                 if (Vehicle.CompFueledTravel != null && Props.fuelConsumptionPerTick > 0)
                 {
+                    if (InAIMode)
+                    {
+                        Log.Message("Vehicle.CompFueledTravel.Fuel: " + Vehicle.CompFueledTravel.Fuel);
+                    }
                     if (Vehicle.CompFueledTravel.Fuel < Props.fuelConsumptionPerTick)
                     {
                         SetFlightMode(false);
@@ -414,6 +420,13 @@ namespace taranchuk_flightcombat
                 {
                     initialTarget = LocalTargetInfo.Invalid;
                 }
+        
+        
+                if (InAIMode)
+                {
+                    AITick();
+                }
+        
                 if (TakingOff)
                 {
                     Takeoff();
@@ -442,14 +455,9 @@ namespace taranchuk_flightcombat
                 {
                     Flight(); 
                 }
-
-                if (InAIMode)
-                {
-                    AITick();
-                }
-
+        
                 SpawnFlecks();
-
+        
                 var curPositionIntVec = curPosition.ToIntVec3();
                 if (curPositionIntVec != Vehicle.Position)
                 {
@@ -472,7 +480,7 @@ namespace taranchuk_flightcombat
                                 }
                             }
                         }
-
+        
                         if (shouldRefreshCosts)
                         {
                             PathingHelper.RecalculateAllPerceivedPathCosts(Vehicle.Map);
@@ -517,7 +525,7 @@ namespace taranchuk_flightcombat
                     }
                     if (targetToChase.IsValid)
                     {
-                        if (Vehicle.Position.DistanceTo(curTarget.Cell) < bomberSettings.minRangeToStartBombing)
+                        if (Vehicle.Position.DistanceTo(curTarget.Cell) < bomberSettings.distanceFromTarget)
                         {
                             var bombOption = Props.bombOptions.Where(x => bomberSettings.blacklistedBombs.Contains(x.projectile) is false).RandomElement();
                             if (TryDropBomb(bombOption))
@@ -545,14 +553,24 @@ namespace taranchuk_flightcombat
                         targetToChase = curTarget;
                         target = targetToFace = LocalTargetInfo.Invalid;
                     }
+                    else if (gunshipSettings.gunshipMode == GunshipMode.Hovering)
+                    {
+                        targetToFace = curTarget;
+                        target = targetToChase = LocalTargetInfo.Invalid;
+                    }
                 }
             }
         }
 
         public LocalTargetInfo GetTarget()
         {
-            var targets = (Vehicle.Map.attackTargetsCache.GetPotentialTargetsFor(Vehicle).Select(x => x.Thing)
-                .Concat(Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.PowerTrader)));
+            var targets = Vehicle.Map.attackTargetsCache.GetPotentialTargetsFor(Vehicle).Select(x => x.Thing)
+                .Concat(Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.PowerTrader));
+            if (Vehicle.Faction != Faction.OfPlayer)
+            {
+                //Log.Message("1 targets: " + string.Join(", ", targets));
+            }
+
             targets = targets.Distinct().Where(x => IsValidTarget(x)).OrderByDescending(x => CombatPoints(x)).Take(3);
             //Log.Message("Got first 3 targets: " + string.Join(", ", targets));
             //foreach (var target in targets)
@@ -796,17 +814,47 @@ namespace taranchuk_flightcombat
         {
             if (initialTarget.IsValid)
             {
-                bool rotated = RotateTowards(initialTarget.CenterVector3);
-                MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                if (targetToFace.IsValid)
+                {
+                    bool rotated = RotateTowards(targetToFace.CenterVector3);
+                    MoveTowards(initialTarget.CenterVector3, rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                }
+                else
+                {
+                    bool rotated = RotateTowards(initialTarget.CenterVector3);
+                    MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                }
             }
             else if (target.IsValid && target.Cell != Vehicle.Position)
             {
-                bool rotated = RotateTowards(target.CenterVector3);
-                MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                if (targetToFace.IsValid)
+                {
+                    bool rotated = RotateTowards(targetToFace.CenterVector3);
+                    MoveTowards(target.CenterVector3, rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                }
+                else
+                {
+                    bool rotated = RotateTowards(target.CenterVector3);
+                    MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                }
             }
             else if (targetToFace.IsValid)
             {
-                RotateTowards(targetToFace.CenterVector3);
+                //bool rotated = RotateTowards(targetToFace.CenterVector3);
+                //if (InAIMode)
+                //{
+                //    var distance = targetToFace.Cell.DistanceTo(Vehicle.Position);
+                //    if (distance > Props.AISettings.gunshipSettings.distanceFromTarget)
+                //    {
+                //        Log.Message("Move further");
+                //        MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick, Props.AISettings.gunshipSettings.distanceFromTarget);
+                //    }
+                //    else if (distance < Props.AISettings.gunshipSettings.distanceFromTarget - 1)
+                //    {
+                //        Log.Message("Move back");
+                //        MoveBack(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                //    }
+                //}
             }
         }
 
@@ -903,15 +951,25 @@ namespace taranchuk_flightcombat
             return pos + offset;
         }
 
-        private void MoveFurther(float speed)
+        private void MoveFurther(float speed, float? minDistanceFromTarget = null)
         {
             var newTarget = curPosition + (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.forward).RotatedBy(FlightAngleOffset);
-            MoveTowards(newTarget, speed);
+            MoveTowards(newTarget, speed, minDistanceFromTarget);
         }
 
-        private void MoveTowards(Vector3 target, float speed)
+        private void MoveBack(float speed, float? minDistanceFromTarget = null)
+        {
+            var newTarget = curPosition + (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.back).RotatedBy(FlightAngleOffset);
+            MoveTowards(newTarget, speed, minDistanceFromTarget);
+        }
+
+        private void MoveTowards(Vector3 target, float speed, float? minDistanceFromTarget = null)
         {
             var newPosition = Vector3.MoveTowards(Vehicle.DrawPos.Yto0(), target.Yto0(), speed);
+            if (minDistanceFromTarget.HasValue && Vector3.Distance(newPosition.Yto0(), target.Yto0()) < minDistanceFromTarget)
+            {
+                return;
+            }
             curPosition = new Vector3(newPosition.x, Altitudes.AltitudeFor(AltitudeLayer.MetaOverlays), newPosition.z);
         }
 

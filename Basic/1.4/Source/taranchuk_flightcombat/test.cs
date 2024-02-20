@@ -15,9 +15,13 @@ namespace taranchuk_flightcombat
     {
         public static bool Prefix(ref bool __result, VehicleTurret turret, ref LocalTargetInfo targetInfo, TargetingParameters param = null)
         {
-            __result = TryGetTarget(turret, out targetInfo, param);
-            Log.Message(targetInfo + " - " + turret.vehicle + " - __result: " + __result);
-            return false;
+            if (turret.vehicle.HostileTo(Faction.OfPlayer))
+            {
+                __result = TryGetTarget(turret, out targetInfo, param);
+                Log.Message(targetInfo + " - " + turret.vehicle + " - __result: " + __result);
+                return false;
+            }
+            return true;
         }
 
         public static bool TryGetTarget(this VehicleTurret turret, out LocalTargetInfo targetInfo, TargetingParameters param = null)
@@ -119,7 +123,7 @@ namespace taranchuk_flightcombat
                     if (t is VehiclePawn vehiclePawn)
                     {
                     }
-                    Log.Message(thing + " - false 10: " + t.ThreatDisabled(searcherPawn));
+                    Log.Message(thing + " - false 10: " + t.ThreatDisabled(searcherPawn) + " - t.ThreatDisabled: " + t.ThreatDisabled(null));
                     return false;
                 }
                 if ((flags & TargetScanFlags.NeedAutoTargetable) != TargetScanFlags.None && !AttackTargetFinder.IsAutoTargetable(t))
@@ -171,7 +175,7 @@ namespace taranchuk_flightcombat
             };
 
             List<IAttackTarget> tmpTargets = new List<IAttackTarget>();
-            tmpTargets.AddRange(searcherPawn.Map.attackTargetsCache.GetPotentialTargetsFor(searcherPawn));
+            tmpTargets.AddRange(GetPotentialTargetsFor(searcherPawn.Map.attackTargetsCache, searcherPawn));
             Log.Message("1 tmpTargets: " + string.Join(", ", tmpTargets.Select(x => x.Thing)));
             bool flag = false;
             for (int i = 0; i < tmpTargets.Count; i++)
@@ -209,5 +213,163 @@ namespace taranchuk_flightcombat
             tmpTargets.Clear();
             return result;
         }
+
+        public static bool HostileTo(this Thing a, Thing b)
+        {
+            if (a.Destroyed || b.Destroyed || a == b)
+            {
+                return false;
+            }
+            if ((a.Faction == null && a.TryGetComp<CompCauseGameCondition>() != null) || (b.Faction == null && b.TryGetComp<CompCauseGameCondition>() != null))
+            {
+                return true;
+            }
+            Pawn pawn = a as Pawn;
+            Pawn pawn2 = b as Pawn;
+            if (pawn != null && pawn2 != null && ((pawn.story != null && pawn.story.traits.DisableHostilityFrom(pawn2)) || (pawn2.story != null && pawn2.story.traits.DisableHostilityFrom(pawn))))
+            {
+                return false;
+            }
+            if ((pawn != null && pawn.MentalState != null && pawn.MentalState.ForceHostileTo(b)) || (pawn2 != null && pawn2.MentalState != null && pawn2.MentalState.ForceHostileTo(a)))
+            {
+                return true;
+            }
+            if (pawn != null && pawn2 != null && (GenHostility.IsPredatorHostileTo(pawn, pawn2) || GenHostility.IsPredatorHostileTo(pawn2, pawn)))
+            {
+                return true;
+            }
+            if ((a.Faction != null && pawn2 != null && pawn2.HostFaction == a.Faction && (pawn == null || pawn.HostFaction == null) && PrisonBreakUtility.IsPrisonBreaking(pawn2)) || (b.Faction != null && pawn != null && pawn.HostFaction == b.Faction && (pawn2 == null || pawn2.HostFaction == null) && PrisonBreakUtility.IsPrisonBreaking(pawn)))
+            {
+                return true;
+            }
+            if ((a.Faction != null && pawn2 != null && pawn2.IsSlave && pawn2.Faction == a.Faction && (pawn == null || !pawn.IsSlave) && SlaveRebellionUtility.IsRebelling(pawn2)) || (b.Faction != null && pawn != null && pawn.IsSlave && pawn.Faction == b.Faction && (pawn2 == null || !pawn2.IsSlave) && SlaveRebellionUtility.IsRebelling(pawn)))
+            {
+                return true;
+            }
+            if ((a.Faction != null && pawn2 != null && pawn2.HostFaction == a.Faction) || (b.Faction != null && pawn != null && pawn.HostFaction == b.Faction))
+            {
+                return false;
+            }
+            if (pawn != null && pawn.IsPrisoner && pawn2 != null && pawn2.IsPrisoner)
+            {
+                return false;
+            }
+            if (pawn != null && pawn.IsSlave && pawn2 != null && pawn2.IsSlave)
+            {
+                return false;
+            }
+            if (pawn != null && pawn2 != null && ((pawn.IsPrisoner && pawn.HostFaction == pawn2.HostFaction && !PrisonBreakUtility.IsPrisonBreaking(pawn)) || (pawn2.IsPrisoner && pawn2.HostFaction == pawn.HostFaction && !PrisonBreakUtility.IsPrisonBreaking(pawn2))))
+            {
+                return false;
+            }
+            if (pawn != null && pawn2 != null && ((pawn.HostFaction != null && pawn2.Faction != null && !pawn.HostFaction.HostileTo(pawn2.Faction) && !PrisonBreakUtility.IsPrisonBreaking(pawn)) || (pawn2.HostFaction != null && pawn.Faction != null && !pawn2.HostFaction.HostileTo(pawn.Faction) && !PrisonBreakUtility.IsPrisonBreaking(pawn2))))
+            {
+                return false;
+            }
+            if ((a.Faction != null && a.Faction.IsPlayer && pawn2 != null && pawn2.mindState.WillJoinColonyIfRescued) || (b.Faction != null && b.Faction.IsPlayer && pawn != null && pawn.mindState.WillJoinColonyIfRescued))
+            {
+                return false;
+            }
+            if (pawn != null && pawn2 != null && (pawn.ThreatDisabledBecauseNonAggressiveRoamer(pawn2) || pawn2.ThreatDisabledBecauseNonAggressiveRoamer(pawn)))
+            {
+                return false;
+            }
+            if ((pawn != null && MechanitorUtility.IsPlayerOverseerSubject(pawn) && !pawn.IsColonyMechPlayerControlled) 
+                || (pawn2 != null && MechanitorUtility.IsPlayerOverseerSubject(pawn2) && !pawn2.IsColonyMechPlayerControlled))
+            {
+                Log.Message("FAlse 1");
+                return false;
+            }
+            if ((pawn != null && pawn.Faction == null && pawn.RaceProps.Humanlike && b.Faction != null && b.Faction.def.hostileToFactionlessHumanlikes) || (pawn2 != null && pawn2.Faction == null && pawn2.RaceProps.Humanlike && a.Faction != null && a.Faction.def.hostileToFactionlessHumanlikes))
+            {
+                return true;
+            }
+            if (a.Faction == null || b.Faction == null)
+            {
+                Log.Message("FAlse 2");
+                return false;
+            }
+            var res = a.Faction.HostileTo(b.Faction);
+            if (res is false)
+            {
+                Log.Message("FAlse 3");
+            }
+            return res;
+        }
+
+
+        public static List<IAttackTarget> GetPotentialTargetsFor(AttackTargetsCache cache, IAttackTargetSearcher th)
+        {
+            Thing thing = th.Thing;
+            AttackTargetsCache.targets.Clear();
+            Faction faction = thing.Faction;
+            if (faction != null)
+            {
+                foreach (IAttackTarget item in cache.TargetsHostileToFaction(faction))
+                {
+                    if (thing.HostileTo(item.Thing))
+                    {
+                        AttackTargetsCache.targets.Add(item);
+                    }
+                    else
+                    {
+                        Log.Message(thing + " 1 is not hostile to " + item.Thing + " - " + thing.Faction + " - " + item.Thing.Faction);
+                    }
+                }
+            }
+            foreach (Pawn item2 in cache.pawnsInAggroMentalState)
+            {
+                if (thing.HostileTo(item2))
+                {
+                    AttackTargetsCache.targets.Add(item2);
+                }
+                else
+                {
+                    Log.Message(thing + " 2 is not hostile to " + item2);
+                }
+            }
+            foreach (Pawn factionlessHumanlike in cache.factionlessHumanlikes)
+            {
+                if (thing.HostileTo(factionlessHumanlike))
+                {
+                    AttackTargetsCache.targets.Add(factionlessHumanlike);
+                }
+                else
+                {
+                    Log.Message(thing + " 3 is not hostile to " + factionlessHumanlike);
+                }
+            }
+            Pawn pawn = th as Pawn;
+            if (pawn != null && PrisonBreakUtility.IsPrisonBreaking(pawn))
+            {
+                Faction hostFaction = pawn.guest.HostFaction;
+                List<Pawn> list = cache.map.mapPawns.SpawnedPawnsInFaction(hostFaction);
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (thing.HostileTo(list[i]))
+                    {
+                        AttackTargetsCache.targets.Add(list[i]);
+                    }
+                    else
+                    {
+                        Log.Message(thing + " 4 is not hostile to " + list[i]);
+                    }
+                }
+            }
+            if (pawn != null && ModsConfig.IdeologyActive && SlaveRebellionUtility.IsRebelling(pawn))
+            {
+                Faction faction2 = pawn.Faction;
+                List<Pawn> list2 = cache.map.mapPawns.SpawnedPawnsInFaction(faction2);
+                for (int j = 0; j < list2.Count; j++)
+                {
+                    if (thing.HostileTo(list2[j]))
+                    {
+                        AttackTargetsCache.targets.Add(list2[j]);
+                    }
+                }
+            }
+            return AttackTargetsCache.targets;
+        }
+
     }
 }

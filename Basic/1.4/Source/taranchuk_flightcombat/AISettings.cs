@@ -6,13 +6,13 @@ namespace taranchuk_flightcombat
     public abstract class AIFightSettings
     {
         public List<ThingDefCountRangeClass> npcStock;
+        public float distanceFromTarget;
     }
 
     public class BomberSettings : AIFightSettings
     {
         public int? maxBombRun;
         public List<ThingDef> blacklistedBombs;
-        public float minRangeToStartBombing;
     }
 
     public class GunshipSettings : AIFightSettings
@@ -21,7 +21,7 @@ namespace taranchuk_flightcombat
     }
     public enum GunshipMode
     {
-        Circling, Chasing
+        Circling, Chasing, Hovering
     }
 
     public class AISettings
