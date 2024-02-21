@@ -10,10 +10,13 @@ namespace taranchuk_flightcombat
     {
         public static bool Prefix(CompVehicleTurrets __instance)
         {
-            if (__instance.Vehicle.Position.InBounds(__instance.Vehicle.Map) is false 
-                || __instance.Vehicle.OccupiedRect().Cells.Any(x => x.InBounds(__instance.Vehicle.Map) is false))
+            if (__instance.Vehicle.Map != null)
             {
-                return false;
+                if (__instance.Vehicle.Position.InBounds(__instance.Vehicle.Map) is false
+                    || __instance.Vehicle.OccupiedRect().Cells.Any(x => x.InBounds(__instance.Vehicle.Map) is false))
+                {
+                    return false;
+                }
             }
             return true;
         }

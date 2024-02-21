@@ -40,7 +40,7 @@ namespace taranchuk_homingprojectiles
             {
                 Vector3 origin = projectile.origin;
                 Vector3 newPos = new Vector3(projectile.ExactPosition.x, origin.y, projectile.ExactPosition.z);
-                if (newPos.InBounds(projectile.Map))
+                if (projectile.Map is null || newPos.InBounds(projectile.Map))
                 {
                     projectile.origin = newPos;
                     projectile.destination = destination;
