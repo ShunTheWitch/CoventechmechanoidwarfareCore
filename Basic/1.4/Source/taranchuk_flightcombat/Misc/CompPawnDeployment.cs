@@ -37,7 +37,10 @@ namespace taranchuk_flightcombat
         public override void PostDrawExtraSelectionOverlays()
         {
             base.PostDrawExtraSelectionOverlays();
-            GenDraw.DrawFieldEdges(GetPickupCells());
+            if (Vehicle.Map != null)
+            {
+                GenDraw.DrawFieldEdges(GetPickupCells());
+            }
         }
 
         public List<IntVec3> GetPickupCells()
