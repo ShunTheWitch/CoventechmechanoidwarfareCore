@@ -14,5 +14,6 @@ namespace taranchuk_flightcombat
         public float angleOffset;
         public int spawnTickRate = 1;
         public float scale = 1f;
+        public bool attachToVehicle;
     }
 }
