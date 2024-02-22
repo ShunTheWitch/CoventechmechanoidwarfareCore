@@ -17,7 +17,8 @@ namespace taranchuk_flightcombat
         public FlightCommands flightCommands;
         public int takeoffTicks;
         public int landingTicks;
-        public bool moveWhileTakingOff;
+        public bool moveWhileTakingOff = true;
+        public bool moveWhileLanding = true;
         public List<TerrainAffordanceDef> runwayTerrainRequirements;
         public float flightSpeedPerTick;
         public float flightSpeedTurningPerTick;
@@ -34,6 +35,7 @@ namespace taranchuk_flightcombat
         public List<FlightFleckData> landingFlecks;
         public FleckDef waypointFleck;
         public AISettings AISettings;
+
         public CompProperties_FlightMode()
         {
             this.compClass = typeof(CompFlightMode);
@@ -132,6 +134,18 @@ namespace taranchuk_flightcombat
 
         private bool initialized;
 
+        private List<VehicleTurret> VehicleTurrets
+        {
+            get
+            {
+                var turrets = Vehicle.CompVehicleTurrets?.turrets;
+                if (turrets is null)
+                {
+                    return new List<VehicleTurret>();
+                }
+                return turrets;
+            }
+        }
         public override bool IsThreat(IAttackTargetSearcher searcher)
         {
             return true;
@@ -175,7 +189,7 @@ namespace taranchuk_flightcombat
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
-            if (Vehicle.Faction == Faction.OfPlayer)
+            if (Vehicle.Faction == Faction.OfPlayer && Vehicle.Drafted)
             {
                 if (Props.flightCommands.flightMode != null)
                 {
@@ -359,7 +373,7 @@ namespace taranchuk_flightcombat
                     Vehicle.vehiclePather.StopDead();
                 }
                 UpdateVehicleAngleAndRotation();
-                foreach (var turret in Vehicle.CompVehicleTurrets.turrets)
+                foreach (var turret in VehicleTurrets)
                 {
                     turret.parentRotCached = this.FlightRotation;
                     turret.parentAngleCached = this.CurAngle;
@@ -397,6 +411,7 @@ namespace taranchuk_flightcombat
 
         public void SetTarget(LocalTargetInfo targetInfo)
         {
+            Log.Message("SetTarget: " + targetInfo);
             this.target = targetInfo;
             this.initialTarget = targetInfo.Cell;
             this.clockwiseTurn = null;
@@ -419,7 +434,8 @@ namespace taranchuk_flightcombat
                     }
                     Vehicle.CompFueledTravel.ConsumeFuel(Props.fuelConsumptionPerTick);
                 }
-                if (initialTarget.IsValid && OccupiedRect().Contains(initialTarget.Cell))
+                if (TakingOff is false && initialTarget.IsValid && curPosition.ToIntVec3().InBounds(Vehicle.Map) 
+                    && OccupiedRect().Contains(initialTarget.Cell))
                 {
                     initialTarget = LocalTargetInfo.Invalid;
                 }
@@ -437,13 +453,13 @@ namespace taranchuk_flightcombat
                 else if (Landing)
                 {
                     takeoffProgress = Mathf.Max(0, takeoffProgress - (1 / (float)Props.landingTicks));
-                    if (Props.moveWhileTakingOff)
+                    if (Props.moveWhileLanding)
                     {
                         MoveFurther(Props.flightSpeedPerTick * takeoffProgress);
                     }
                     if (takeoffProgress == 0)
                     {
-                        foreach (var turret in Vehicle.CompVehicleTurrets.turrets)
+                        foreach (var turret in VehicleTurrets)
                         {
                             turret.parentRotCached = Vehicle.Rotation;
                             turret.parentAngleCached = Vehicle.Angle;
@@ -458,9 +474,10 @@ namespace taranchuk_flightcombat
                 {
                     Flight(); 
                 }
-        
+
+                ProcessRotors();
                 SpawnFlecks();
-        
+                
                 var curPositionIntVec = curPosition.ToIntVec3();
                 if (curPositionIntVec != Vehicle.Position)
                 {
@@ -500,9 +517,24 @@ namespace taranchuk_flightcombat
             //LogData("flightMode: " + flightMode);
         }
 
+        private void ProcessRotors()
+        {
+            var launcher = Vehicle.CompVehicleLauncher;
+            if (launcher != null)
+            {
+                var props = launcher.Props.launchProtocol.LaunchProperties as PropellerProtocolProperties;
+                if (props?.angularVelocityPropeller != null)
+                {
+                    var rotationRate = props.angularVelocityPropeller.Evaluate(takeoffProgress);
+                    Vehicle.graphicOverlay?.rotationRegistry?.UpdateRegistry(rotationRate);
+                }
+            }
+        }
+
         private void GotoWorld()
         {
             var map = Vehicle.Map;
+            Vehicle.Angle = 0;
             Vehicle.DeSpawn();
             if (Vehicle.Faction == Faction.OfPlayer)
             {
@@ -537,19 +569,19 @@ namespace taranchuk_flightcombat
 
         private void AITick()
         {
-            //foreach (var turret in Vehicle.CompVehicleTurrets.turrets)
-            //{
-            //    if (turret.HasAmmo is false)
-            //    {
-            //        ThingDef ammoType = Vehicle.inventory.innerContainer
-            //            .FirstOrDefault(t => turret.turretDef.ammunition.Allows(t) 
-            //            || turret.turretDef.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
-            //        if (ammoType != null)
-            //        {
-            //            turret.ReloadInternal(ammoType);
-            //        }
-            //    }
-            //}
+            foreach (var turret in VehicleTurrets)
+            {
+                if (turret.HasAmmo is false)
+                {
+                    ThingDef ammoType = Vehicle.inventory.innerContainer
+                        .FirstOrDefault(t => turret.turretDef.ammunition.Allows(t) 
+                        || turret.turretDef.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
+                    if (ammoType != null)
+                    {
+                        turret.ReloadInternal(ammoType);
+                    }
+                }
+            }
 
             var bomberSettings = Props.AISettings.bomberSettings;
             if (bomberSettings != null)
@@ -738,19 +770,23 @@ namespace taranchuk_flightcombat
         {
             var fleckPos = fleckData.position.RotatedBy(CurAngle);
             var loc = curPosition - fleckPos;
-            FleckCreationData dataStatic = FleckMaker.GetDataStatic(loc, Vehicle.Map, fleckData.fleck, fleckData.scale);
-            dataStatic.velocityAngle = AngleAdjusted(CurAngle - fleckData.angleOffset);
-            dataStatic.solidTimeOverride = fleckData.solidTime;
+            FleckCreationData data = FleckMaker.GetDataStatic(loc, Vehicle.Map, fleckData.fleck, fleckData.scale);
+            if (fleckData.attachToVehicle)
+            {
+                data.link = new FleckAttachLink(Vehicle);
+            }
+            data.velocityAngle = AngleAdjusted(CurAngle - fleckData.angleOffset);
+            data.solidTimeOverride = fleckData.solidTime;
             if (fleckData.solidTimeScaleByTakeoffInverse)
             {
-                dataStatic.solidTimeOverride *= 1f - takeoffProgress;
+                data.solidTimeOverride *= 1f - takeoffProgress;
             }
             else if (fleckData.solidTimeScaleByTakeoff)
             {
-                dataStatic.solidTimeOverride *= takeoffProgress;
+                data.solidTimeOverride *= takeoffProgress;
             }
-            dataStatic.velocitySpeed = fleckData.velocitySpeed;
-            Vehicle.Map.flecks.CreateFleck(dataStatic);
+            data.velocitySpeed = fleckData.velocitySpeed;
+            Vehicle.Map.flecks.CreateFleck(data);
         }
 
         private void UpdateVehicleAngleAndRotation()

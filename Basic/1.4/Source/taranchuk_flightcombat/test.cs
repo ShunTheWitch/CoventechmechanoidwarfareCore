@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using RimWorld;
+using SmashTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,12 +11,74 @@ using Verse.AI;
 namespace taranchuk_flightcombat
 {
     [HotSwappable]
+    [HarmonyPatch(typeof(VehicleTurret), "TurretAutoTick")]
+    public static class VehicleTurret_TurretAutoTick_Patch
+    {
+        public static bool Prefix(VehicleTurret __instance, ref bool __result)
+        {
+            if (__instance.HasAmmo is false)
+            {
+                Log.Message("REloading: " + __instance);
+                ThingDef ammoType = __instance.vehicle.inventory.innerContainer
+                    .FirstOrDefault(t => __instance.turretDef.ammunition.Allows(t) 
+                    || __instance.turretDef.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
+                if (ammoType != null)
+                {
+                    __instance.ReloadInternal(ammoType);
+                }
+                Log.Message("REloading: " + __instance + " - " + __instance.HasAmmo);
+            }
+            __result = TurretAutoTick(__instance);
+            return false;
+        }
+
+
+        private static bool TurretAutoTick(VehicleTurret __instance)
+        {
+            if (__instance.vehicle.Spawned && !__instance.queuedToFire && __instance.AutoTarget)
+            {
+                if (Find.TickManager.TicksGame % VehicleTurret.AutoTargetInterval == 0)
+                {
+                    if (__instance.TurretDisabled)
+                    {
+                        Log.Message("Fail 2");
+                        return false;
+                    }
+                    if (!__instance.cannonTarget.IsValid && TurretTargeter.Turret != __instance && __instance.ReloadTicks <= 0 
+                        && __instance.HasAmmo)
+                    {
+                        if (__instance.TryGetTarget(out LocalTargetInfo autoTarget))
+                        {
+                            __instance.AlignToAngleRestricted(__instance.TurretLocation.AngleToPoint(autoTarget.Thing.DrawPos));
+                            __instance.SetTarget(autoTarget);
+                        }
+                        else
+                        {
+                            Log.Message("Fail 4");
+                        }
+                    }
+                    else
+                    {
+                        Log.Message(__instance.vehicle.Faction + " - Fail 3: __instance.HasAmmo: " + __instance.HasAmmo);
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                Log.Message("Fail 1");
+            }
+            return false;
+        }
+
+    }
+    [HotSwappable]
     [HarmonyPatch(typeof(TargetingHelper), "TryGetTarget")]
     public static class test
     {
         public static bool Prefix(ref bool __result, VehicleTurret turret, ref LocalTargetInfo targetInfo, TargetingParameters param = null)
         {
-            if (turret.vehicle.HostileTo(Faction.OfPlayer))
+            //if (turret.vehicle.HostileTo(Faction.OfPlayer))
             {
                 __result = TryGetTarget(turret, out targetInfo, param);
                 Log.Message(targetInfo + " - " + turret.vehicle + " - __result: " + __result);
@@ -214,7 +277,7 @@ namespace taranchuk_flightcombat
             return result;
         }
 
-        public static bool HostileTo(this Thing a, Thing b)
+        public static bool HostileToTest(this Thing a, Thing b)
         {
             if (a.Destroyed || b.Destroyed || a == b)
             {
@@ -286,7 +349,7 @@ namespace taranchuk_flightcombat
             }
             if (a.Faction == null || b.Faction == null)
             {
-                Log.Message("FAlse 2");
+                Log.Message("FAlse 2: " + a + " - " + b + " - " + a.Faction + " - " + b.Faction);
                 return false;
             }
             var res = a.Faction.HostileTo(b.Faction);

@@ -49,10 +49,11 @@ namespace taranchuk_flightcombat
                     if (comp != null)
                     {
                         var maxSize = Mathf.Max(pawn.def.Size.x, pawn.def.Size.z);
-                        IntVec3 loc = CellFinder.RandomClosewalkCellNear(spawnCenter, map, Mathf.Max(8, maxSize), delegate (IntVec3 x)
+                        CellFinder.TryFindRandomCellNear(spawnCenter, map, Mathf.Max(8, maxSize),
+                            delegate (IntVec3 x)
                         {
                             return GenAdj.OccupiedRect(x, spawnRotation, new IntVec2(maxSize, maxSize)).ExpandedBy(1).Cells.All(x => x.InBounds(map));
-                        });
+                        }, out var loc);
                         GenSpawn.Spawn(pawn, loc, map, spawnRotation);
                         if (comp.Props.AISettings?.gunshipSettings?.gunshipMode == GunshipMode.Hovering)
                         {
@@ -64,7 +65,7 @@ namespace taranchuk_flightcombat
                         }
                         comp.takeoffProgress = 1f;
                         pawns.RemoveAt(i);
-                        Log.Message("Spawning " + pawn + " at " + loc + " with mode: " + comp.flightMode);
+                        Log.Message("Spawning " + pawn + " at " + loc + " with mode: " + comp.flightMode + " - spawn center: " + spawnCenter);
                     }
                 }
             }
@@ -74,24 +75,11 @@ namespace taranchuk_flightcombat
         {
             spawnCenter = IntVec3.Invalid;
             Map map = (Map)parms.target;
-            if (parms.attackTargets != null && parms.attackTargets.Count > 0 && !RCellFinder.TryFindEdgeCellFromThingAvoidingColony(parms.attackTargets[0], map, predicate, out spawnCenter))
-            {
-                CellFinder.TryFindRandomEdgeCellWith((IntVec3 p) => !map.roofGrid.Roofed(p) && p.Walkable(map), map, CellFinder.EdgeRoadChance_Hostile, out spawnCenter);
-            }
-            if (!spawnCenter.IsValid && !RCellFinder.TryFindRandomPawnEntryCell(out spawnCenter, map, CellFinder.EdgeRoadChance_Hostile))
+            if (!CellFinder.TryFindRandomEdgeCellWith((IntVec3 c) => true, map, CellFinder.EdgeRoadChance_Hostile, out spawnCenter))
             {
                 return false;
             }
-            parms.spawnRotation = Rot4.FromAngleFlat((map.Center - spawnCenter).AngleFlat);
             return true;
-            bool predicate(IntVec3 from, IntVec3 to)
-            {
-                if (!map.roofGrid.Roofed(from) && from.Walkable(map))
-                {
-                    return map.reachability.CanReach(from, to, PathEndMode.OnCell, TraverseMode.NoPassClosedDoors, Danger.Some);
-                }
-                return false;
-            }
         }
     }
 }
