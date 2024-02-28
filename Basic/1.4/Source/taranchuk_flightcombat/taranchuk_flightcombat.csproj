@@ -73,6 +73,7 @@
     <Compile Include="AISettings.cs" />
     <Compile Include="CompVehicleLauncher_CompGetGizmosExtra_Patch.cs" />
     <Compile Include="CompVehicleLauncher_TryLaunch_Patch.cs" />
+    <Compile Include="HarmonyPatches\GenSpawn_Spawn_Patch.cs" />
     <Compile Include="Misc\AntiAirProjectile.cs" />
     <Compile Include="Bomb.cs" />
     <Compile Include="BombOption.cs" />

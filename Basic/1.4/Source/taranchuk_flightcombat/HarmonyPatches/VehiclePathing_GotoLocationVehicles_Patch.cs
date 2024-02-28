@@ -10,7 +10,6 @@ namespace taranchuk_flightcombat
     {
         public static bool Prefix(IntVec3 __0, Pawn __1, ref bool __result)
         {
-            Log.Message("vehicle.Faction: " + __1?.Faction);
             var vehicle = __1 as VehiclePawn;
             if (vehicle != null && vehicle.Faction == Faction.OfPlayer)
             {
@@ -26,7 +25,6 @@ namespace taranchuk_flightcombat
                     return false;
                 }
             }
-            Log.Message("vehicle.Faction: " + vehicle?.Faction);
             return true;
         }
     }
