@@ -33,7 +33,7 @@ namespace taranchuk_flightcombat
             if (parms.spawnCenter.IsValid is false || (worker is not PawnsArrivalModeWorker_EdgeDrop 
                 && worker is not PawnsArrivalModeWorker_EdgeWalkIn))
             {
-                TryResolveRaidSpawnCenter(parms, out spawnCenter);
+                TryResolveRaidSpawnCenter((Map)parms.target, out spawnCenter);
             }
             else
             {
@@ -71,10 +71,9 @@ namespace taranchuk_flightcombat
             }
         }
 
-        public static bool TryResolveRaidSpawnCenter(IncidentParms parms, out IntVec3 spawnCenter)
+        public static bool TryResolveRaidSpawnCenter(Map map, out IntVec3 spawnCenter)
         {
             spawnCenter = IntVec3.Invalid;
-            Map map = (Map)parms.target;
             if (!CellFinder.TryFindRandomEdgeCellWith((IntVec3 c) => true, map, CellFinder.EdgeRoadChance_Hostile, out spawnCenter))
             {
                 return false;

@@ -11,6 +11,7 @@ namespace taranchuk_homingprojectiles
         public int tickRate;
         public float turnRate;
         public int lifetimeTicks;
+        public int delayTurnInTicks;
         public FleckDef tailFleck;
         public ThingDef tailMote;
         public int? effectLifetime;
@@ -38,11 +39,22 @@ namespace taranchuk_homingprojectiles
             this.Props.initialSpreadAngle), 0f, Rand.Range(0f - this.Props.initialSpreadAngle,
                 this.Props.initialSpreadAngle));
 
-        public bool CanChangeTrajectory()
+        public override void PostDestroy(DestroyMode mode, Map previousMap)
         {
+            base.PostDestroy(mode, previousMap);
+            Log.Message("Destroyed: " + this);
+        }
+        public bool CanChangeTrajectory(out bool delayTurning)
+        {
+            delayTurning = false;
             var projectile = Projectile;
             if (projectile.intendedTarget.Thing is Pawn pawn && pawn.Dead)
             {
+                return false;
+            }
+            if (Props.delayTurnInTicks > 0 && Find.TickManager.TicksGame - launchTick < Props.delayTurnInTicks)
+            {
+                delayTurning = true;
                 return false;
             }
             var result = Find.TickManager.TicksGame % Props.tickRate == 0;

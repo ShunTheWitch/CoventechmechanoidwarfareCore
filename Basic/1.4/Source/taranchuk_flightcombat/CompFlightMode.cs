@@ -42,6 +42,11 @@ namespace taranchuk_flightcombat
         }
     }
 
+    public enum LandingStage
+    {
+        Inactive, GotoInitialSpot, GotoRunwayStartSpot, GotoLanding
+    }
+
     [HotSwappable]
     public class CompFlightMode : VehicleComp, IMaterialCacheTarget
     {
@@ -56,13 +61,17 @@ namespace taranchuk_flightcombat
         private LocalTargetInfo target;
         private LocalTargetInfo targetToFace = LocalTargetInfo.Invalid;
         private LocalTargetInfo targetToChase = LocalTargetInfo.Invalid;
+        private LocalTargetInfo landingSpot;
+        private LocalTargetInfo runwayStartingSpot;
+        private Vector3? targetForRunway;
+        private LandingStage landingStage;
 
         private LocalTargetInfo initialTarget = LocalTargetInfo.Invalid;
         private int bombardmentOptionInd;
         private int lastBombardmentTick;
         private int? tickToStartFiring;
         public float takeoffProgress;
-        private bool TakingOff => flightMode != FlightMode.Off && takeoffProgress < 1f;
+        private bool TakingOff => flightMode != FlightMode.Off && takeoffProgress < 1f && runwayStartingSpot.IsValid is false;
         private bool Hovering => flightMode == FlightMode.Hover;
         private bool Landing => flightMode == FlightMode.Off && takeoffProgress > 0f;
         public bool InAir => Vehicle.Spawned && (Flying || TakingOff || Landing);
@@ -82,6 +91,8 @@ namespace taranchuk_flightcombat
                 curAngleInt = newValue;
             }
         }
+
+        public bool CanFly => Vehicle.Deploying is false && Vehicle.CanMoveFinal;
 
         public float AngleAdjusted(float angle)
         {
@@ -191,137 +202,205 @@ namespace taranchuk_flightcombat
         {
             if (Vehicle.Faction == Faction.OfPlayer && Vehicle.Drafted)
             {
-                if (Props.flightCommands.flightMode != null)
+                foreach (var g in GetAircraftGizmos())
                 {
-                    var flightModeCommand = Props.flightCommands.flightMode.GetCommand();
-                    flightModeCommand.isActive = () => Flying;
-                    flightModeCommand.toggleAction = () =>
+                    if (CanFly is false)
                     {
-                        SetFlightMode(this.flightMode != FlightMode.Flight);
-                    };
-                    if (Props.moveWhileTakingOff)
+                        g.Disable("VF_VehicleUnableToMove".Translate(Vehicle));
+                    }
+                    yield return g;
+                }
+            }
+            
+            if (Prefs.DevMode)
+            {
+                yield return new Command_Action
+                {
+                    defaultLabel = "Set custom angle: " + CurAngle,
+                    action = () =>
                     {
-                        flightModeCommand.onHover = () =>
+                        Find.WindowStack.Add(new Dialog_Slider("Set angle: " + CurAngle, 0, 360, delegate (int value)
                         {
-                            if ((TakingOff || flightMode == FlightMode.Off) && Landing is false)
+                            CurAngle = value;
+                        }));
+                    }
+                };
+            }
+        }
+
+        private IEnumerable<Gizmo> GetAircraftGizmos()
+        {
+            if (Flying && Props.flightCommands.landOnGround != null)
+            {
+                var landOnGround = Props.flightCommands.landOnGround.GetCommand();
+                landOnGround.defaultLabel = "WIP: " + landOnGround.defaultLabel;
+                landOnGround.action = () =>
+                {
+                    Find.Targeter.BeginTargeting(TargetingParamsForLanding, delegate (LocalTargetInfo landingSpot)
+                    {
+                        Find.Targeter.BeginTargeting(TargetingParamsForLanding, delegate (LocalTargetInfo runwayStartingSpot)
+                        {
+                            var runwayCells = GetRunwayCells(takingOff: false, runwayStartingSpot.Cell, (landingSpot.Cell - runwayStartingSpot.Cell).AngleFlat);
+                            var blockingCells = GetBlockingCells(runwayCells);
+                            if (blockingCells.Any())
                             {
-                                DrawRunway(takingOff: true);
+                                Messages.Message("CVN_CannotLand".Translate(), MessageTypeDefOf.RejectInput);
                             }
                             else
                             {
-                                DrawRunway(takingOff: false);
-                            }
-                        };
-                        if (flightMode == FlightMode.Off && Landing is false)
-                        {
-                            var blockingCells = GetBlockingCells(takingOff: true);
-                            if (blockingCells.Any())
-                            {
-                                flightModeCommand.Disable("CVN_CannotTakeoff".Translate());
-                            }
-                        }
-                        else if (InAir)
-                        {
-                            var blockingCells = GetBlockingCells(takingOff: false);
-                            if (blockingCells.Any())
-                            {
-                                flightModeCommand.Disable("CVN_CannotLand".Translate());
-                            }
-                        }
-                    }
-                    else if (InAir && !CanLand())
-                    {
-                        flightModeCommand.Disable("CVN_CannotLandOnImpassableTiles".Translate());
-                    }
-                    yield return flightModeCommand;
-                }
-
-                if (Props.flightCommands.hoverMode != null)
-                {
-                    var hoverModeCommand = Props.flightCommands.hoverMode.GetCommand();
-                    hoverModeCommand.isActive = () => this.flightMode == FlightMode.Hover;
-                    hoverModeCommand.toggleAction = () =>
-                    {
-                        SetHoverMode(this.flightMode != FlightMode.Hover);
-                    };
-                    yield return hoverModeCommand;
-                }
-
-                if (Props.flightCommands.faceTarget != null)
-                {
-                    if (targetToFace.IsValid && Props.flightCommands.cancelFaceTarget != null)
-                    {
-                        var cancelFaceTargetCommand = Props.flightCommands.cancelFaceTarget.GetCommand();
-                        cancelFaceTargetCommand.action = () =>
-                        {
-                            targetToFace = LocalTargetInfo.Invalid;
-                        };
-                        yield return cancelFaceTargetCommand;
-                    }
-                    else
-                    {
-                        var faceTargetCommand = Props.flightCommands.faceTarget.GetCommand();
-                        faceTargetCommand.action = () =>
-                        {
-                            Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
-                            {
-                                if (Hovering is false)
+                                this.landingSpot = landingSpot;
+                                this.runwayStartingSpot = runwayStartingSpot;
+                                if (flightMode != FlightMode.Flight)
                                 {
-                                    SetHoverMode(true);
+                                    this.SetFlightMode(true);
                                 }
-                                targetToFace = x;
-                            });
-                        };
-                        yield return faceTargetCommand;
-                    }
+                            }
+                        }, highlightAction: delegate (LocalTargetInfo x)
+                        {
+                            if (x.IsValid && x.Cell != landingSpot.Cell)
+                            {
+                                var runwayCells = GetRunwayCells(takingOff: false, x.Cell, (landingSpot.Cell - x.Cell).AngleFlat);
+                                GenDraw.DrawFieldEdges(runwayCells);
+                                var blockingCells = GetBlockingCells(runwayCells);
+                                GenDraw.DrawFieldEdges(blockingCells, Color.red);
+                            }
+                        }, null);
+                    });
+                };
+                yield return landOnGround;
+            }
 
-                }
-
-                if (Props.flightCommands.chaseTarget != null)
+            if (Props.flightCommands.flightMode != null)
+            {
+                var flightModeCommand = Props.flightCommands.flightMode.GetCommand();
+                flightModeCommand.isActive = () => Flying;
+                flightModeCommand.toggleAction = () =>
                 {
-                    var chaseTargetcommand = Props.flightCommands.chaseTarget.GetCommand();
-                    chaseTargetcommand.action = () =>
+                    SetFlightMode(this.flightMode != FlightMode.Flight);
+                };
+                if (Props.moveWhileTakingOff)
+                {
+                    flightModeCommand.onHover = () =>
+                    {
+                        if ((TakingOff || flightMode == FlightMode.Off) && Landing is false)
+                        {
+                            DrawRunway(takingOff: true);
+                        }
+                        else
+                        {
+                            DrawRunway(takingOff: false);
+                        }
+                    };
+                    if (flightMode == FlightMode.Off && Landing is false)
+                    {
+                        var runwayCells = GetRunwayCells(takingOff: false);
+                        var blockingCells = GetBlockingCells(runwayCells);
+                        if (blockingCells.Any())
+                        {
+                            flightModeCommand.Disable("CVN_CannotTakeoff".Translate());
+                        }
+                    }
+                    else if (InAir)
+                    {
+                        var runwayCells = GetRunwayCells(takingOff: false);
+                        var blockingCells = GetBlockingCells(runwayCells);
+                        if (blockingCells.Any())
+                        {
+                            flightModeCommand.Disable("CVN_CannotLand".Translate());
+                        }
+                    }
+                }
+                else if (InAir && !CanLand())
+                {
+                    flightModeCommand.Disable("CVN_CannotLandOnImpassableTiles".Translate());
+                }
+                yield return flightModeCommand;
+            }
+
+            if (Props.flightCommands.hoverMode != null)
+            {
+                var hoverModeCommand = Props.flightCommands.hoverMode.GetCommand();
+                hoverModeCommand.isActive = () => this.flightMode == FlightMode.Hover;
+                hoverModeCommand.toggleAction = () =>
+                {
+                    SetHoverMode(this.flightMode != FlightMode.Hover);
+                };
+                yield return hoverModeCommand;
+            }
+
+            if (Props.flightCommands.faceTarget != null)
+            {
+                if (targetToFace.IsValid && Props.flightCommands.cancelFaceTarget != null)
+                {
+                    var cancelFaceTargetCommand = Props.flightCommands.cancelFaceTarget.GetCommand();
+                    cancelFaceTargetCommand.action = () =>
+                    {
+                        targetToFace = LocalTargetInfo.Invalid;
+                    };
+                    yield return cancelFaceTargetCommand;
+                }
+                else
+                {
+                    var faceTargetCommand = Props.flightCommands.faceTarget.GetCommand();
+                    faceTargetCommand.action = () =>
                     {
                         Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
                         {
-                            if (Hovering)
+                            if (Hovering is false)
                             {
-                                SetFlightMode(true);
+                                SetHoverMode(true);
                             }
-                            targetToChase = x;
+                            targetToFace = x;
                         });
                     };
-                    yield return chaseTargetcommand;
+                    yield return faceTargetCommand;
+                }
+            }
+
+            if (Props.flightCommands.chaseTarget != null)
+            {
+                var chaseTargetcommand = Props.flightCommands.chaseTarget.GetCommand();
+                chaseTargetcommand.action = () =>
+                {
+                    Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
+                    {
+                        if (Hovering)
+                        {
+                            SetFlightMode(true);
+                        }
+                        targetToChase = x;
+                    });
+                };
+                yield return chaseTargetcommand;
+            }
+
+            if (Props.bombOptions.NullOrEmpty() is false)
+            {
+                var list = new List<FloatMenuOption>();
+                foreach (var option in Props.bombOptions)
+                {
+                    list.Add(new FloatMenuOption(option.label, delegate
+                    {
+                        bombardmentOptionInd = Props.bombOptions.IndexOf(option);
+                        tickToStartFiring = null;
+                    }, itemIcon: ContentFinder<Texture2D>.Get(option.texPath), iconColor: Color.white));
                 }
 
-                if (Props.bombOptions.NullOrEmpty() is false)
+                BombOption bombOption = BombOption;
+                var bombCommand = new Command_Bomb(lastBombardmentTick, bombingCooldownTicks)
                 {
-                    var list = new List<FloatMenuOption>();
-                    foreach (var option in Props.bombOptions)
+                    defaultLabel = bombOption.label,
+                    icon = ContentFinder<Texture2D>.Get(bombOption.texPath),
+                    action = () =>
                     {
-                        list.Add(new FloatMenuOption(option.label, delegate
-                        {
-                            bombardmentOptionInd = Props.bombOptions.IndexOf(option);
-                            tickToStartFiring = null;
-                        }, itemIcon: ContentFinder<Texture2D>.Get(option.texPath), iconColor: Color.white));
-                    }
+                        TryDropBomb(bombOption);
+                    },
+                    bombOptions = list
+                };
 
-                    BombOption bombOption = BombOption;
-                    var bombCommand = new Command_Bomb(lastBombardmentTick, bombingCooldownTicks)
-                    {
-                        defaultLabel = bombOption.label,
-                        icon = ContentFinder<Texture2D>.Get(bombOption.texPath),
-                        action = () =>
-                        {
-                            TryDropBomb(bombOption);
-                        },
-                        bombOptions = list
-                    };
-
-                    if (BombCooldownActive())
-                    {
-                        bombCommand.Disable("CVN_OnCooldown".Translate(((lastBombardmentTick + bombingCooldownTicks) - Find.TickManager.TicksGame).ToStringTicksToPeriod()));
-                    }
+                if (BombCooldownActive())
+                {
+                    bombCommand.Disable("CVN_OnCooldown".Translate(((lastBombardmentTick + bombingCooldownTicks) - Find.TickManager.TicksGame).ToStringTicksToPeriod()));
                 }
             }
         }
@@ -338,11 +417,18 @@ namespace taranchuk_flightcombat
             validator = (TargetInfo x) => x.Thing != this.Vehicle
         };
 
+        private TargetingParameters TargetingParamsForLanding => new TargetingParameters
+        {
+            canTargetPawns = false,
+            canTargetLocations = true,
+            validator = (TargetInfo x) => Vehicle.Drivable(x.Cell)
+        };
+
         private void DrawRunway(bool takingOff)
         {
-            var cells = GetRunwayCells(takingOff: takingOff);
-            GenDraw.DrawFieldEdges(cells);
-            var blockingCells = GetBlockingCells(takingOff: takingOff);
+            var runwayCells = GetRunwayCells(takingOff: takingOff);
+            GenDraw.DrawFieldEdges(runwayCells);
+            var blockingCells = GetBlockingCells(runwayCells);
             GenDraw.DrawFieldEdges(blockingCells, Color.red);
         }
 
@@ -386,7 +472,7 @@ namespace taranchuk_flightcombat
                 Vehicle.FullRotation = Rot8.FromAngle(CurAngle);
                 Vehicle.UpdateAngle();
             }
-            targetToChase = LocalTargetInfo.Invalid;
+            ResetFlightData();
             this.flightMode = flightMode ? FlightMode.Flight : FlightMode.Off;
         }
 
@@ -411,12 +497,24 @@ namespace taranchuk_flightcombat
 
         public void SetTarget(LocalTargetInfo targetInfo)
         {
-            Log.Message("SetTarget: " + targetInfo);
+            if (flightMode == FlightMode.Off)
+            {
+                SetFlightMode(true);
+            }
             this.target = targetInfo;
             this.initialTarget = targetInfo.Cell;
+            ResetFlightData();
+            Vehicle.vehiclePather.PatherFailed();
+        }
+
+        private void ResetFlightData()
+        {
             this.clockwiseTurn = null;
             targetToChase = LocalTargetInfo.Invalid;
-            Vehicle.vehiclePather.PatherFailed();
+            runwayStartingSpot = LocalTargetInfo.Invalid;
+            landingSpot = LocalTargetInfo.Invalid;
+            targetForRunway = null;
+            landingStage = LandingStage.Inactive;
         }
 
         public override void CompTick()
@@ -797,11 +895,16 @@ namespace taranchuk_flightcombat
 
         public List<IntVec3> GetRunwayCells(bool takingOff)
         {
-            var cells = new List<IntVec3>();
-            var vehicle = Vehicle;
-            var position = vehicle.Position;
+            var position = Vehicle.Position;
             var rot = Vehicle.FullRotation;
             var angle = InAir ? AngleAdjusted(CurAngle + FlightAngleOffset) : rot.AsAngle;
+            return GetRunwayCells(takingOff, position, angle);
+        }
+
+        private List<IntVec3> GetRunwayCells(bool takingOff, IntVec3 position, float angle)
+        {
+            var cells = new List<IntVec3>();
+            var vehicle = Vehicle;
             var distance = 0f;
             if (takingOff)
             {
@@ -824,11 +927,11 @@ namespace taranchuk_flightcombat
 
             var width = vehicle.def.Size.x;
             var north = IntVec3.North.ToVector3();
-            var rotInAir = Rot8.FromAngle(CurAngle + FlightAngleOffset);
+            var rotInAir = Rot8.FromAngle(angle);
             for (var i = 1; i <= width; i++)
             {
                 var pos = CellOffset(position, i, width, angle);
-                pos = AdjustPos(InAir ? rotInAir : rot, pos);
+                pos = AdjustPos(InAir ? rotInAir : Vehicle.FullRotation, pos);
                 cells.Add(pos);
                 for (var j = 0; j < distance; j++)
                 {
@@ -864,10 +967,10 @@ namespace taranchuk_flightcombat
             return pos;
         }
 
-        public List<IntVec3> GetBlockingCells(bool takingOff)
+        public List<IntVec3> GetBlockingCells(List<IntVec3> runwayCells)
         {
             var cells = new List<IntVec3>();
-            foreach (var cell in GetRunwayCells(takingOff))
+            foreach (var cell in runwayCells)
             {
                 if (cell.InBounds(Vehicle.Map))
                 {
@@ -947,6 +1050,10 @@ namespace taranchuk_flightcombat
             {
                 MoveFurther(Props.flightSpeedPerTick);
             }
+            else if (runwayStartingSpot.IsValid)
+            {
+                MoveToLandingSpot();
+            }
             else if (initialTarget.IsValid)
             {
                 bool rotated = RotateTowards(initialTarget.CenterVector3);
@@ -985,7 +1092,139 @@ namespace taranchuk_flightcombat
                     MoveFurther(Props.flightSpeedTurningPerTick);
                 }
             }
+        }
 
+        private void MoveToLandingSpot()
+        {
+            if (landingStage == LandingStage.Inactive)
+            {
+                if (targetForRunway is null)
+                {
+                    var newTarget = runwayStartingSpot.CenterVector3 + (Quaternion.AngleAxis(CurAngle, Vector3.up)
+                        * (Vector3.forward * (Props.distanceFromTargetToStartTurningChaseMode * 2))).RotatedBy(FlightAngleOffset);
+                    targetForRunway = newTarget;
+                }
+                bool rotated = RotateTowards(targetForRunway.Value);
+                MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                if (rotated is false)
+                {
+                    landingStage = LandingStage.GotoInitialSpot;
+                }
+            }
+            else
+            {
+                if (landingStage == LandingStage.GotoInitialSpot)
+                {
+                    bool shouldRotate = ShouldRotate(out bool? clockturn);
+                    //Log.Message("Should rotate: " + shouldRotate + " - " + clockturn); ;
+                    if (shouldRotate)
+                    {
+                        if (clockturn.Value)
+                        {
+                            CurAngle += Props.turnAngleCirclingPerTick;
+                        }
+                        else
+                        {
+                            CurAngle -= Props.turnAngleCirclingPerTick;
+                        }
+                        landingStage = LandingStage.GotoRunwayStartSpot;
+                    }
+                    MoveFurther(shouldRotate ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                }
+                else
+                {
+                    if (landingStage == LandingStage.GotoRunwayStartSpot)
+                    {
+                        Vehicle.Map.debugDrawer.FlashCell(runwayStartingSpot.Cell);
+                        Vehicle.Map.debugDrawer.FlashCell(landingSpot.Cell, 0.5f);
+                        Find.TickManager.CurTimeSpeed = TimeSpeed.Paused;
+                        bool rotated = RotateTowards(runwayStartingSpot.CenterVector3);
+                        MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                        if (curPosition.ToIntVec3() == runwayStartingSpot.Cell)
+                        {
+                            landingStage = LandingStage.GotoLanding;
+                        }
+                    }
+                    else if (landingStage == LandingStage.GotoLanding)
+                    {
+                        bool rotated = RotateTowards(landingSpot.CenterVector3);
+                        MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                        takeoffProgress = Mathf.Max(0, takeoffProgress - (1 / (float)Props.landingTicks));
+                        Log.Message("takeoffProgress: " + takeoffProgress);
+                        Vehicle.Map.debugDrawer.FlashCell(runwayStartingSpot.Cell);
+                        Vehicle.Map.debugDrawer.FlashCell(landingSpot.Cell, 0.5f);
+                        if (takeoffProgress == 0)
+                        {
+                            SetFlightMode(false);
+                            foreach (var turret in VehicleTurrets)
+                            {
+                                turret.parentRotCached = Vehicle.Rotation;
+                                turret.parentAngleCached = Vehicle.Angle;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool ShouldRotate(out bool? clockturn)
+        {
+            clockturn = null;
+            var speedPerTick = Props.flightSpeedPerTick;
+            var dist = speedPerTick;
+            var curAngle = CurAngle;
+            Quaternion angleAxis = Quaternion.AngleAxis(curAngle, Vector3.up);
+            var minAngle = float.MinValue;
+            var targetAngle = AngleAdjusted((landingSpot.CenterVector3 - runwayStartingSpot.CenterVector3).AngleFlat() - FlightAngleOffset);
+            while (true)
+            {
+                var newPosition = curPosition + (angleAxis * (Vector3.forward * dist)).RotatedBy(FlightAngleOffset);
+                var newRunwayAngle = AngleAdjusted((newPosition.Yto0() - runwayStartingSpot.CenterVector3.Yto0()).AngleFlat());
+                var newRunwayAngle2 = AngleAdjusted((newPosition.Yto0() - landingSpot.CenterVector3.Yto0()).AngleFlat());
+                var minDiff = Mathf.Abs(newRunwayAngle - newRunwayAngle2);
+                if (minAngle != float.MinValue && minDiff > minAngle && minAngle <= 1)
+                {
+                    clockturn = ClockWiseTurn(AngleAdjusted(newRunwayAngle + FlightAngleOffset));
+                    if (clockturn is null)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        var turnoffset = clockturn.Value ? Props.turnAnglePerTick : -Props.turnAnglePerTick;
+                        var ticksPassedSimulated = (int)(dist / speedPerTick);
+                        for (var i = 0; i < ticksPassedSimulated; i++)
+                        {
+                            curAngle = AngleAdjusted(curAngle + turnoffset);
+                            bool angleInRange = AngleInRange(curAngle, AngleAdjusted(targetAngle - Props.turnAnglePerTick), AngleAdjusted(targetAngle + Props.turnAnglePerTick));
+                            if (angleInRange)
+                            {
+                                Log.Message("curAngle: " + curAngle + " - targetAngle: " + targetAngle + " - i: " + i + " - ticksPassedSimulated: " + ticksPassedSimulated);
+                                //Vehicle.Map.debugDrawer.FlashCell(runwayStartingSpot.Cell);
+                                //Vehicle.Map.debugDrawer.FlashCell(landingSpot.Cell, 0.5f);
+                            }
+                            if (angleInRange && i >= ticksPassedSimulated - 3)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                }
+                minAngle = minDiff;
+                dist += speedPerTick;
+                if (dist > 1000)
+                {
+                    Log.Error("Broke cycle");
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        private bool AngleInRange(float angle, float lower, float upper)
+        {
+            return (angle - lower) % 360 <= (upper - lower) % 360;
         }
 
         private void Takeoff()
@@ -1094,6 +1333,11 @@ namespace taranchuk_flightcombat
         private bool RotateTowards(Vector3 target)
         {
             float targetAngle = GetAngleFromTarget(target);
+            return RotateTo(targetAngle);
+        }
+
+        private bool RotateTo(float targetAngle)
+        {
             if (new FloatRange(targetAngle - Props.turnAnglePerTick, targetAngle + Props.turnAnglePerTick).Includes(CurAngle))
             {
                 return false;
@@ -1106,6 +1350,20 @@ namespace taranchuk_flightcombat
             else
             {
                 CurAngle += Props.turnAnglePerTick;
+            }
+            return true;
+        }
+
+        private bool? ClockWiseTurn(float targetAngle)
+        {
+            if (new FloatRange(targetAngle - Props.turnAnglePerTick, targetAngle + Props.turnAnglePerTick).Includes(CurAngle))
+            {
+                return null;
+            }
+            float diff = targetAngle - CurAngle;
+            if (diff > 0 ? diff > 180f : diff >= -180f)
+            {
+                return false;
             }
             return true;
         }
@@ -1189,6 +1447,10 @@ namespace taranchuk_flightcombat
             Scribe_TargetInfo.Look(ref targetToFace, "targetToFace", LocalTargetInfo.Invalid);
             Scribe_TargetInfo.Look(ref targetToChase, "targetToChase", LocalTargetInfo.Invalid);
             Scribe_TargetInfo.Look(ref initialTarget, "initialTarget", LocalTargetInfo.Invalid);
+            Scribe_TargetInfo.Look(ref landingSpot, "landingSpot", LocalTargetInfo.Invalid);
+            Scribe_TargetInfo.Look(ref runwayStartingSpot, "runwayStartingSpot", LocalTargetInfo.Invalid);
+            Scribe_Values.Look(ref targetForRunway, "targetForRunway");
+            Scribe_Values.Look(ref landingStage, "landingStage");
             Scribe_Values.Look(ref clockwiseTurn, "clockwiseTurn");
             Scribe_Values.Look(ref continueRotating, "continueRotating");
             Scribe_Values.Look(ref takeoffProgress, "takeoffProgress");
