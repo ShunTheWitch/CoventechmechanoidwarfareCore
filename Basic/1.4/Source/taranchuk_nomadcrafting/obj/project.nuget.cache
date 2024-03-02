@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "z89OxZcJedyU2l2u7MKyx5d3gFKTJ+HTKWXhHZAOHa3ZjYGY7R1+4R1YlkxeeystRVnJSDlzyrDXU0/3O0TG8w==",
+  "success": true,
+  "projectFilePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_nomadcrafting\\taranchuk_nomadcrafting.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Vova\\.nuget\\packages\\krafs.publicizer\\2.2.1\\krafs.publicizer.2.2.1.nupkg.sha512",
+    "C:\\Users\\Vova\\.nuget\\packages\\krafs.rimworld.ref\\1.4.3901\\krafs.rimworld.ref.1.4.3901.nupkg.sha512",
+    "C:\\Users\\Vova\\.nuget\\packages\\lib.harmony\\2.3.0\\lib.harmony.2.3.0.nupkg.sha512"
+  ],
+  "logs": []
+}

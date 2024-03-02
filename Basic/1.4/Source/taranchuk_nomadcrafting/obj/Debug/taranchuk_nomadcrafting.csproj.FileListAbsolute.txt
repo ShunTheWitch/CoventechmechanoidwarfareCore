@@ -1,0 +1,5 @@
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\Assemblies\taranchuk_nomadcrafting.dll
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\taranchuk_nomadcrafting\obj\Debug\taranchuk_nomadcrafting.csproj.AssemblyReference.cache
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\taranchuk_nomadcrafting\obj\Debug\taranchuk_nomadcrafting.csproj.CoreCompileInputs.cache
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\taranchuk_nomadcrafting\obj\Debug\taranchuk_nomadcrafting.dll
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Assemblies\taranchuk_nomadcrafting.dll

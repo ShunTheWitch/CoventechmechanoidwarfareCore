@@ -293,7 +293,7 @@ namespace taranchuk_flightcombat
                     };
                     if (flightMode == FlightMode.Off && Landing is false)
                     {
-                        var runwayCells = GetRunwayCells(takingOff: false);
+                        var runwayCells = GetRunwayCells(takingOff: true);
                         var blockingCells = GetBlockingCells(runwayCells);
                         if (blockingCells.Any())
                         {
@@ -497,10 +497,6 @@ namespace taranchuk_flightcombat
 
         public void SetTarget(LocalTargetInfo targetInfo)
         {
-            if (flightMode == FlightMode.Off)
-            {
-                SetFlightMode(true);
-            }
             this.target = targetInfo;
             this.initialTarget = targetInfo.Cell;
             ResetFlightData();
