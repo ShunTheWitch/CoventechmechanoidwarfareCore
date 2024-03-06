@@ -95,6 +95,7 @@ namespace taranchuk_nomadcrafting
                         opts.Add(new FloatMenuOption(label, delegate
                         {
                             Bill bill2 = recipe.MakeNewBill(precept);
+                            Log.Message("Making bill: " + bill2.GetType() + " - " + recipe + " - " + recipe.gestationCycles + " - mechResurrection: " + recipe.mechResurrection);
                             comp.billStack.AddBill(bill2);
                             if (recipe.conceptLearned != null)
                             {
