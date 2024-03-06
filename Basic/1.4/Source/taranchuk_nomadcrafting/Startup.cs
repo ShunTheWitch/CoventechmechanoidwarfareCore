@@ -1,5 +1,4 @@
-﻿using HarmonyLib;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
@@ -11,7 +10,6 @@ namespace taranchuk_nomadcrafting
     {
         static Startup()
         {
-            new Harmony("taranchuk_nomadcraftingMod").PatchAll();
             foreach (var thingDef in DefDatabase<ThingDef>.AllDefs)
             {
                 var compProps = thingDef.GetCompProperties<CompProperties_NomadCrafting>();
@@ -27,6 +25,14 @@ namespace taranchuk_nomadcrafting
                             AddRecipesFrom(compProps, table);
                         }
                     }
+                }
+            }
+
+            foreach (var recipe in DefDatabase<RecipeDef>.AllDefs)
+            {
+                if (recipe.mechResurrection || recipe.defName.StartsWith("CVN"))
+                {
+                    Log.Message("Startup: " + recipe + " - recipe.fixedIngredientFilter: " + string.Join(", ", recipe.fixedIngredientFilter.AllowedThingDefs));
                 }
             }
         }

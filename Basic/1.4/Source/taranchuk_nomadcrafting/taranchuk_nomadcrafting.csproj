@@ -62,8 +62,11 @@
     <Publicize Include="Assembly-CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BillProcess.cs" />
     <Compile Include="CompNomadCrafting.cs" />
+    <Compile Include="GenerateImpliedDefs_PreResolve_Patch.cs" />
     <Compile Include="ITab_BillsPawn.cs" />
+    <Compile Include="NomadCraftingMod.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
