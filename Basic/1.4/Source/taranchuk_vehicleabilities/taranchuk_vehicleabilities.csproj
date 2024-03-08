@@ -70,6 +70,10 @@
     <Publicize Include="Assembly-CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CompBurrowAbilityEffect.cs" />
+    <Compile Include="CompVehicleAbilities.cs" />
+    <Compile Include="MapPawns_AnyPawnBlockingMapRemoval_Patch.cs" />
+    <Compile Include="PawnSpawner.cs" />
     <Compile Include="taranchuk_vehicleabilitiesMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
