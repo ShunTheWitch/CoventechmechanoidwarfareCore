@@ -27,14 +27,6 @@ namespace taranchuk_nomadcrafting
                     }
                 }
             }
-
-            foreach (var recipe in DefDatabase<RecipeDef>.AllDefs)
-            {
-                if (recipe.mechResurrection || recipe.defName.StartsWith("CVN"))
-                {
-                    Log.Message("Startup: " + recipe + " - recipe.fixedIngredientFilter: " + string.Join(", ", recipe.fixedIngredientFilter.AllowedThingDefs));
-                }
-            }
         }
 
         private static void AddRecipesFrom(CompProperties_NomadCrafting compProps, ThingDef table)
