@@ -1,4 +1,5 @@
 ﻿using RimWorld;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,12 @@ namespace taranchuk_nomadcrafting
         }
     }
 
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class HotSwappableAttribute : Attribute
+    {
+    }
+
+    [HotSwappableAttribute]
     public class CompNomadCrafting : ThingComp
     {
         public CompProperties_NomadCrafting Props => base.props as CompProperties_NomadCrafting;
@@ -42,12 +49,15 @@ namespace taranchuk_nomadcrafting
                 var sb = new StringBuilder();
                 foreach (var process in billProcesses)
                 {
-                    sb.AppendLine("CVN.CraftingItem".Translate(process.bill.recipe.ProducedThingDef.label, (process.workLeft / process.bill.GetWorkAmount()).ToStringPercent()));
+                    var progress = 1f - (process.workLeft / process.bill.GetWorkAmount());
+                    sb.AppendLine("CVN.Bill".Translate(process.bill.recipe.label, progress.ToStringPercent()));
                 }
                 return sb.ToString().TrimEndNewlines();
             }
             return null;
         }
+
+
 
         public override void CompTick()
         {
@@ -74,7 +84,6 @@ namespace taranchuk_nomadcrafting
                     Bill bill = billStack[i];
                     if (!bill.ShouldDoNow())
                     {
-                        Log.Message(bill + " - shouldn't do");
                         continue;
                     }
                     if (bill is Bill_Production billProduction)
@@ -82,7 +91,6 @@ namespace taranchuk_nomadcrafting
                         if (billProduction.repeatMode == BillRepeatModeDefOf.RepeatCount
                             && billProcesses.Where(x => x.bill == bill).Count() >= billProduction.repeatCount)
                         {
-                            Log.Message(bill + " - shouldn't do 2");
                             continue;
                         }
                     }
@@ -90,7 +98,6 @@ namespace taranchuk_nomadcrafting
                     var availableThings = Pawn.inventory.innerContainer.Where(x => IsUsableIngredient(x, bill)).ToList();
                     if (!TryFindBestIngredientsInSet(availableThings, bill.recipe.ingredients, chosenIngThings, missingIngredients, bill))
                     {
-                        Log.Message("No ingredients found: " + string.Join(", ", availableThings));
                         chosenIngThings.Clear();
                         continue;
                     }
@@ -114,60 +121,6 @@ namespace taranchuk_nomadcrafting
                     break;
                 }
             }
-        }
-
-        public static bool IsFixedOrAllowedIngredient(Bill bill, Thing thing)
-        {
-            for (int i = 0; i < bill.recipe.ingredients.Count; i++)
-            {
-                IngredientCount ingredientCount = bill.recipe.ingredients[i];
-                if (ingredientCount.IsFixedIngredient && ingredientCount.filter.Allows(thing))
-                {
-                    return true;
-                }
-                else
-                {
-                    Log.Message("1: " + thing + " doesn't allow: " + ingredientCount + " - ingredientCount.IsFixedIngredient: " + ingredientCount.IsFixedIngredient);
-                }
-            }
-            if (bill.recipe.fixedIngredientFilter.Allows(thing))
-            {
-                if (bill.ingredientFilter.Allows(thing))
-                {
-                    return true;
-                }
-                else
-                {
-                    Log.Message("3: " + thing + " doesn't allow: " + bill.ingredientFilter);
-                }
-            }
-            else
-            {
-                Log.Message("2: " + thing + " doesn't allow: " + bill.recipe.fixedIngredientFilter + " - bill.recipe.fixedIngredientFilter: " + string.Join(", ", bill.recipe.fixedIngredientFilter.AllowedThingDefs));
-            }
-            return false;
-        }
-
-        private static bool IsUsableIngredient(Thing t, Bill bill)
-        {
-            if (!IsFixedOrAllowedIngredient(bill, t))
-            {
-                Log.Message(t + " is not usable 1");
-                return false;
-            }
-            foreach (IngredientCount ingredient in bill.recipe.ingredients)
-            {
-                if (ingredient.filter.Allows(t))
-                {
-                    return true;
-                }
-                else
-                {
-                    Log.Message(t + " is not usable 1.5: " + ingredient.filter.Summary);
-                }
-            }
-            Log.Message(t + " is not usable 2");
-            return false;
         }
 
         private List<ThingCount> chosenIngThings = new List<ThingCount>();

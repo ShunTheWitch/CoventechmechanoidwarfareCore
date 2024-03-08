@@ -1,8 +1,11 @@
 ﻿using HarmonyLib;
 using RimWorld;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Verse;
 
 namespace taranchuk_nomadcrafting
@@ -10,7 +13,9 @@ namespace taranchuk_nomadcrafting
     [HarmonyPatch(typeof(DefGenerator), "GenerateImpliedDefs_PreResolve")]
     public static class GenerateImpliedDefs_PreResolve_Patch
     {
-        public static void Prefix()
+        public static HashSet<RecipeDef> resurrectionRecipes = new HashSet<RecipeDef>();
+        public static HashSet<RecipeDef> gestationRecipes = new HashSet<RecipeDef>();
+        public static void Postfix()
         {
             foreach (var recipe in DefDatabase<RecipeDef>.AllDefs.ToList())
             {
@@ -18,11 +23,12 @@ namespace taranchuk_nomadcrafting
                 {
                     var newRecipe = CloneRecipe(recipe);
                     newRecipe.mechResurrection = false;
-                    Log.Message(newRecipe + " - " + newRecipe.mechResurrection);
+                    resurrectionRecipes.Add(newRecipe);
                 }
                 else if (recipe.gestationCycles > 0)
                 {
-                    CloneRecipe(recipe);
+                    var newRecipe = CloneRecipe(recipe);
+                    gestationRecipes.Add(newRecipe);
                 }
             }
         }
@@ -30,17 +36,19 @@ namespace taranchuk_nomadcrafting
         private static RecipeDef CloneRecipe(RecipeDef recipe)
         {
             var newRecipe = recipe.Clone();
+            newRecipe.fixedIngredientFilter = newRecipe.defaultIngredientFilter = null;
+            newRecipe.ingredients = null;
             newRecipe.shortHash = 0;
             newRecipe.defName = "CVN_" + recipe.defName;
             //newRecipe.workAmount += recipe.formingTicks;
             newRecipe.workSpeedStat = newRecipe.efficiencyStat = null;
             if (recipe.defaultIngredientFilter != null)
             {
-                newRecipe.defaultIngredientFilter = recipe.defaultIngredientFilter.CopyThingFilter();
+                newRecipe.defaultIngredientFilter = recipe.defaultIngredientFilter.CopyThingFilter(newRecipe + " - defaultIngredientFilter");
             }
             if (recipe.fixedIngredientFilter != null)
             {
-                newRecipe.fixedIngredientFilter = recipe.fixedIngredientFilter.CopyThingFilter();
+                newRecipe.fixedIngredientFilter = recipe.fixedIngredientFilter.CopyThingFilter(newRecipe + " - fixedIngredientFilter");
             }
             if (recipe.ingredients != null)
             {
@@ -49,7 +57,7 @@ namespace taranchuk_nomadcrafting
                 {
                     var newIngredient = new IngredientCount();
                     newIngredient.count = ingredient.count;
-                    newIngredient.filter = ingredient.filter.CopyThingFilter();
+                    newIngredient.filter = ingredient.filter.CopyThingFilter(newRecipe + " - ingredient: " + ingredient.Summary);
                     newRecipe.ingredients.Add(newIngredient);
                 }
             }
@@ -60,17 +68,16 @@ namespace taranchuk_nomadcrafting
             return newRecipe;
         }
 
-        private static ThingFilter CopyThingFilter(this ThingFilter thingFilter)
+        private static ThingFilter CopyThingFilter(this ThingFilter thingFilter, string debugPrefix)
         {
             var newThingFilter = new ThingFilter();
-            if (thingFilter.thingDefs != null)
-            {
-                newThingFilter.thingDefs = thingFilter.thingDefs.ListFullCopy();
-            }
-            if (thingFilter.categories != null)
-            {
-                newThingFilter.categories = thingFilter.categories.ListFullCopy();
-            }
+            newThingFilter.thingDefs = thingFilter.thingDefs.ListFullCopyOrNull();
+            newThingFilter.categories = thingFilter.categories.ListFullCopyOrNull();
+            newThingFilter.specialFiltersToAllow = thingFilter.specialFiltersToAllow.ListFullCopyOrNull();
+            newThingFilter.specialFiltersToDisallow = thingFilter.specialFiltersToDisallow.ListFullCopyOrNull();
+            newThingFilter.disallowedCategories = thingFilter.disallowedCategories.ListFullCopyOrNull();
+            newThingFilter.disallowedSpecialFilters = thingFilter.disallowedSpecialFilters.ListFullCopyOrNull();
+            newThingFilter.disallowedThingDefs = thingFilter.disallowedThingDefs.ListFullCopyOrNull();
             return newThingFilter;
         }
 
