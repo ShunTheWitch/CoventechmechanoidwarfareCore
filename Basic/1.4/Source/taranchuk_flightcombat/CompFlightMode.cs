@@ -35,7 +35,7 @@ namespace taranchuk_flightcombat
         public List<FlightFleckData> landingFlecks;
         public FleckDef waypointFleck;
         public AISettings AISettings;
-
+        public float? damageMultiplierFromNonAntiAirProjectiles;
         public CompProperties_FlightMode()
         {
             this.compClass = typeof(CompFlightMode);
@@ -71,6 +71,7 @@ namespace taranchuk_flightcombat
         private int lastBombardmentTick;
         private int? tickToStartFiring;
         public float takeoffProgress;
+        public bool shouldCrash;
         private bool TakingOff => flightMode != FlightMode.Off && takeoffProgress < 1f && runwayStartingSpot.IsValid is false;
         private bool Hovering => flightMode == FlightMode.Hover;
         private bool Landing => flightMode == FlightMode.Off && takeoffProgress > 0f;
@@ -92,7 +93,11 @@ namespace taranchuk_flightcombat
             }
         }
 
-        public bool CanFly => Vehicle.Deploying is false && Vehicle.CanMoveFinal;
+        public bool CanFly => Vehicle.Deploying is false && Vehicle.CanMoveFinal 
+            && Vehicle.GetStatValue(VehicleStatDefOf.FlightSpeed) > 
+            Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightSpeed) / 2f
+            && Vehicle.GetStatValue(VehicleStatDefOf.FlightControl) >
+            Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightControl) / 2f;
 
         public float AngleAdjusted(float angle)
         {
@@ -216,7 +221,7 @@ namespace taranchuk_flightcombat
             {
                 yield return new Command_Action
                 {
-                    defaultLabel = "Set custom angle: " + CurAngle,
+                    defaultLabel = "DEV: Set custom angle: " + CurAngle,
                     action = () =>
                     {
                         Find.WindowStack.Add(new Dialog_Slider("Set angle: " + CurAngle, 0, 360, delegate (int value)
@@ -225,6 +230,18 @@ namespace taranchuk_flightcombat
                         }));
                     }
                 };
+
+                if (InAir && !shouldCrash)
+                {
+                    yield return new Command_Action
+                    {
+                        defaultLabel = "DEV: Set to crash",
+                        action = () =>
+                        {
+                            SetToCrash();
+                        }
+                    };
+                }
             }
         }
 
@@ -503,6 +520,12 @@ namespace taranchuk_flightcombat
             Vehicle.vehiclePather.PatherFailed();
         }
 
+
+        public override void PostPreApplyDamage(DamageInfo dinfo, out bool absorbed)
+        {
+            base.PostPreApplyDamage(dinfo, out absorbed);
+        }
+
         private void ResetFlightData()
         {
             this.clockwiseTurn = null;
@@ -523,18 +546,28 @@ namespace taranchuk_flightcombat
                 {
                     if (Vehicle.CompFueledTravel.Fuel < Props.fuelConsumptionPerTick)
                     {
-                        SetFlightMode(false);
-                        return;
+                        if (shouldCrash is false)
+                        {
+                            SetToCrash();
+                        }
                     }
-                    Vehicle.CompFueledTravel.ConsumeFuel(Props.fuelConsumptionPerTick);
+                    else
+                    {
+                        Vehicle.CompFueledTravel.ConsumeFuel(Props.fuelConsumptionPerTick);
+                    }
                 }
+
+                if (CanFly is false && shouldCrash is false)
+                {
+                    SetToCrash();
+                }
+
                 if (TakingOff is false && initialTarget.IsValid && curPosition.ToIntVec3().InBounds(Vehicle.Map) 
                     && OccupiedRect().Contains(initialTarget.Cell))
                 {
                     initialTarget = LocalTargetInfo.Invalid;
                 }
-        
-                
+                        
                 if (InAIMode && !GoingToWorld)
                 {
                     AITick();
@@ -546,18 +579,26 @@ namespace taranchuk_flightcombat
                 }
                 else if (Landing)
                 {
-                    takeoffProgress = Mathf.Max(0, takeoffProgress - (1 / (float)Props.landingTicks));
+                    var takeoffOffset = (1 / (float)Props.landingTicks);
+                    if (shouldCrash)
+                    {
+                        takeoffOffset *= 2f;
+                    }
+                    takeoffProgress = Mathf.Max(0, takeoffProgress - takeoffOffset);
                     if (Props.moveWhileLanding)
                     {
-                        MoveFurther(Props.flightSpeedPerTick * takeoffProgress);
+                        if (shouldCrash)
+                        {
+                            MoveFurther(Props.flightSpeedPerTick);
+                        }
+                        else
+                        {
+                            MoveFurther(Props.flightSpeedPerTick * takeoffProgress);
+                        }
                     }
                     if (takeoffProgress == 0)
                     {
-                        foreach (var turret in VehicleTurrets)
-                        {
-                            turret.parentRotCached = Vehicle.Rotation;
-                            turret.parentAngleCached = Vehicle.Angle;
-                        }
+                        FlightEnd();
                     }
                 }
                 else if (Hovering)
@@ -611,6 +652,35 @@ namespace taranchuk_flightcombat
             //LogData("flightMode: " + flightMode);
         }
 
+        private void FlightEnd()
+        {
+            foreach (var turret in VehicleTurrets)
+            {
+                turret.parentRotCached = Vehicle.Rotation;
+                turret.parentAngleCached = Vehicle.Angle;
+            }
+            if (shouldCrash)
+            {
+                shouldCrash = false;
+                var damageAmount = (Vehicle.GetMass() + MassUtility.GearAndInventoryMass(Vehicle)) * 20f;
+                var components = Vehicle.statHandler.components
+                    .Where(x => x.props.depth == VehicleComponent.VehiclePartDepth.External).ToList();
+                damageAmount /= components.Count;
+                foreach (var component in components)
+                {
+                    component.TakeDamage(Vehicle, new DamageInfo(DamageDefOf.Blunt, damageAmount), ignoreArmor: true);
+                }
+            }
+        }
+
+        private void SetToCrash()
+        {
+            if (flightMode != FlightMode.Off)
+            {
+                SetFlightMode(false);
+            }
+            shouldCrash = true;
+        }
         private void ProcessRotors()
         {
             var launcher = Vehicle.CompVehicleLauncher;
@@ -856,9 +926,6 @@ namespace taranchuk_flightcombat
                 }
             }
         }
-
-        //[TweakValue("0test", -10, 10f)] public static float fleckX;
-        //[TweakValue("0test", -10, 10f)] public static float fleckZ;
 
         public void SpawnFleck(FlightFleckData fleckData)
         {
@@ -1152,11 +1219,7 @@ namespace taranchuk_flightcombat
                         if (takeoffProgress == 0)
                         {
                             SetFlightMode(false);
-                            foreach (var turret in VehicleTurrets)
-                            {
-                                turret.parentRotCached = Vehicle.Rotation;
-                                turret.parentAngleCached = Vehicle.Angle;
-                            }
+                            FlightEnd();
                         }
                     }
                 }
@@ -1459,7 +1522,7 @@ namespace taranchuk_flightcombat
             Scribe_Deep.Look(ref arrivalAction, "arrivalAction", Array.Empty<object>());
             Scribe_Collections.Look(ref flightPath, "flightPath");
             Scribe_Values.Look(ref orderRecon, "orderRecon");
-
+            Scribe_Values.Look(ref shouldCrash, "shouldCrash");
         }
     }
 }
