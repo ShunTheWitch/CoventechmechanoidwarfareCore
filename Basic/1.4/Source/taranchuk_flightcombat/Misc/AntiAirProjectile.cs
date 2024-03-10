@@ -2,8 +2,9 @@
 
 namespace taranchuk_flightcombat
 {
-    public class AntiAirProjectile : DefModExtension
+    public class ProjectileModes : DefModExtension
     {
-
+        public bool antiAir;
+        public bool ground;
     }
 }
