@@ -66,6 +66,11 @@
 			<captureJob>CVN_CapturePawn</captureJob>
 			<releaseJob>CVN_ReleasePawn</releaseJob>
 		</li>
+		<li Class="VehicleMechanitorControl.CompProperties_MechanitorControl">
+			<bandwidthGain>0</bandwidthGain>
+			<mechControlRange>0</mechControlRange>
+			<canBeMechanitor>true</canBeMechanitor>
+		</li>
 	</comps>
   </ThingDef>
 

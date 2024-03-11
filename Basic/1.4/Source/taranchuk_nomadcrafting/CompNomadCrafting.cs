@@ -15,11 +15,31 @@ namespace taranchuk_nomadcrafting
         public float craftingSpeed;
         public List<RecipeDef> recipes;
         public List<ThingDef> pullRecipesFrom;
+        public List<MechWeightClass> mechClassesToGestate;
         public List<QualityCategory> qualityRange;
 
         public CompProperties_NomadCrafting()
         {
             this.compClass = typeof(CompNomadCrafting);
+        }
+
+        public override void ResolveReferences(ThingDef parentDef)
+        {
+            base.ResolveReferences(parentDef);
+            if (mechClassesToGestate != null)
+            {
+                recipes ??= new List<RecipeDef>();
+                foreach (var mechClass in mechClassesToGestate)
+                {
+                    foreach (var recipe in GenerateImpliedDefs_PreResolve_Patch.gestationRecipes)
+                    {
+                        if (recipe.ProducedThingDef.race.mechWeightClass == mechClass)
+                        {
+                            recipes.Add(recipe);
+                        }
+                    }
+                }
+            }
         }
     }
 
