@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompBurrowAbilityEffect.cs" />
+    <Compile Include="CompRipscanAbilityEffect.cs" />
     <Compile Include="CompVehicleAbilities.cs" />
     <Compile Include="MapPawns_AnyPawnBlockingMapRemoval_Patch.cs" />
     <Compile Include="PawnSpawner.cs" />

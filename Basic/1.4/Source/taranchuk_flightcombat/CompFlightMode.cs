@@ -517,7 +517,10 @@ namespace taranchuk_flightcombat
             this.target = targetInfo;
             this.initialTarget = targetInfo.Cell;
             ResetFlightData();
-            Vehicle.vehiclePather.PatherFailed();
+            if (Vehicle.jobs.curDriver is JobDriver_Goto)
+            {
+                Vehicle.vehiclePather.PatherFailed();
+            }
         }
 
 

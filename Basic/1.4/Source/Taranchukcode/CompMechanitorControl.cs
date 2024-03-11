@@ -8,28 +8,27 @@ using Verse.AI;
 
 namespace VehicleMechanitorControl
 {
-    public class CompProperties_MechanitorControl : VehicleCompProperties
+    public class CompProperties_MechanitorControl : CompProperties
     {
         public int bandwidthGain;
         public float mechControlRange;
+        public bool canBeMechanitor;
         public CompProperties_MechanitorControl()
         {
             this.compClass = typeof(CompMechanitorControl);
         }
     }
-    public class CompMechanitorControl : VehicleComp
+
+    public class CompMechanitorControl : ThingComp
     {
         public CompProperties_MechanitorControl Props => base.props as CompProperties_MechanitorControl;
 
-        public override bool IsThreat(IAttackTargetSearcher searcher)
-        {
-            return true;
-        }
+        public Pawn Pawn => parent as Pawn;
 
         public override void PostDraw()
         {
             base.PostDraw();
-            Pawn overseer = this.Vehicle.GetOverseer();
+            Pawn overseer = Pawn.GetOverseer();
             if (overseer != null)
             {
                 foreach (var pawn in overseer.mechanitor.ControlledPawns)
@@ -62,11 +61,38 @@ namespace VehicleMechanitorControl
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
-            foreach (Gizmo mechGizmo in MechanitorUtility.GetMechGizmos(this.Vehicle))
+            if (Pawn.RaceProps.IsMechanoid is false)
             {
-                yield return mechGizmo;
+                if (MechanitorUtility.IsMechanitor(Pawn))
+                {
+                    foreach (Gizmo gizmo6 in Pawn.mechanitor.GetGizmos())
+                    {
+                        yield return gizmo6;
+                    }
+                }
+                foreach (Gizmo mechGizmo in MechanitorUtility.GetMechGizmos(Pawn))
+                {
+                    yield return mechGizmo;
+                }
+            }
+        }
+
+        public void AssignMechanitorControlComps()
+        {
+            var pawn = parent as Pawn;
+            pawn.relations ??= new Pawn_RelationsTracker(pawn);
+            pawn.drafter ??= new Pawn_DraftController(pawn);
+            if (Props.canBeMechanitor)
+            {
+                if (MechanitorUtility.IsMechanitor(pawn) && pawn.mechanitor == null)
+                {
+                    pawn.mechanitor = new Pawn_MechanitorTracker(pawn);
+                }
+                else if (!MechanitorUtility.IsMechanitor(pawn) && pawn.mechanitor != null)
+                {
+                    pawn.mechanitor = null;
+                }
             }
         }
     }
-
 }

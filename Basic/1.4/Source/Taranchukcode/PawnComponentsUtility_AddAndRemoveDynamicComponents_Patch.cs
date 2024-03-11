@@ -12,7 +12,7 @@ namespace VehicleMechanitorControl
             var comp = pawn.GetComp<CompMechanitorControl>();
             if (comp != null)
             {
-                pawn.AssignMechanitorControlComps();
+                comp.AssignMechanitorControlComps();
             }
         }
     }

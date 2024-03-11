@@ -33,9 +33,12 @@ namespace VehicleMechanitorControl
             foreach (var controlledPawn in pawn.mechanitor.ControlledPawns)
             {
                 var comp = controlledPawn.GetComp<CompMechanitorControl>();
-                if (comp != null && controlledPawn.OverseerSubject.Overseer == pawn)
+                if (comp != null)
                 {
-                    count += comp.Props.bandwidthGain;
+                    if (controlledPawn.OverseerSubject.Overseer == pawn)
+                    {
+                        count += comp.Props.bandwidthGain;
+                    }
                 }
             }
         }

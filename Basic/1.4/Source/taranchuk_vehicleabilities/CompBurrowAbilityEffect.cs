@@ -45,6 +45,8 @@ namespace taranchuk_vehicleabilities
             spawner.pawn = parent.pawn;
             spawner.spawnInTicks = Props.baseRespawnDuration;
             spawner.spawnInTicks += (int)(Props.respawnDurationPerCell * parent.pawn.Position.DistanceTo(target.Cell));
+            spawner.effecterDef = Props.warmupEffecter;
+            spawner.effecterDuration = (int)(parent.verb.verbProps.warmupTime * 60);
             GenSpawn.Spawn(spawner, target.Cell, parent.pawn.Map);
             parent.pawn.DeSpawn();
         }
