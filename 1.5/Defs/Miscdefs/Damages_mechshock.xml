@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <DamageDef>
+    <defName>MechElecShockwave</defName>
+    <label>mech Electric Shockwave</label>
+    <workerClass>DamageWorker_Flame</workerClass>
+    <externalViolenceForMechanoids>true</externalViolenceForMechanoids>
+    <deathMessage>{0} has been shocked to death.</deathMessage>
+    <harmsHealth>True</harmsHealth>
+    <impactSoundType>MechBandShockwave</impactSoundType>
+    <defaultDamage>30</defaultDamage>
+    <harmAllLayersUntilOutside>true</harmAllLayersUntilOutside>
+    <defaultStoppingPower>5.5</defaultStoppingPower>
+    <defaultArmorPenetration>5.5</defaultArmorPenetration>
+    <plantDamageFactor>0</plantDamageFactor>
+    <buildingDamageFactorImpassable>0</buildingDamageFactorImpassable>
+    <buildingDamageFactorPassable>0</buildingDamageFactorPassable>
+    <explosionSnowMeltAmount>20</explosionSnowMeltAmount>
+    <explosionCellEffecter>MechBandElectricityArc</explosionCellEffecter>
+    <explosionCellEffecterChance>0.3</explosionCellEffecterChance>
+    <explosionCellEffecterMaxRadius>10</explosionCellEffecterMaxRadius>
+    <expolosionPropagationSpeed>0.3</expolosionPropagationSpeed>
+    <soundExplosion>Explosion_MechBandShockwave</soundExplosion>
+    <corpseDamageFactor>0</corpseDamageFactor>
+    <combatLogRules>Damage_Flame</combatLogRules>
+    <hediff>Burn</hediff>
+
+  </DamageDef>
+
+  <DamageDef>
+    <defName>MechElecShockbullet</defName>
+    <label>mech Electric Shockbullet</label>
+    <workerClass>DamageWorker_Stab</workerClass>
+    <externalViolenceForMechanoids>true</externalViolenceForMechanoids>
+    <deathMessage>{0} has been shocked to death.</deathMessage>
+    <harmsHealth>True</harmsHealth>
+    <impactSoundType>MechBandShockwave</impactSoundType>
+    <defaultDamage>0</defaultDamage>
+    <harmAllLayersUntilOutside>true</harmAllLayersUntilOutside>
+    <defaultStoppingPower>9.5</defaultStoppingPower>
+    <defaultArmorPenetration>5.5</defaultArmorPenetration>
+    <plantDamageFactor>0</plantDamageFactor>
+    <stabChanceOfForcedInternal>0.6</stabChanceOfForcedInternal>
+    <overkillPctToDestroyPart>0.4~1.0</overkillPctToDestroyPart>
+    <corpseDamageFactor>0</corpseDamageFactor>
+    <combatLogRules>Damage_Flame</combatLogRules>
+    <hediff>Burn</hediff>
+
+  </DamageDef>
+
+
+  <DamageDef>
+    <defName>MechElectwo</defName>
+    <label>mech Electric Shockwave</label>
+    <workerClass>DamageWorker_Flame</workerClass>
+    <externalViolenceForMechanoids>true</externalViolenceForMechanoids>
+    <deathMessage>{0} has been shocked to death.</deathMessage>
+    <harmsHealth>True</harmsHealth>
+    <impactSoundType>MechBandShockwave</impactSoundType>
+    <defaultDamage>30</defaultDamage>
+    <harmAllLayersUntilOutside>true</harmAllLayersUntilOutside>
+    <defaultStoppingPower>5.5</defaultStoppingPower>
+    <defaultArmorPenetration>5.5</defaultArmorPenetration>
+    <explosionSnowMeltAmount>20</explosionSnowMeltAmount>
+    <explosionCellEffecterChance>0.3</explosionCellEffecterChance>
+	<explosionCellFleck>BlastEMP</explosionCellFleck>
+    <explosionColorEdge>(0.8, 0.8, 0.8, 0.8)</explosionColorEdge>
+    <explosionInteriorFleck>ElectricalSpark</explosionInteriorFleck>
+    <expolosionPropagationSpeed>0.3</expolosionPropagationSpeed>
+    <soundExplosion>Explosion_MechBandShockwave</soundExplosion>
+    <corpseDamageFactor>0</corpseDamageFactor>
+    <combatLogRules>Damage_Flame</combatLogRules>
+    <hediff>Burn</hediff>
+
+  </DamageDef>
+</Defs>

@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <AbilityDef>
+    <defName>CVN_Ripscan</defName>
+    <label>ripscan</label>
+    <description>text.</description>
+    <iconPath>UI/Abilities/MechLongJump</iconPath>
+    <cooldownTicksRange>480</cooldownTicksRange>
+    <hostile>false</hostile>
+	<warmupEffecter>ApocrionAttached</warmupEffecter>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <label>ripscan</label>
+      <warmupTime>10</warmupTime>
+      <range>100</range>
+      <requireLineOfSight>false</requireLineOfSight>
+      <targetParams>
+        <canTargetLocations>false</canTargetLocations>
+        <canTargetPawns>true</canTargetPawns>
+        <canTargetBuildings>false</canTargetBuildings>
+      </targetParams>
+    </verbProperties>
+	<comps>
+		<li Class="taranchuk_vehicleabilities.CompProperties_Ripscan">
+			<subcoreScannerOutputDef>SubcoreHigh</subcoreScannerOutputDef>
+		</li>
+	</comps>
+  </AbilityDef>
+
+</Defs>
