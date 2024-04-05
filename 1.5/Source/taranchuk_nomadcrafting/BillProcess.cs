@@ -97,7 +97,7 @@ namespace taranchuk_nomadcrafting
         public Pawn ResurrectMech(Corpse corpse, Pawn mechanitor)
         {
             Pawn innerPawn = corpse.InnerPawn;
-            ResurrectionUtility.Resurrect(innerPawn);
+            ResurrectionUtility.TryResurrect(innerPawn);
             innerPawn.needs.energy.CurLevel = innerPawn.needs.energy.MaxLevel * 0.5f;
             innerPawn.health.RemoveAllHediffs();
             if (mechanitor != null)
