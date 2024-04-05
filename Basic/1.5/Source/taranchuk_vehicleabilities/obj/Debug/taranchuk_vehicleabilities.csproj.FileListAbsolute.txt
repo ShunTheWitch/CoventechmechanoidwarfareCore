@@ -1,4 +1,0 @@
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.5\Assemblies\taranchuk_vehicleabilities.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.5\Source\taranchuk_vehicleabilities\obj\Debug\taranchuk_vehicleabilities.csproj.AssemblyReference.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.5\Source\taranchuk_vehicleabilities\obj\Debug\taranchuk_vehicleabilities.csproj.CoreCompileInputs.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.5\Source\taranchuk_vehicleabilities\obj\Debug\taranchuk_vehicleabilities.dll
