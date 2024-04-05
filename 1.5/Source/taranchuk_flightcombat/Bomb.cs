@@ -39,7 +39,7 @@ namespace taranchuk_flightcombat
             }
         }
 
-        public override void Draw()
+        public override void DrawAt(Vector3 drawLoc, bool flip = false)
         {
             float num = ArcHeightFactor * GenMath.InverseParabola(DistanceCoveredFraction);
             Vector3 drawPos = DrawPos;
