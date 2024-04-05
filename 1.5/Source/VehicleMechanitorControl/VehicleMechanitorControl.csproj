@@ -89,6 +89,7 @@
     <Compile Include="PawnComponentsUtility_CreateInitialComponents_Patch.cs" />
     <Compile Include="PawnRelationWorker_Overseer_OnRelationCreated_Patch.cs" />
     <Compile Include="PawnRelationWorker_Overseer_OnRelationRemoved_Patch.cs" />
+    <Compile Include="Pawn_IsColonyMechPlayerControlled_Patch.cs" />
     <Compile Include="Pawn_IsColonyMech_Patch.cs" />
     <Compile Include="Pawn_MechanitorTracker_CanCommandTo_Patch.cs" />
     <Compile Include="Pawn_MechanitorTracker_CanControlMechs_Patch.cs" />

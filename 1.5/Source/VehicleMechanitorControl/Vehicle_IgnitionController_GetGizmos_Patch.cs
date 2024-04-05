@@ -15,7 +15,7 @@ namespace VehicleMechanitorControl
                 yield return r;
                 if (r is Command_Toggle toggle && toggle.defaultLabel == __instance.DraftGizmoLabel)
                 {
-                    var comp = __instance.vehicle.GetComp<CompMechanitorControl>();
+                    var comp = __instance.vehicle.OverseerSubject;
                     if (comp != null)
                     {
                         var overseer = __instance.vehicle.GetOverseer();
