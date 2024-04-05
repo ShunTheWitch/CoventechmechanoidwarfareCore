@@ -9,7 +9,8 @@ namespace VehicleMechanitorControl
     {
         public static void Postfix(ref bool __result, Pawn pawn)
         {
-            if (!__result && pawn.Faction.IsPlayerSafe() && (pawn.GetComp<CompMechanitorControl>()?.Props.canBeMechanitor ?? false))
+            if (!__result && pawn.Faction.IsPlayerSafe() 
+                && (pawn.GetComp<CompMechanitorControl>()?.Props.canBeMechanitor ?? false))
             {
                 __result = true;
             }
