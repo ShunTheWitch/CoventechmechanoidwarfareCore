@@ -1,4 +1,0 @@
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.5\Assemblies\taranchuk_mobilecrypto.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.5\Source\taranchuk_mobilecrypto\obj\Debug\taranchuk_mobilecrypto.csproj.AssemblyReference.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.5\Source\taranchuk_mobilecrypto\obj\Debug\taranchuk_mobilecrypto.csproj.CoreCompileInputs.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.5\Source\taranchuk_mobilecrypto\obj\Debug\taranchuk_mobilecrypto.dll
