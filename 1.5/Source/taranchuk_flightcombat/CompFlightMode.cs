@@ -523,12 +523,6 @@ namespace taranchuk_flightcombat
             }
         }
 
-
-        public override void PostPreApplyDamage(DamageInfo dinfo, out bool absorbed)
-        {
-            base.PostPreApplyDamage(dinfo, out absorbed);
-        }
-
         private void ResetFlightData()
         {
             this.clockwiseTurn = null;

@@ -15,11 +15,11 @@ namespace CVN_CorpseCleaner
 			link2 = new MoteAttachLink(b, Vector3.zero);
 		}
 
-		public override void Draw()
-		{
-			UpdatePositionAndRotation();
-			base.Draw();
-		}
+        protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+        {
+            UpdatePositionAndRotation();
+            base.DrawAt(drawLoc, flip);
+        }
 
 		protected void UpdatePositionAndRotation()
 		{
