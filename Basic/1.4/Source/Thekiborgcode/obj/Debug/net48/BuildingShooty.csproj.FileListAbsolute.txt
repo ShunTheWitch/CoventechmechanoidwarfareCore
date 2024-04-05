@@ -1,9 +1,0 @@
-D:\Steam\steamapps\common\RimWorld\Mods\BuildingShooty\1.4\Assemblies\BuildingShooty.dll
-D:\Steam\steamapps\common\RimWorld\Mods\BuildingShooty\1.4\Assemblies\BuildingShooty.pdb
-D:\Steam\steamapps\common\RimWorld\Mods\BuildingShooty\1.4\Source\obj\Debug\net48\BuildingShooty.csproj.AssemblyReference.cache
-D:\Steam\steamapps\common\RimWorld\Mods\BuildingShooty\1.4\Source\obj\Debug\net48\BuildingShooty.GeneratedMSBuildEditorConfig.editorconfig
-D:\Steam\steamapps\common\RimWorld\Mods\BuildingShooty\1.4\Source\obj\Debug\net48\BuildingShooty.AssemblyInfoInputs.cache
-D:\Steam\steamapps\common\RimWorld\Mods\BuildingShooty\1.4\Source\obj\Debug\net48\BuildingShooty.AssemblyInfo.cs
-D:\Steam\steamapps\common\RimWorld\Mods\BuildingShooty\1.4\Source\obj\Debug\net48\BuildingShooty.csproj.CoreCompileInputs.cache
-D:\Steam\steamapps\common\RimWorld\Mods\BuildingShooty\1.4\Source\obj\Debug\net48\BuildingShooty.dll
-D:\Steam\steamapps\common\RimWorld\Mods\BuildingShooty\1.4\Source\obj\Debug\net48\BuildingShooty.pdb

@@ -1,4 +1,0 @@
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Assemblies\taranchuk_projectiletrails.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\taranchuk_projectiletrails\obj\Debug\taranchuk_projectiletrails.csproj.AssemblyReference.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\taranchuk_projectiletrails\obj\Debug\taranchuk_projectiletrails.csproj.CoreCompileInputs.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\taranchuk_projectiletrails\obj\Debug\taranchuk_projectiletrails.dll

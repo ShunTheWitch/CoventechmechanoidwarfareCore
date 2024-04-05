@@ -1,8 +1,0 @@
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Assemblies\VehicleMechanitorControl.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\obj\Debug\VehicleMechanitorControl.csproj.AssemblyReference.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\obj\Debug\VehicleMechanitorControl.csproj.CoreCompileInputs.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\obj\Debug\VehicleMechanitorControl.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\Taranchukcode\obj\Debug\VehicleMechanitorControl.csproj.AssemblyReference.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\Taranchukcode\obj\Debug\VehicleMechanitorControl.csproj.CoreCompileInputs.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\Taranchukcode\obj\Debug\VehicleMechanitorControl.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\Assemblies\VehicleMechanitorControl.dll
