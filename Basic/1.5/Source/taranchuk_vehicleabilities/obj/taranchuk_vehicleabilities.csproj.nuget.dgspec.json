@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_vehicleabilities\\taranchuk_vehicleabilities.csproj": {}
+    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_vehicleabilities\\taranchuk_vehicleabilities.csproj": {}
   },
   "projects": {
-    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_vehicleabilities\\taranchuk_vehicleabilities.csproj": {
+    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_vehicleabilities\\taranchuk_vehicleabilities.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_vehicleabilities\\taranchuk_vehicleabilities.csproj",
+        "projectUniqueName": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_vehicleabilities\\taranchuk_vehicleabilities.csproj",
         "projectName": "taranchuk_vehicleabilities",
-        "projectPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_vehicleabilities\\taranchuk_vehicleabilities.csproj",
+        "projectPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_vehicleabilities\\taranchuk_vehicleabilities.csproj",
         "packagesPath": "C:\\Users\\Vova\\.nuget\\packages\\",
-        "outputPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_vehicleabilities\\obj\\",
+        "outputPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_vehicleabilities\\obj\\",
         "projectStyle": "PackageReference",
         "skipContentFileWrite": true,
         "configFilePaths": [
@@ -29,6 +29,11 @@
           "net48": {
             "projectReferences": {}
           }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
         }
       },
       "frameworks": {
@@ -42,7 +47,7 @@
             },
             "Krafs.Rimworld.Ref": {
               "target": "Package",
-              "version": "[1.4.*, )"
+              "version": "[1.5.4055-beta, )"
             },
             "Lib.Harmony": {
               "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",

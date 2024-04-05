@@ -1,5 +1,0 @@
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\Assemblies\taranchuk_ocean.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\taranchuk_ocean\obj\Debug\taranchuk_ocean.csproj.AssemblyReference.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\taranchuk_ocean\obj\Debug\taranchuk_ocean.csproj.CoreCompileInputs.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Source\taranchuk_ocean\obj\Debug\taranchuk_ocean.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore\Basic\1.4\Assemblies\taranchuk_ocean.dll

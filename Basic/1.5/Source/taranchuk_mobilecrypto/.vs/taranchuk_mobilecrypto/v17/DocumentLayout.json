@@ -3,23 +3,8 @@
   "WorkspaceRootPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}|taranchuk_mobilecrypto.csproj|c:\\program files (x86)\\steam\\steamapps\\common\\rimworld\\mods\\coventechmechanoidwarfarecore\\basic\\1.5\\source\\taranchuk_mobilecrypto\\compmobilecrypto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}|taranchuk_mobilecrypto.csproj|solutionrelative:compmobilecrypto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}|taranchuk_mobilecrypto.csproj|C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\jobdriver_releasepawn.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}|taranchuk_mobilecrypto.csproj|solutionrelative:jobdriver_releasepawn.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}|taranchuk_mobilecrypto.csproj|C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\jobdriver_capturepawn.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}|taranchuk_mobilecrypto.csproj|solutionrelative:jobdriver_capturepawn.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}|taranchuk_mobilecrypto.csproj|C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecryptomod.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}|taranchuk_mobilecrypto.csproj|c:\\program files (x86)\\steam\\steamapps\\common\\rimworld\\mods\\coventechmechanoidwarfarecore\\basic\\1.5\\source\\taranchuk_mobilecrypto\\taranchuk_mobilecryptomod.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}|taranchuk_mobilecrypto.csproj|solutionrelative:taranchuk_mobilecryptomod.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|taranchuk_mobilecrypto||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     }
   ],
   "DocumentGroupContainers": [
@@ -29,67 +14,20 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "JobDriver_ReleasePawn.cs",
-              "DocumentMoniker": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\JobDriver_ReleasePawn.cs",
-              "RelativeDocumentMoniker": "JobDriver_ReleasePawn.cs",
-              "ToolTip": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\JobDriver_ReleasePawn.cs",
-              "RelativeToolTip": "JobDriver_ReleasePawn.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAABQAAAAPAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-04-05T18:59:10.354Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "JobDriver_CapturePawn.cs",
-              "DocumentMoniker": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\JobDriver_CapturePawn.cs",
-              "RelativeDocumentMoniker": "JobDriver_CapturePawn.cs",
-              "ToolTip": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\JobDriver_CapturePawn.cs",
-              "RelativeToolTip": "JobDriver_CapturePawn.cs",
-              "ViewState": "AQIAABkAAAAAAAAAAAAAABAAAAAMAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-04-05T18:59:10.442Z"
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "CompMobileCrypto.cs",
-              "DocumentMoniker": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\CompMobileCrypto.cs",
-              "RelativeDocumentMoniker": "CompMobileCrypto.cs",
-              "ToolTip": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\CompMobileCrypto.cs",
-              "RelativeToolTip": "CompMobileCrypto.cs",
-              "ViewState": "AQIAAIEAAAAAAAAAAAAwwJcAAAAJAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-04-05T18:59:10.531Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
               "Title": "taranchuk_mobilecryptoMod.cs",
               "DocumentMoniker": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecryptoMod.cs",
               "RelativeDocumentMoniker": "taranchuk_mobilecryptoMod.cs",
               "ToolTip": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecryptoMod.cs",
               "RelativeToolTip": "taranchuk_mobilecryptoMod.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAwAAAAFAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-04-05T18:59:10.589Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "taranchuk_mobilecrypto",
-              "DocumentMoniker": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj",
-              "RelativeDocumentMoniker": "taranchuk_mobilecrypto.csproj",
-              "ToolTip": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj",
-              "RelativeToolTip": "taranchuk_mobilecrypto.csproj",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2024-03-06T17:04:30.125Z"
+              "WhenOpened": "2024-04-05T19:06:31.599Z",
+              "EditorCaption": ""
             }
           ]
         }

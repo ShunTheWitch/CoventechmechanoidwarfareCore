@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj": {}
+    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj": {}
   },
   "projects": {
-    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj": {
+    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj",
+        "projectUniqueName": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj",
         "projectName": "taranchuk_mobilecrypto",
-        "projectPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj",
+        "projectPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\taranchuk_mobilecrypto.csproj",
         "packagesPath": "C:\\Users\\Vova\\.nuget\\packages\\",
-        "outputPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.4\\Source\\taranchuk_mobilecrypto\\obj\\",
+        "outputPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld\\Mods\\CoventechmechanoidwarfareCore\\Basic\\1.5\\Source\\taranchuk_mobilecrypto\\obj\\",
         "projectStyle": "PackageReference",
         "skipContentFileWrite": true,
         "configFilePaths": [
@@ -29,6 +29,11 @@
           "net48": {
             "projectReferences": {}
           }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
         }
       },
       "frameworks": {
@@ -42,7 +47,7 @@
             },
             "Krafs.Rimworld.Ref": {
               "target": "Package",
-              "version": "[1.4.*, )"
+              "version": "[1.5.4055-beta, )"
             },
             "Lib.Harmony": {
               "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",

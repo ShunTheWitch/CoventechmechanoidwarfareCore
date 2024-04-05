@@ -1,6 +1,0 @@
-D:\games\steam game\steamapps\common\RimWorld\Mods\MakaiTech dev\Source\CVN_CorpseCleaner\bin\Debug\CVN_CorpseCleaner.dll
-D:\games\steam game\steamapps\common\RimWorld\Mods\MakaiTech dev\Source\CVN_CorpseCleaner\obj\Debug\CVN_CorpseCleaner.csproj.AssemblyReference.cache
-D:\games\steam game\steamapps\common\RimWorld\Mods\MakaiTech dev\Source\CVN_CorpseCleaner\obj\Debug\CVN_CorpseCleaner.csproj.CoreCompileInputs.cache
-D:\games\steam game\steamapps\common\RimWorld\Mods\MakaiTech dev\Source\CVN_CorpseCleaner\obj\Debug\CVN_CorpseCleaner.dll
-D:\games\steam game\steamapps\common\RimWorld\Mods\CVN-Mechanoid-Combined-Arms-Warfare\Basic\1.4\Assemblies\CVN_CorpseCleaner.dll
-D:\games\steam game\steamapps\common\RimWorld\Mods\MakaiTech\Content\Assemblies\CVN_CorpseCleaner.dll
