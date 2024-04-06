@@ -1,28 +1,31 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Defs>
 
-  <AbilityDef>
+  <AbilityDef Name="CVN_MechanitorAbility" Abstract="True">
+    <hostile>false</hostile>
+    <verbProperties>
+      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
+      <violent>false</violent>
+      <targetParams>
+        <canTargetPawns>true</canTargetPawns>
+        <canTargetBuildings>false</canTargetBuildings>
+        <canTargetCorpses>false</canTargetCorpses>
+      </targetParams>
+    </verbProperties>
+  </AbilityDef>
+
+  <AbilityDef ParentName="CVN_MechanitorAbility">
     <defName>CVN_ControlMech</defName>
     <label>control mech</label>
     <description>text.</description>
     <iconPath>UI/Abilities/MechLongJump</iconPath>
     <cooldownTicksRange>480</cooldownTicksRange>
-    <hostile>false</hostile>
     <verbProperties>
-      <verbClass>Verb_CastAbility</verbClass>
+      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
       <label>control mech</label>
-      <violent>false</violent>
       <warmupTime>5</warmupTime>
       <requireLineOfSight>false</requireLineOfSight>
       <range>100</range>
-      <targetParams>
-        <canTargetPawns>true</canTargetPawns>
-        <canTargetBuildings>false</canTargetBuildings>
-        <canTargetCorpses>false</canTargetCorpses>
-        <canTargetAnimals>false</canTargetAnimals>
-        <canTargetHumans>false</canTargetHumans>
-        <canTargetMechs>true</canTargetMechs>
-      </targetParams>
     </verbProperties>
 	<comps>
 		<li Class="VehicleMechanitorControl.CompProperties_ControlMech">
@@ -30,28 +33,18 @@
 	</comps>
   </AbilityDef>
   
-  <AbilityDef>
+  <AbilityDef ParentName="CVN_MechanitorAbility">
     <defName>CVN_RepairMech</defName>
     <label>repair mech</label>
     <description>text.</description>
     <iconPath>UI/Abilities/MechLongJump</iconPath>
     <cooldownTicksRange>480</cooldownTicksRange>
-    <hostile>false</hostile>
     <verbProperties>
-      <verbClass>Verb_CastAbility</verbClass>
+      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
       <label>repair mech</label>
-      <violent>false</violent>
       <warmupTime>10</warmupTime>
       <range>100</range>
       <requireLineOfSight>false</requireLineOfSight>
-      <targetParams>
-        <canTargetPawns>true</canTargetPawns>
-        <canTargetBuildings>false</canTargetBuildings>
-        <canTargetCorpses>false</canTargetCorpses>
-        <canTargetAnimals>false</canTargetAnimals>
-        <canTargetHumans>false</canTargetHumans>
-        <canTargetMechs>true</canTargetMechs>
-      </targetParams>
     </verbProperties>
 	<comps>
 		<li Class="VehicleMechanitorControl.CompProperties_RepairMech">
@@ -59,28 +52,18 @@
 	</comps>
   </AbilityDef>
   
-  <AbilityDef>
+  <AbilityDef ParentName="CVN_MechanitorAbility">
     <defName>CVN_DisassembleMech</defName>
     <label>disassemble mech</label>
     <description>text.</description>
     <iconPath>UI/Abilities/MechLongJump</iconPath>
     <cooldownTicksRange>480</cooldownTicksRange>
-    <hostile>false</hostile>
     <verbProperties>
-      <verbClass>Verb_CastAbility</verbClass>
+      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
       <label>disassemble mech</label>
-      <violent>false</violent>
       <warmupTime>5</warmupTime>
       <range>100</range>
       <requireLineOfSight>false</requireLineOfSight>
-      <targetParams>
-        <canTargetPawns>true</canTargetPawns>
-        <canTargetBuildings>false</canTargetBuildings>
-        <canTargetCorpses>false</canTargetCorpses>
-        <canTargetAnimals>false</canTargetAnimals>
-        <canTargetHumans>false</canTargetHumans>
-        <canTargetMechs>true</canTargetMechs>
-      </targetParams>
     </verbProperties>
 	<comps>
 		<li Class="VehicleMechanitorControl.CompProperties_DisassembleMech">
@@ -88,30 +71,21 @@
 	</comps>
   </AbilityDef>
   
-  <AbilityDef>
+  <AbilityDef ParentName="CVN_MechanitorAbility">
     <defName>CVN_DisconnectMech</defName>
     <label>disconnect mech</label>
     <description>text.</description>
     <iconPath>UI/Abilities/MechLongJump</iconPath>
     <cooldownTicksRange>480</cooldownTicksRange>
-    <hostile>false</hostile>
     <verbProperties>
-      <verbClass>Verb_CastAbility</verbClass>
+      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
       <label>disconnect mech</label>
-      <violent>false</violent>
       <range>100</range>
-      <targetParams>
-        <canTargetPawns>true</canTargetPawns>
-        <canTargetBuildings>false</canTargetBuildings>
-        <canTargetCorpses>false</canTargetCorpses>
-        <canTargetAnimals>false</canTargetAnimals>
-        <canTargetHumans>false</canTargetHumans>
-        <canTargetMechs>true</canTargetMechs>
-      </targetParams>
     </verbProperties>
 	<comps>
 		<li Class="VehicleMechanitorControl.CompProperties_DisconnectMech">
 		</li>
 	</comps>
   </AbilityDef>
+  
 </Defs>

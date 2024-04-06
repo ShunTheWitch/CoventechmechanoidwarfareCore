@@ -29,11 +29,11 @@ namespace VehicleMechanitorControl
         {
             base.PostDraw();
             Pawn overseer = Pawn.GetOverseer();
-            if (overseer != null)
+            if (overseer?.mechanitor != null)
             {
                 foreach (var pawn in overseer.mechanitor.ControlledPawns)
                 {
-                    if (pawn.OverseerSubject.Overseer == overseer)
+                    if (pawn.OverseerSubject?.Overseer == overseer)
                     {
                         if (pawn is VehiclePawn vehicle)
                         {
@@ -73,6 +73,19 @@ namespace VehicleMechanitorControl
                 foreach (Gizmo mechGizmo in MechanitorUtility.GetMechGizmos(Pawn))
                 {
                     yield return mechGizmo;
+                }
+            }
+        }
+
+        public override void CompTick()
+        {
+            base.CompTick();
+            if (Pawn.IsHashIntervalTick(60))
+            {
+                var hediffNode = Pawn.health.hediffSet.GetFirstHediffOfDef(CVN_DefOf.BandNode) as Hediff_BandNode;
+                if (hediffNode != null)
+                {
+                    hediffNode.RecacheBandNodes();
                 }
             }
         }

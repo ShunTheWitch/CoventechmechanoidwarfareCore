@@ -95,9 +95,11 @@
     <Compile Include="Pawn_MechanitorTracker_CanControlMechs_Patch.cs" />
     <Compile Include="Pawn_OverseerSubject_Patch.cs" />
     <Compile Include="Pawn_ThreatDisabled_Patch.cs" />
+    <Compile Include="Startup.cs" />
     <Compile Include="VehicleMechanitorControlMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Vehicle_IgnitionController_GetGizmos_Patch.cs" />
+    <Compile Include="Verb_CastAbilityVehicle.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

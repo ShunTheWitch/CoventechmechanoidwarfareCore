@@ -2,6 +2,7 @@
 using RimWorld;
 using System.Linq;
 using System.Reflection;
+using Verse;
 
 namespace VehicleMechanitorControl
 {
@@ -23,6 +24,8 @@ namespace VehicleMechanitorControl
                 {
                     __instance.pawn.health.AddHediff(CVN_DefOf.BandNode, __instance.pawn.health.hediffSet.GetBrain());
                 }
+                var hediffNode = __instance.pawn.health.hediffSet.GetFirstHediffOfDef(CVN_DefOf.BandNode) as Hediff_BandNode;
+                hediffNode.RecacheBandNodes();
             }
         }
     }

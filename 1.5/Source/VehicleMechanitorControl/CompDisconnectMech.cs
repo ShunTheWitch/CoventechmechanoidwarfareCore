@@ -15,7 +15,7 @@ namespace VehicleMechanitorControl
         public override bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
         {
             var mech = target.Pawn;
-            return mech.IsColonyMech && !mech.IsFighting() && mech.GetOverseer() == parent.pawn;
+            return mech.GetOverseer() == parent.pawn;
         }
 
         public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
