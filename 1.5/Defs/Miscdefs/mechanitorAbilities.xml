@@ -21,7 +21,6 @@
     <iconPath>UI/Abilities/MechLongJump</iconPath>
     <cooldownTicksRange>480</cooldownTicksRange>
     <verbProperties>
-      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
       <label>control mech</label>
       <warmupTime>5</warmupTime>
       <requireLineOfSight>false</requireLineOfSight>
@@ -40,7 +39,6 @@
     <iconPath>UI/Abilities/MechLongJump</iconPath>
     <cooldownTicksRange>480</cooldownTicksRange>
     <verbProperties>
-      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
       <label>repair mech</label>
       <warmupTime>10</warmupTime>
       <range>100</range>
@@ -59,7 +57,6 @@
     <iconPath>UI/Abilities/MechLongJump</iconPath>
     <cooldownTicksRange>480</cooldownTicksRange>
     <verbProperties>
-      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
       <label>disassemble mech</label>
       <warmupTime>5</warmupTime>
       <range>100</range>
@@ -78,7 +75,6 @@
     <iconPath>UI/Abilities/MechLongJump</iconPath>
     <cooldownTicksRange>480</cooldownTicksRange>
     <verbProperties>
-      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
       <label>disconnect mech</label>
       <range>100</range>
     </verbProperties>
