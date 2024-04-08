@@ -24,10 +24,9 @@ namespace VehicleMechanitorControl
         {
             base.Apply(target, dest);
             var mech = target.Pawn;
-            while (MechRepairUtility.CanRepair(mech))
+            while (MechRepairUtility.GetHediffToHeal(mech) is Hediff hediffToHeal)
             {
-                mech.needs.energy.CurLevel -= mech.GetStatValue(StatDefOf.MechEnergyLossPerHP);
-                MechRepairUtility.RepairTick(mech);
+                mech.health.RemoveHediff(hediffToHeal);
             }
         }
     }
