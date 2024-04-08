@@ -15,14 +15,20 @@ namespace VehicleMechanitorControl
         public override bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
         {
             var mech = target.Pawn;
-            return mech.IsColonyMech && !mech.IsFighting() && mech.GetOverseer() == parent.pawn;
+            return mech.GetOverseer() == parent.pawn;
         }
 
         public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
         {
             base.Apply(target, dest);
             var mech = target.Pawn;
-            foreach (ThingDefCountClass item in MechanitorUtility.IngredientsFromDisassembly(mech.def))
+
+            var costList = MechanitorUtility.IngredientsFromDisassembly(mech.def);
+            if (costList.Empty())
+            {
+                costList = mech.CostListAdjusted();
+            }
+            foreach (ThingDefCountClass item in costList)
             {
                 Thing thing = ThingMaker.MakeThing(item.thingDef);
                 thing.stackCount = item.count;
@@ -31,7 +37,7 @@ namespace VehicleMechanitorControl
             mech.forceNoDeathNotification = true;
             mech.Kill(null, null);
             mech.forceNoDeathNotification = false;
-            mech.Corpse.Destroy();
+            mech.Corpse?.Destroy();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using RimWorld;
+using Vehicles;
 using Verse;
 
 namespace VehicleMechanitorControl
@@ -16,17 +17,16 @@ namespace VehicleMechanitorControl
         public override bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
         {
             var mech = target.Pawn;
-            return mech.IsColonyMech && MechRepairUtility.CanRepair(mech);
+            return mech.IsColonyMech && mech is not VehiclePawn && MechRepairUtility.CanRepair(mech);
         }
 
         public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
         {
             base.Apply(target, dest);
             var mech = target.Pawn;
-            while (MechRepairUtility.CanRepair(mech))
+            while (MechRepairUtility.GetHediffToHeal(mech) is Hediff hediffToHeal)
             {
-                mech.needs.energy.CurLevel -= mech.GetStatValue(StatDefOf.MechEnergyLossPerHP);
-                MechRepairUtility.RepairTick(mech);
+                mech.health.RemoveHediff(hediffToHeal);
             }
         }
     }

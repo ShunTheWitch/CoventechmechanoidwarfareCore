@@ -14,7 +14,7 @@ namespace VehicleMechanitorControl
             if (!__result)
             {
                 Pawn overseer = mech.GetOverseer();
-                if (overseer != null)
+                if (overseer?.mechanitor != null)
                 {
                     foreach (var pawn in overseer.mechanitor.ControlledPawns)
                     {

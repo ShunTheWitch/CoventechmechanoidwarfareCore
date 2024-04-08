@@ -1,7 +1,5 @@
 ﻿using HarmonyLib;
-using System.Linq;
 using UnityEngine;
-using Vehicles;
 using Verse;
 
 namespace VehicleMechanitorControl
@@ -13,5 +11,4 @@ namespace VehicleMechanitorControl
 			new Harmony("VehicleMechanitorControlMod").PatchAll();
         }
     }
-
 }
