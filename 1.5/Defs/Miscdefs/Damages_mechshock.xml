@@ -46,7 +46,27 @@
     <corpseDamageFactor>0</corpseDamageFactor>
     <combatLogRules>Damage_Flame</combatLogRules>
     <hediff>Burn</hediff>
-
+	<modExtensions>
+		<li Class="taranchuk_damageTiers.DamageExtension">
+			<damagesByMass>
+				<li>
+					<minimumMass>50</minimumMass>
+					<damageAmount>25</damageAmount>
+					<damageDef>MechElectwo</damageDef>
+				</li>
+				<li>
+					<minimumMass>100</minimumMass>
+					<damageAmount>30</damageAmount>
+					<damageDef>MechElectwo</damageDef>
+				</li>
+				<li>
+					<minimumMass>200</minimumMass>
+					<damageAmount>50</damageAmount>
+					<damageDef>MechElectwo</damageDef>
+				</li>
+			</damagesByMass>
+		</li>
+	</modExtensions>
   </DamageDef>
 
 

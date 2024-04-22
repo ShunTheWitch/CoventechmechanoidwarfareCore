@@ -1,4 +1,5 @@
 ﻿using RimWorld;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -6,8 +7,17 @@ using Verse;
 
 namespace taranchuk_lasers
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class HotSwappableAttribute : Attribute
+    {
+    }
+
+    [HotSwappable]
     public class LaserProjectile : Projectile
     {
+        public Vector3 originOld;
+        public Vector3 launcherPosOld;
+        public float launcherAngleOld;
         public int launchTick;
         public float originAngle;
         public Vector3 originDest;
@@ -25,8 +35,11 @@ namespace taranchuk_lasers
             originAngle = ExactRotation.eulerAngles.y;
             angleOffset = LaserProperties.sweepRatePerTick;
             originDest = destination;
+            launcherPosOld = launcher.DrawPos;
+            launcherAngleOld = Utilities.GetBodyAngle(launcher);
+            originOld = origin;
         }
-
+        
         private float GetAngleFromTarget(Vector3 target)
         {
             var targetAngle = (origin.Yto0() - target.Yto0()).AngleFlat() - 180f;
@@ -114,6 +127,7 @@ namespace taranchuk_lasers
         public override void Tick()
         {
             base.Tick();
+            LockOnCaster();
             textureScroll += LaserProperties.textureScrollOffsetPerTick;
             if (LaserProperties.damageTickRate > 0 && this.IsHashIntervalTick(LaserProperties.damageTickRate))
             {
@@ -153,6 +167,15 @@ namespace taranchuk_lasers
                 shouldBeDestroyed = true;
                 Destroy();
             }
+        }
+
+        private void LockOnCaster()
+        {
+            var bodyAngle = Utilities.GetBodyAngle(launcher);
+            var drawPos = launcher.DrawPos.Yto0();
+            var angleDiff = bodyAngle - launcherAngleOld;
+            var originOffset = (originOld.Yto0() - launcherPosOld.Yto0()).RotatedBy(angleDiff);
+            origin = drawPos + originOffset;
         }
 
         private void DoSweep()
@@ -286,6 +309,8 @@ namespace taranchuk_lasers
             Scribe_Values.Look(ref originAngle, "originAngle");
             Scribe_Values.Look(ref angleOffset, "angleOffset");
             Scribe_Values.Look(ref originDest, "originDest");
+            Scribe_Values.Look(ref launcherPosOld, "launcherPosOld");
+            Scribe_Values.Look(ref launcherAngleOld, "launcherAngleOld");
         }
     }
 }
