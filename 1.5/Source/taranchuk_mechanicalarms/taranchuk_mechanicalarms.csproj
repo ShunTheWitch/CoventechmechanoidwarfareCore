@@ -7,8 +7,8 @@
     <ProjectGuid>{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>taranchuk_lasers</RootNamespace>
-    <AssemblyName>taranchuk_lasers</AssemblyName>
+    <RootNamespace>taranchuk_mechanicalarms</RootNamespace>
+    <AssemblyName>taranchuk_mechanicalarms</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -47,15 +47,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="taranchuk_flightcombat, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Assemblies\taranchuk_flightcombat.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Vehicles">
-      <HintPath>..\..\..\..\Vehicle-Framework\1.5\Assemblies\Vehicles.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Krafs.Publicizer" Version="2.*">
@@ -71,10 +62,14 @@
     <Publicize Include="Assembly-CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LaserProjectile.cs" />
-    <Compile Include="LaserProperties.cs" />
-    <Compile Include="Utilities.cs" />
+    <Compile Include="ArmSegment.cs" />
+    <Compile Include="ArmSegmentProps.cs" />
+    <Compile Include="CompMechanicalArms.cs" />
+    <Compile Include="MechanicalArm.cs" />
+    <Compile Include="MechanicalArmProps.cs" />
+    <Compile Include="taranchuk_mechanicalarmsMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
