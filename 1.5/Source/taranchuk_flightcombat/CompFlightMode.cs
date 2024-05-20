@@ -614,19 +614,7 @@ namespace taranchuk_flightcombat
                 if (curPositionIntVec != Vehicle.Position && curPositionIntVec.InBounds(Vehicle.Map))
                 {
                     var occupiedRect = Vehicle.OccupiedRect();
-                    CellRect cellRect = Vehicle.OccupiedRect();
-                    for (int i = cellRect.minZ; i <= cellRect.maxZ; i++)
-                    {
-                        for (int j = cellRect.minX; j <= cellRect.maxX; j++)
-                        {
-                            if (new IntVec3(j, 0, i).InBounds(Vehicle.Map) is false)
-                            {
-                                return;
-                            }
-                        }
-                    }
-
-                    if (occupiedRect.MovedBy(curPositionIntVec.ToIntVec2 - Vehicle.Position.ToIntVec2).InBounds(Vehicle.Map))
+                    if (occupiedRect.MovedBy(curPositionIntVec.ToIntVec2 - Vehicle.Position.ToIntVec2).InBoundsLocal(Vehicle.Map))
                     {
                         try
                         {
