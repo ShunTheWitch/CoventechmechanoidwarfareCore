@@ -18,12 +18,29 @@ namespace taranchuk_flightcombat
                 if (comp != null && PawnsArrivalModeWorker_Arrive_Patch.TryResolveRaidSpawnCenter(map, out var spawnPos))
                 {
                     newThing = skyfaller.vehicle;
-                    if (comp.Props.flightCommands.hoverMode != null)
+                    if (GenAdj.OccupiedRect(spawnPos, newThing.Rotation, newThing.def.size)
+                        .InBoundsLocal(map) is false)
                     {
-                        comp.SetHoverMode(true);
+                        foreach (var cell in GenRadial.RadialCellsAround(spawnPos, 5, true))
+                        {
+                            if (GenAdj.OccupiedRect(cell, newThing.Rotation, newThing.def.size).InBoundsLocal(map))
+                            {
+                                spawnPos = cell;
+                                break;
+                            }
+                        }
                     }
-                    comp.CurAngle = (loc - spawnPos).AngleFlat - comp.FlightAngleOffset;
-                    comp.SetTarget(loc);
+
+                    if (comp.flightMode == FlightMode.Flight)
+                    {
+                        comp.CurAngle = (map.Center - spawnPos).AngleFlat - comp.FlightAngleOffset;
+                        comp.SetTarget(map.Center);
+                    }
+                    else
+                    {
+                        comp.CurAngle = (loc - spawnPos).AngleFlat - comp.FlightAngleOffset;
+                        comp.SetTarget(loc);
+                    }
                     loc = spawnPos;
                 }
             }
