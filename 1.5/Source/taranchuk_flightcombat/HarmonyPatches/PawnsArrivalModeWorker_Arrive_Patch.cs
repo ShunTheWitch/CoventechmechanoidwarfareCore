@@ -27,45 +27,47 @@ namespace taranchuk_flightcombat
 
         public static void Prefix(List<Pawn> pawns, IncidentParms parms)
         {
-            Map map = (Map)parms.target;
-            var worker = parms.raidArrivalMode.Worker;
-            IntVec3 spawnCenter;
-            if (parms.spawnCenter.IsValid is false || (worker is not PawnsArrivalModeWorker_EdgeDrop 
-                && worker is not PawnsArrivalModeWorker_EdgeWalkIn))
+            if (parms?.raidArrivalMode != null)
             {
-                TryResolveRaidSpawnCenter((Map)parms.target, out spawnCenter);
-            }
-            else
-            {
-                spawnCenter = parms.spawnCenter;
-            }
-            var spawnRotation = Rot4.FromAngleFlat((map.Center - spawnCenter).AngleFlat);
-            for (int i = pawns.Count - 1; i >= 0; i--)
-            {
-                var pawn = pawns[i];
-                if (pawn is VehiclePawn)
+                Map map = (Map)parms.target;
+                var worker = parms.raidArrivalMode.Worker;
+                IntVec3 spawnCenter;
+                if (parms.spawnCenter.IsValid is false || (worker is not PawnsArrivalModeWorker_EdgeDrop
+                    && worker is not PawnsArrivalModeWorker_EdgeWalkIn))
                 {
-                    var comp = pawn.TryGetComp<CompFlightMode>();
-                    if (comp != null)
+                    TryResolveRaidSpawnCenter((Map)parms.target, out spawnCenter);
+                }
+                else
+                {
+                    spawnCenter = parms.spawnCenter;
+                }
+                var spawnRotation = Rot4.FromAngleFlat((map.Center - spawnCenter).AngleFlat);
+                for (int i = pawns.Count - 1; i >= 0; i--)
+                {
+                    var pawn = pawns[i];
+                    if (pawn is VehiclePawn)
                     {
-                        var maxSize = Mathf.Max(pawn.def.Size.x, pawn.def.Size.z);
-                        CellFinder.TryFindRandomCellNear(spawnCenter, map, Mathf.Max(8, maxSize),
-                            delegate (IntVec3 x)
+                        var comp = pawn.TryGetComp<CompFlightMode>();
+                        if (comp != null)
                         {
-                            return GenAdj.OccupiedRect(x, spawnRotation, new IntVec2(maxSize, maxSize)).ExpandedBy(1).Cells.All(x => x.InBounds(map));
-                        }, out var loc);
-                        GenSpawn.Spawn(pawn, loc, map, spawnRotation);
-                        if (comp.Props.AISettings?.gunshipSettings?.gunshipMode == GunshipMode.Hovering)
-                        {
-                            comp.SetHoverMode(true);
+                            var maxSize = Mathf.Max(pawn.def.Size.x, pawn.def.Size.z);
+                            CellFinder.TryFindRandomCellNear(spawnCenter, map, Mathf.Max(8, maxSize),
+                                delegate (IntVec3 x)
+                                {
+                                    return GenAdj.OccupiedRect(x, spawnRotation, new IntVec2(maxSize, maxSize)).ExpandedBy(1).Cells.All(x => x.InBounds(map));
+                                }, out var loc);
+                            GenSpawn.Spawn(pawn, loc, map, spawnRotation);
+                            if (comp.Props.AISettings?.gunshipSettings?.gunshipMode == GunshipMode.Hovering)
+                            {
+                                comp.SetHoverMode(true);
+                            }
+                            else
+                            {
+                                comp.SetFlightMode(true);
+                            }
+                            comp.takeoffProgress = 1f;
+                            pawns.RemoveAt(i);
                         }
-                        else
-                        {
-                            comp.SetFlightMode(true);
-                        }
-                        comp.takeoffProgress = 1f;
-                        pawns.RemoveAt(i);
-                        Log.Message("Spawning " + pawn + " at " + loc + " with mode: " + comp.flightMode + " - spawn center: " + spawnCenter);
                     }
                 }
             }

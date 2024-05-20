@@ -611,31 +611,49 @@ namespace taranchuk_flightcombat
                 SpawnFlecks();
                 
                 var curPositionIntVec = curPosition.ToIntVec3();
-                if (curPositionIntVec != Vehicle.Position)
+                if (curPositionIntVec != Vehicle.Position && curPositionIntVec.InBounds(Vehicle.Map))
                 {
                     var occupiedRect = Vehicle.OccupiedRect();
-                    if (occupiedRect.MovedBy(curPositionIntVec.ToIntVec2 - Vehicle.Position.ToIntVec2).InBounds(Vehicle.Map))
+                    CellRect cellRect = Vehicle.OccupiedRect();
+                    for (int i = cellRect.minZ; i <= cellRect.maxZ; i++)
                     {
-                        Vehicle.Position = curPositionIntVec;
-                        Vehicle.vehiclePather.nextCell = curPositionIntVec;
-                        bool shouldRefreshCosts = false;
-                        foreach (var cell in occupiedRect.ExpandedBy(Vehicle.RotatedSize.x))
+                        for (int j = cellRect.minX; j <= cellRect.maxX; j++)
                         {
-                            if (cell.InBounds(Vehicle.Map))
+                            if (new IntVec3(j, 0, i).InBounds(Vehicle.Map) is false)
                             {
-                                var grid = Vehicle.Map.thingGrid.thingGrid[Vehicle.Map.cellIndices.CellToIndex(cell)];
-                                var vehicle = grid.OfType<VehiclePawn>().Where(x => x == this.Vehicle).FirstOrDefault();
-                                if (vehicle != null && Vehicle.OccupiedRect().Contains(cell) is false)
-                                {
-                                    grid.Remove(vehicle);
-                                    shouldRefreshCosts = true;
-                                }
+                                return;
                             }
                         }
-        
-                        if (shouldRefreshCosts)
+                    }
+
+                    if (occupiedRect.MovedBy(curPositionIntVec.ToIntVec2 - Vehicle.Position.ToIntVec2).InBounds(Vehicle.Map))
+                    {
+                        try
                         {
-                            PathingHelper.RecalculateAllPerceivedPathCosts(Vehicle.Map);
+                            Vehicle.Position = curPositionIntVec;
+                            Vehicle.vehiclePather.nextCell = curPositionIntVec;
+                            bool shouldRefreshCosts = false;
+                            foreach (var cell in occupiedRect.ExpandedBy(Vehicle.RotatedSize.x))
+                            {
+                                if (cell.InBounds(Vehicle.Map))
+                                {
+                                    var grid = Vehicle.Map.thingGrid.thingGrid[Vehicle.Map.cellIndices.CellToIndex(cell)];
+                                    var vehicle = grid.OfType<VehiclePawn>().Where(x => x == this.Vehicle).FirstOrDefault();
+                                    if (vehicle != null && Vehicle.OccupiedRect().Contains(cell) is false)
+                                    {
+                                        grid.Remove(vehicle);
+                                        shouldRefreshCosts = true;
+                                    }
+                                }
+                            }
+                            if (shouldRefreshCosts)
+                            {
+                                PathingHelper.RecalculateAllPerceivedPathCosts(Vehicle.Map);
+                            }
+                        }
+                        catch
+                        {
+
                         }
                     }
                     else if (GoingToWorld)
