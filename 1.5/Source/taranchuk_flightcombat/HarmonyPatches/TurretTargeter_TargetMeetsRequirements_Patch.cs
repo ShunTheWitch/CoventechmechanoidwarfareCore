@@ -4,6 +4,7 @@ using Verse;
 
 namespace taranchuk_flightcombat
 {
+
     [HotSwappable]
     [HarmonyPatch(typeof(TurretTargeter), "TargetMeetsRequirements")]
     public static class TurretTargeter_TargetMeetsRequirements_Patch
