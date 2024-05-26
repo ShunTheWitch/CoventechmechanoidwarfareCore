@@ -3,6 +3,6 @@
 	<v1.5>
     <li>/</li>
     <li>1.5</li>
-<li IfModActive="ShunTheWitch.CVNmechanoidnavalwarfare,ShunTheWitch.CVNmechanoidcombinedwarfare,ShunTheWitch.CVNLeviathansone">Coven</li>
+<li IfModActive="ShunTheWitch.CVNmechanoidnavalwarfare,ShunTheWitch.CVNupdatedmechanoidcombinedwarfare,ShunTheWitch.CVNDreamWarfare,ShunTheWitch.CVNLeviathansone">Coven</li>
 	</v1.5>
 </loadFolders>
