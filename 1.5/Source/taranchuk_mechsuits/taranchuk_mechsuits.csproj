@@ -7,8 +7,8 @@
     <ProjectGuid>{97FA1308-3ED7-41D8-827D-0CC3A3291EE8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>taranchuk_ablativehealth</RootNamespace>
-    <AssemblyName>taranchuk_ablativehealth</AssemblyName>
+    <RootNamespace>taranchuk_mechsuits</RootNamespace>
+    <AssemblyName>taranchuk_mechsuits</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -25,7 +25,7 @@
     <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\Assemblies\</OutputPath>
+    <OutputPath>..\..\Assemblies\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -62,7 +62,10 @@
     <Publicize Include="Assembly-CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="taranchuk_ablativehealthMod.cs" />
+    <Compile Include="CompMechSuit.cs" />
+    <Compile Include="ITab_MechSuit.cs" />
+    <Compile Include="MechPart.cs" />
+    <Compile Include="taranchuk_mechsuitsMod.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
