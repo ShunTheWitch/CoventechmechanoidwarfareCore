@@ -59,7 +59,8 @@ namespace taranchuk_nomadcrafting
                     doer.inventory.innerContainer.TryAdd(thing);
                 }
             }
-
+            
+            this.bill.billStack.billGiver = new Building_WorkTableAutonomous(); // Ignore this, its purely being set to avoid an NPE/cast exception, your never setting it so it *should* be fine to replace
             this.bill.Notify_BillWorkFinished(doer);
             this.bill.Notify_IterationCompleted(doer, consumedIngredients);
         }
