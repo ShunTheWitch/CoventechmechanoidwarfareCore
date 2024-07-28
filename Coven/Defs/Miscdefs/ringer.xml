@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+<ThingDef ParentName="MoteBase">
+    <defName>CVNMote_RedRing</defName>
+    <graphicData>
+      <texPath>Things/Mote/Mote_RingRed</texPath> <!-- your texpath here -->
+      <shaderType>MoteGlow</shaderType>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <drawOffscreen>true</drawOffscreen>
+    <mote>
+	  <rotateTowardsMoveDirection>true</rotateTowardsMoveDirection>
+	  <rotateTowardsTarget>true</rotateTowardsTarget>
+      <fadeInTime>0</fadeInTime>
+      <solidTime>0.2</solidTime>
+      <fadeOutTime>0.1</fadeOutTime>
+      <growthRate>15</growthRate>
+	  <speedPerTime>-0.12</speedPerTime>
+    </mote>
+  </ThingDef>
+
+<ThingDef ParentName="MoteBase">
+    <defName>CVNMote_RedGlow</defName>
+    <graphicData>
+      <texPath>Things/Mote/Mote_RedExplosionFancy</texPath> <!-- your texpath here -->
+      <shaderType>MoteGlow</shaderType> 
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <drawOffscreen>true</drawOffscreen>
+    <mote>
+	  <rotateTowardsMoveDirection>true</rotateTowardsMoveDirection>
+	  <rotateTowardsTarget>true</rotateTowardsTarget>
+      <fadeInTime>0.01</fadeInTime>
+      <solidTime>0.5</solidTime>
+      <fadeOutTime>0.4</fadeOutTime>
+      <growthRate>5</growthRate>
+    </mote>
+  </ThingDef>
+
+<EffecterDef>
+    <defName>CVN_HeliosImpact</defName>
+    <children>
+      <li>
+        <subEffecterClass>SubEffecter_SprayerTriggered</subEffecterClass>
+        <fleckDef>SparkFlash</fleckDef>
+        <positionLerpFactor>0.6</positionLerpFactor>
+        <chancePerTick>0.2</chancePerTick>
+        <scale>
+          <min>2.5</min>
+          <max>4.5</max>
+        </scale>
+        <spawnLocType>OnSource</spawnLocType>
+      </li>
+	  <li>
+        <subEffecterClass>SubEffecter_SprayerTriggered</subEffecterClass>
+        <moteDef>CVNMote_RedGlow</moteDef>
+        <positionLerpFactor>0.6</positionLerpFactor>
+        <chancePerTick>0.2</chancePerTick>
+        <scale>
+          <min>12</min>
+          <max>12</max>
+        </scale>
+        <spawnLocType>OnSource</spawnLocType>
+      </li>
+	  <li>
+        <subEffecterClass>SubEffecter_SprayerTriggered</subEffecterClass>
+        <moteDef>CVNMote_RedRing</moteDef>
+        <positionLerpFactor>0.6</positionLerpFactor>
+        <chancePerTick>0.2</chancePerTick>
+        <scale>
+          <min>3</min>
+          <max>4</max>
+        </scale>
+        <spawnLocType>OnSource</spawnLocType>
+      </li>
+	  <li>
+        <subEffecterClass>SubEffecter_SprayerTriggered</subEffecterClass>
+        <moteDef>Mote_PsychicEmanatorEffect</moteDef>
+        <scale>1~1</scale>
+		<spawnLocType>OnSource</spawnLocType>
+      </li>
+    </children>
+    <offsetTowardsTarget><min>0.0</min><max>0.0</max></offsetTowardsTarget>
+  </EffecterDef>
+	
+
+
+</Defs>
