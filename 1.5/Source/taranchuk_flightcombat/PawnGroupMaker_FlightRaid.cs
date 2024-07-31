@@ -183,10 +183,12 @@ namespace taranchuk_flightcombat
         {
             public static void Postfix(PawnGroupMaker __instance, ref bool __result, PawnGroupMakerParms parms)
             {
-                if (__instance is PawnGroupMaker_FlightRaid flightRaid && flightRaid.minPoints.HasValue 
-                    && parms.points < flightRaid.minPoints)
+                if (__instance is PawnGroupMaker_FlightRaid flightRaid)
                 {
-                    __result = false;
+                    if (flightRaid.minPoints.HasValue && parms.points < flightRaid.minPoints || parms.raidStrategy.Worker is not RaidStrategyWorker_FlightCombatAttack)
+                    {
+                        __result = false;
+                    }
                 }
             }
         }

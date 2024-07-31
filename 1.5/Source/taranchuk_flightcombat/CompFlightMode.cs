@@ -93,11 +93,33 @@ namespace taranchuk_flightcombat
             }
         }
 
-        public bool CanFly => Vehicle.Deploying is false && Vehicle.CanMoveFinal 
-            && Vehicle.GetStatValue(VehicleStatDefOf.FlightSpeed) > 
-            Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightSpeed) / 2f
-            && Vehicle.GetStatValue(VehicleStatDefOf.FlightControl) >
-            Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightControl) / 2f;
+        public bool CanFly
+        {
+            get
+            {
+                //var deploying = Vehicle.Deploying is false;
+                //var canMove = Vehicle.CanMoveFinal;
+                //var canMove2 = Vehicle.CanMove;
+                //var stat = Vehicle.GetStatValue(VehicleStatDefOf.MoveSpeed);
+                //var moveSpeed = Vehicle.GetStatValue(VehicleStatDefOf.MoveSpeed) > 0.1f;
+                //var perm = Vehicle.MovementPermissions > VehiclePermissions.NotAllowed 
+                //    && Vehicle.movementStatus == VehicleMovementStatus.Online;
+                //var flightSpeed = Vehicle.GetStatValue(VehicleStatDefOf.FlightSpeed) >
+                //    Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightSpeed) / 2f;
+                //var flightControl = Vehicle.GetStatValue(VehicleStatDefOf.FlightControl) >
+                //    Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightControl) / 2f;
+                //Log.Message("deploying: " + deploying + " - canMove: " + canMove + " - canMove2: " + canMove2
+                //    + " - moveSpeed: " + moveSpeed + " - perm: " + perm + " - stat: " + stat
+                //    + " - flightSpeed: " + flightSpeed
+                //    + " - flightControl: " + flightControl);
+                //return deploying && canMove && flightSpeed && flightControl;
+                return Vehicle.Deploying is false && Vehicle.CanMoveFinal
+                    && Vehicle.GetStatValue(VehicleStatDefOf.FlightSpeed) >
+                    Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightSpeed) / 2f
+                    && Vehicle.GetStatValue(VehicleStatDefOf.FlightControl) >
+                    Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightControl) / 2f;
+            }
+        }
 
         public float AngleAdjusted(float angle)
         {
@@ -547,6 +569,7 @@ namespace taranchuk_flightcombat
                         if (shouldCrash is false)
                         {
                             SetToCrash();
+                            //Log.Message("should crash because of lack of fuel");
                         }
                     }
                     else
@@ -558,6 +581,8 @@ namespace taranchuk_flightcombat
                 if (CanFly is false && shouldCrash is false)
                 {
                     SetToCrash();
+                    //Log.Message("should crash because of CanFly");
+                    //Find.TickManager.CurTimeSpeed = TimeSpeed.Paused;
                 }
 
                 if (TakingOff is false && initialTarget.IsValid && curPosition.ToIntVec3().InBounds(Vehicle.Map) 
@@ -1217,7 +1242,6 @@ namespace taranchuk_flightcombat
                         bool rotated = RotateTowards(landingSpot.CenterVector3);
                         MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
                         takeoffProgress = Mathf.Max(0, takeoffProgress - (1 / (float)Props.landingTicks));
-                        Log.Message("takeoffProgress: " + takeoffProgress);
                         Vehicle.Map.debugDrawer.FlashCell(runwayStartingSpot.Cell);
                         Vehicle.Map.debugDrawer.FlashCell(landingSpot.Cell, 0.5f);
                         if (takeoffProgress == 0)
