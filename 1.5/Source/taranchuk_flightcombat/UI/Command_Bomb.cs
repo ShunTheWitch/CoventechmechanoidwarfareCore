@@ -4,6 +4,7 @@ using Verse;
 
 namespace taranchuk_flightcombat
 {
+    [StaticConstructorOnStartup]
     public class Command_Bomb : Command_Action
     {
         public List<FloatMenuOption> bombOptions;

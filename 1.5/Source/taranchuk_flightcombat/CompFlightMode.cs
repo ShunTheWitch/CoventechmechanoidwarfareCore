@@ -391,7 +391,7 @@ namespace taranchuk_flightcombat
                 yield return chaseTargetcommand;
             }
 
-            if (Props.bombOptions.NullOrEmpty() is false)
+            if (Flying && Props.bombOptions.NullOrEmpty() is false)
             {
                 var list = new List<FloatMenuOption>();
                 foreach (var option in Props.bombOptions)
@@ -419,6 +419,7 @@ namespace taranchuk_flightcombat
                 {
                     bombCommand.Disable("CVN_OnCooldown".Translate(((lastBombardmentTick + bombingCooldownTicks) - Find.TickManager.TicksGame).ToStringTicksToPeriod()));
                 }
+                yield return bombCommand;
             }
         }
 
