@@ -25,7 +25,6 @@
     <corpseDamageFactor>0</corpseDamageFactor>
     <combatLogRules>Damage_Flame</combatLogRules>
     <hediff>Burn</hediff>
-
   </DamageDef>
 
   <DamageDef>
@@ -94,4 +93,57 @@
     <hediff>Burn</hediff>
 
   </DamageDef>
+
+
+
+  <DamageDef Name="Bullet">
+    <defName>CVN_Bioferrite_Bullet</defName>
+    <label>bioferrite bullet</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0} has been shot to death.</deathMessage>
+    <hediff>BioferriteGunshotHediff</hediff>
+    <harmAllLayersUntilOutside>true</harmAllLayersUntilOutside>
+    <impactSoundType>Bullet</impactSoundType>
+    <armorCategory>Sharp</armorCategory>
+    <overkillPctToDestroyPart>0~0.7</overkillPctToDestroyPart>
+    <isRanged>true</isRanged>
+    <makesAnimalsFlee>true</makesAnimalsFlee>
+  </DamageDef>
+
+<HediffDef ParentName="InjuryBase">
+    <defName>BioferriteGunshotHediff</defName>
+    <label>bioferrite wound</label>
+    <labelNoun>a bioferrite wound</labelNoun>
+    <description>A bioferrite filled wound.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration">
+        <labelTendedWell>bandaged</labelTendedWell>
+        <labelTendedWellInner>sutured</labelTendedWellInner>
+        <labelSolidTendedWell>set</labelSolidTendedWell>
+      </li>
+      <li Class="ModularBullet.HediffCompProperties_ReactionToDamage">
+        <isExplosion>true</isExplosion>
+        <explosionRadius>2</explosionRadius>
+        <isReactToDamageDef>true</isReactToDamageDef>
+        <damageDefs>
+            <li>Flame</li>
+        </damageDefs>
+        <isReactToArmorCategory>true</isReactToArmorCategory>
+        <damageArmorCategoryDef>Heat</damageArmorCategoryDef>
+        <isRemoveSelf>true</isRemoveSelf>
+        <reactionDamageDef>Bomb</reactionDamageDef>
+        <reactionDamageAmount>5</reactionDamageAmount>
+        <!-- <reactionDamageStatMultiplier></reactionDamageStatMultiplier> -->
+      </li>
+    </comps>
+    <injuryProps>
+      <painPerSeverity>0.0125</painPerSeverity>
+      <averagePainPerSeverityPermanent>0.00625</averagePainPerSeverityPermanent>
+      <bleedRate>0.06</bleedRate>
+      <canMerge>false</canMerge>
+      <destroyedLabel>Shot off</destroyedLabel>
+      <destroyedOutLabel>Shot out</destroyedOutLabel>
+    </injuryProps>
+  </HediffDef>
 </Defs>
