@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+	<BodyPartDef>
+		<defName>MechSuitTorso</defName>
+		<label>torso</label>
+		<hitPoints>40</hitPoints>
+		<permanentInjuryChanceFactor>0</permanentInjuryChanceFactor>
+		<skinCovered>false</skinCovered>
+		<solid>true</solid>
+		<alive>false</alive>
+		<bleedRate>0</bleedRate>
+		<frostbiteVulnerability>0.1</frostbiteVulnerability>
+	</BodyPartDef>
+
+	<BodyDef>
+		<defName>MechSuit</defName>
+		<label>mech suit</label>
+		<corePart Class="taranchuk_mechsuits.MechPart">
+			<def>MechSuitTorso</def>
+			<height>Middle</height>
+			<depth>Outside</depth>
+			<mechPartSlots>
+				<li>
+					<label>Back</label>
+				</li>
+				<li>
+					<label>Core</label>
+				</li>
+				<li>
+					<label>Plating</label>
+				</li>
+			</mechPartSlots>
+			<parts>
+				<li>
+					<def>MechanicalNeck</def>
+					<coverage>0.10</coverage>
+					<height>Top</height>
+					<parts>
+						<li Class="taranchuk_mechsuits.MechPart">
+							<def>MechanicalHead</def>
+							<groups>
+								<li>HeadAttackTool</li>
+							</groups>
+							<mechPartSlots>
+								<li>
+									<label>System</label>
+								</li>
+							</mechPartSlots>
+						</li>
+					</parts>
+				</li>
+				<li Class="taranchuk_mechsuits.MechPart">
+					<def>MechanicalShoulder</def>
+					<customLabel>left shoulder</customLabel>
+					<coverage>0.17</coverage>
+					<isSlot>true</isSlot>
+					<parts>
+						<li Class="taranchuk_mechsuits.MechPart">
+							<def>MechanicalArm</def>
+							<customLabel>left arm</customLabel>
+							<isSlot>true</isSlot>
+						</li>
+					</parts>
+				</li>
+				<li Class="taranchuk_mechsuits.MechPart">
+					<def>MechanicalShoulder</def>
+					<customLabel>right shoulder</customLabel>
+					<coverage>0.17</coverage>
+					<isSlot>true</isSlot>
+					<parts>
+						<li>
+							<def>MechanicalArm</def>
+							<customLabel>right arm</customLabel>
+							<isSlot>true</isSlot>
+						</li>
+					</parts>
+				</li>
+				<li Class="taranchuk_mechsuits.MechPart">
+					<def>MechanicalLeg</def>
+					<customLabel>left leg</customLabel>
+					<coverage>0.2</coverage>
+					<height>Bottom</height>
+					<isSlot>true</isSlot>
+				</li>
+				<li Class="taranchuk_mechsuits.MechPart">
+					<def>MechanicalLeg</def>
+					<customLabel>right leg</customLabel>
+					<coverage>0.2</coverage>
+					<height>Bottom</height>
+					<isSlot>true</isSlot>
+				</li>
+			</parts>
+		</corePart>
+	</BodyDef>
+
+	<ThingDef ParentName="BaseMechanoidWalker">
+		<defName>MechSuit</defName>
+		<label>mech suit</label>
+		<description>Fast, spindly, human-sized combat mechanoids specializing in rapid approach and close-range combat. Their bodies are covered in points and blades, but they mostly use their two arm blades to lop off limbs or gut their victims alive.</description>
+		<tools>
+			<li>
+				<label>head</label>
+				<capacities>
+					<li>Blunt</li>
+				</capacities>
+				<power>9</power>
+				<cooldownTime>2</cooldownTime>
+				<linkedBodyPartsGroup>HeadAttackTool</linkedBodyPartsGroup>
+				<ensureLinkedBodyPartsGroupAlwaysUsable>true</ensureLinkedBodyPartsGroupAlwaysUsable>
+				<chanceFactor>0.2</chanceFactor>
+			</li>
+		</tools>
+		<race>
+			<body>MechSuit</body>
+			<baseHealthScale>1.32</baseHealthScale>
+			<soundMeleeHitPawn>Pawn_Melee_MechanoidSlash_HitPawn</soundMeleeHitPawn>
+			<soundMeleeHitBuilding>Pawn_Melee_MechanoidSlash_HitBuilding</soundMeleeHitBuilding>
+			<soundMeleeMiss>Pawn_Melee_MechanoidSlash_Miss</soundMeleeMiss>
+			<detritusLeavings>
+				<li>
+					<def>ChunkMechanoidSlag</def>
+					<texOverrideIndex>18</texOverrideIndex>
+					<spawnChance>0.1</spawnChance>
+				</li>
+				<li>
+					<def>ChunkMechanoidSlag</def>
+					<texOverrideIndex>15</texOverrideIndex>
+					<spawnChance>0.1</spawnChance>
+				</li>
+			</detritusLeavings>
+		</race>
+		<inspectorTabs>
+			<li>taranchuk_mechsuits.ITab_MechSuit</li>
+		</inspectorTabs>
+		<comps Inherit="False">
+			<li Class="taranchuk_mechsuits.CompProperties_MechSuit">
+
+			</li>
+		</comps>
+	</ThingDef>
+
+	<PawnKindDef ParentName="BaseMechanoidKind">
+		<defName>MechSuit</defName>
+		<label>mech suit</label>
+		<race>MechSuit</race>
+		<combatPower>150</combatPower>
+		<lifeStages>
+			<li MayRequire="Ludeon.RimWorld.Biotech">
+				<bodyGraphicData>
+					<texPath>Things/Pawn/Mechanoid/ScytherClean</texPath>
+					<maskPath>Things/Pawn/Mechanoid/AllegianceOverlays/Mech_Scyther</maskPath>
+					<shaderType>CutoutWithOverlay</shaderType>
+					<graphicClass>Graphic_Multi</graphicClass>
+					<drawSize>1.5</drawSize>
+					<shadowData>
+						<volume>(0.4, 0.8, 0.4)</volume>
+					</shadowData>
+				</bodyGraphicData>
+			</li>
+			<li>
+				<bodyGraphicData>
+					<texPath>Things/Pawn/Mechanoid/Scyther</texPath>
+					<maskPath>Things/Pawn/Mechanoid/AllegianceOverlays/Mech_Scyther</maskPath>
+					<shaderType>CutoutWithOverlay</shaderType>
+					<graphicClass>Graphic_Multi</graphicClass>
+					<drawSize>1.5</drawSize>
+					<shadowData>
+						<volume>(0.4, 0.8, 0.4)</volume>
+					</shadowData>
+				</bodyGraphicData>
+			</li>
+		</lifeStages>
+		<weaponMoney>0~0</weaponMoney>
+		<defendPointRadius>0</defendPointRadius>
+		<weaponTags>
+</weaponTags>
+		<techHediffsChance>1</techHediffsChance>
+		<techHediffsMoney>9999~9999</techHediffsMoney>
+	</PawnKindDef>
+
+
+</Defs>
