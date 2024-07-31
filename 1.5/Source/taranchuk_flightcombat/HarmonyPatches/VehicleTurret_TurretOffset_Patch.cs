@@ -23,10 +23,6 @@ namespace taranchuk_flightcombat
                     return false;
                 }
             }
-            else
-            {
-                Log.Message("Cannot change offset yet: " + __instance + " - " + Current.ProgramState + " - " + Scribe.mode);
-            }
             return true;
         }
     }

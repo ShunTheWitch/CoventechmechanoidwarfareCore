@@ -80,6 +80,7 @@
     <Compile Include="Misc\AntiAirProjectile.cs" />
     <Compile Include="Bomb.cs" />
     <Compile Include="BombOption.cs" />
+    <Compile Include="RaidStrategyWorker_FlightCombatAttack.cs" />
     <Compile Include="UI\Command_Bomb.cs" />
     <Compile Include="UI\Command_FlightMode.cs" />
     <Compile Include="CompFlightMode.cs" />
