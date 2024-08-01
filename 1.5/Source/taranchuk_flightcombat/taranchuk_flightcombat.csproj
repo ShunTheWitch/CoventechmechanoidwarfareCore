@@ -77,6 +77,7 @@
     <Compile Include="HarmonyPatches\DamageWorker_ExplosionDamageThing_Patch.cs" />
     <Compile Include="HarmonyPatches\GenSpawn_Spawn_Patch.cs" />
     <Compile Include="HarmonyPatches\ReachabilityUtility_CanReach_Patch.cs" />
+    <Compile Include="HarmonyPatches\VehicleRenderer_RenderPawnAt_Patch.cs" />
     <Compile Include="Misc\AntiAirProjectile.cs" />
     <Compile Include="Bomb.cs" />
     <Compile Include="BombOption.cs" />
