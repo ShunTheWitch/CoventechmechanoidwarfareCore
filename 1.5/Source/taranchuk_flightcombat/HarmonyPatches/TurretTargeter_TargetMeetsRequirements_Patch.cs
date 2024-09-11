@@ -13,9 +13,9 @@ namespace taranchuk_flightcombat
         {
             ThingDef projectileDef = turret.ProjectileDef;
             __state = projectileDef.projectile.flyOverhead;
-            if (__state is false)
+            if (__state is false && turret.vehicle.Map != null)
             {
-                if (target.HasThing && (turret.TurretLocation.ToIntVec3().Roofed(turret.vehicle.Map) is false 
+                if (target.HasThing && (turret.TurretLocation.ToIntVec3().Roofed(turret.vehicle.Map) is false
                     || (turret.vehicle.GetComp<CompFlightMode>()?.InAir ?? false)))
                 {
                     var modExtension = projectileDef.GetModExtension<ProjectileModes>();
