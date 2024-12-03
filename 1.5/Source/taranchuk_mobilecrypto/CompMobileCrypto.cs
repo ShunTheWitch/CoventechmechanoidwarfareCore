@@ -5,7 +5,6 @@ using Verse;
 
 namespace taranchuk_mobilecrypto
 {
-
     public class CompProperties_MobileCrypto : CompProperties
     {
         public int maxPawnCapacity = 1;
@@ -52,6 +51,27 @@ namespace taranchuk_mobilecrypto
             }
         }
 
+        public Thing Holder
+        {
+            get
+            {
+                var apparel = parent as Apparel;
+                if (apparel?.Wearer != null)
+                {
+                    if (apparel.Wearer.Dead)
+                    {
+                        return apparel.Wearer.Corpse;
+                    }
+                    return apparel.Wearer;
+                }
+                if (parent is Pawn pawn && pawn.Dead)
+                {
+                    return pawn.Corpse;
+                }
+                return parent;
+            }
+        }
+
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
             if (IsApparel is false)
@@ -84,6 +104,7 @@ namespace taranchuk_mobilecrypto
             return innerContainer;
         }
 
+
         public IEnumerable<Gizmo> GetGizmos()
         {
             if (Wearer?.Faction == Faction.OfPlayer)
@@ -107,7 +128,7 @@ namespace taranchuk_mobilecrypto
                     releaseCommand.defaultLabel = releaseCommand.defaultLabel.Formatted(pawn);
                     releaseCommand.action = delegate
                     {
-                        Wearer.jobs.TryTakeOrderedJob(JobMaker.MakeJob(Props.releaseJob, pawn, parent));
+                        Wearer.jobs.TryTakeOrderedJob(JobMaker.MakeJob(Props.releaseJob, pawn, parent, Holder));
                     };
                     yield return releaseCommand;
                 }
@@ -133,7 +154,7 @@ namespace taranchuk_mobilecrypto
         public void ReleasePawn(Pawn pawn)
         {
             innerContainer.Remove(pawn);
-            GenSpawn.Spawn(pawn, Wearer.Position, Wearer.Map);
+            GenSpawn.Spawn(pawn, Holder.Position, Holder.MapHeld);
             if (Props.hediffStoring != null)
             {
                 SetHediff();

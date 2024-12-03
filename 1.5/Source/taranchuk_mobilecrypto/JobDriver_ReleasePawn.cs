@@ -13,7 +13,15 @@ namespace taranchuk_mobilecrypto
 
         public override IEnumerable<Toil> MakeNewToils()
         {
-            yield return Toils_General.Wait(180).WithProgressBarToilDelay(TargetIndex.B);
+            if (pawn != TargetPawnC)
+            {
+                yield return Toils_Goto.Goto(TargetIndex.C, PathEndMode.ClosestTouch);
+                yield return Toils_General.WaitWith(TargetIndex.C, 180).WithProgressBarToilDelay(TargetIndex.C);
+            }
+            else
+            {
+                yield return Toils_General.Wait(180).WithProgressBarToilDelay(TargetIndex.C);
+            }
             yield return Toils_General.Do(delegate
             {
                 var comp = TargetB.Thing.TryGetComp<CompMobileCrypto>();

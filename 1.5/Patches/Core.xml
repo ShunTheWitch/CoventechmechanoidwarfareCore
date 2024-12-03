@@ -17,6 +17,42 @@
 					</baseWeatherCommonalities>
 				</value>
 			</li>
+			
+			<li Class="PatchOperationAddModExtension">
+				<xpath>/Defs/ThingDef[defName="Mech_Scyther"]</xpath>
+				<value>
+					<li Class="taranchuk_combatgraphics.PawnGraphicExtension">
+						<combatGraphic>
+							<texPath>Things/Pawn/Mechanoid/LancerClean</texPath>
+							<maskPath>Things/Pawn/Mechanoid/AllegianceOverlays/Mech_Lancer</maskPath>
+							<shaderType>CutoutWithOverlay</shaderType>
+							<graphicClass>Graphic_Multi</graphicClass>
+							<drawSize>1.5</drawSize>
+							<shadowData>
+								<volume>(0.4, 0.8, 0.4)</volume>
+							</shadowData>
+						</combatGraphic>
+					</li>
+				</value>
+			</li>
+			
+			<li Class="PatchOperationAddModExtension">
+				<xpath>/Defs/ThingDef[defName="Mech_Lancer"]</xpath>
+				<value>
+					<li Class="taranchuk_combatgraphics.PawnGraphicExtension">
+						<combatGraphic>
+							<texPath>Things/Pawn/Mechanoid/ScytherClean</texPath>
+							<maskPath>Things/Pawn/Mechanoid/AllegianceOverlays/Mech_Scyther</maskPath>
+							<shaderType>CutoutWithOverlay</shaderType>
+							<graphicClass>Graphic_Multi</graphicClass>
+							<drawSize>1.5</drawSize>
+							<shadowData>
+								<volume>(0.4, 0.8, 0.4)</volume>
+							</shadowData>
+						</combatGraphic>
+					</li>
+				</value>
+			</li>
 		</operations>
 	</Operation>
 </Patch>

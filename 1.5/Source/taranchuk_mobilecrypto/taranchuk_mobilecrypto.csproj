@@ -66,6 +66,7 @@
     <Compile Include="CompMobileCrypto.cs" />
     <Compile Include="JobDriver_CapturePawn.cs" />
     <Compile Include="JobDriver_ReleasePawn.cs" />
+    <Compile Include="Thing_GetFloatMenuOptions_Patch.cs" />
     <Compile Include="taranchuk_mobilecryptoMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
