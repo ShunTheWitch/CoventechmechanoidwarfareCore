@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using RimWorld;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Verse;
 
@@ -16,6 +17,7 @@ namespace taranchuk_apparelgraphics
     public class ApparelExtension : DefModExtension
     {
         public bool hideBody;
+        public bool hideOtherApparels;
         public BodyTypeDef femaleBody;
         public BodyTypeDef maleBody;
     }
@@ -23,7 +25,7 @@ namespace taranchuk_apparelgraphics
     [StaticConstructorOnStartup]
     public static class Utils
     {
-        private static Dictionary<ThingDef, ApparelExtension> cachedExtensions = new Dictionary<ThingDef, ApparelExtension>();
+        private static ConcurrentDictionary<ThingDef, ApparelExtension> cachedExtensions = new ConcurrentDictionary<ThingDef, ApparelExtension>();
         public static bool ShouldHideBody(this ThingDef def)
         {
             if (!cachedExtensions.TryGetValue(def, out var extension))
@@ -36,6 +38,19 @@ namespace taranchuk_apparelgraphics
             }
             return false;
         }
+
+        public static bool ShouldHideApparel(this ThingDef def)
+        {
+            if (!cachedExtensions.TryGetValue(def, out var extension))
+            {
+                cachedExtensions[def] = extension = def.GetModExtension<ApparelExtension>();
+            }
+            if (extension != null && extension.hideOtherApparels)
+            {
+                return true;
+            }
+            return false;
+        }
     }
 
     [HarmonyPatch(typeof(PawnRenderNodeWorker), "AppendDrawRequests")]
@@ -43,14 +58,39 @@ namespace taranchuk_apparelgraphics
     {
         public static bool Prefix(PawnRenderNode node, PawnDrawParms parms, List<PawnGraphicDrawRequest> requests)
         {
-            if ((node is PawnRenderNode_Body || node.parent is PawnRenderNode_Body) && parms.pawn.apparel.AnyApparel)
+            bool nodeIsApparel = node is PawnRenderNode_Apparel;
+            if (parms.pawn.apparel?.AnyApparel ?? false)
             {
-                foreach (var apparel in parms.pawn.apparel.WornApparel)
+                if (node is PawnRenderNode_Body || node.parent is PawnRenderNode_Body)
                 {
-                    if (apparel.def.ShouldHideBody())
+                    foreach (var apparel in parms.pawn.apparel.WornApparel)
                     {
-                        requests.Add(new PawnGraphicDrawRequest(node)); // adds an empty draw request to not draw body
-                        return false;
+                        if (apparel.def.ShouldHideBody())
+                        {
+                            requests.Add(new PawnGraphicDrawRequest(node));
+                            return false;
+                        }
+                    }
+                }
+
+                if (nodeIsApparel)
+                {
+                    bool shouldHideApparel = false;
+                    foreach (var apparel in parms.pawn.apparel.WornApparel)
+                    {
+                        if (apparel.def.ShouldHideApparel())
+                        {
+                            shouldHideApparel = true;
+                            break;
+                        }
+                    }
+                    if (shouldHideApparel)
+                    {
+                        if (node.apparel.def.ShouldHideApparel() is false)
+                        {
+                            requests.Add(new PawnGraphicDrawRequest(node));
+                            return false;
+                        }
                     }
                 }
             }
