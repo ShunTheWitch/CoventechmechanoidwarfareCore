@@ -132,15 +132,22 @@ namespace taranchuk_apparelgraphics
                 var extension = apparel2.def.GetModExtension<ApparelExtension>();
                 if (extension != null)
                 {
-                    if (pawn.gender == Gender.Male && extension.maleBody != null)
+                    //flango's fix for genderless pawns
+                    if (extension.maleBody != null)
                     {
-                        bodyType = extension.maleBody;
-                        break;
+                        if (pawn.gender != Gender.Female) // Male or None
+                        {
+                            bodyType = extension.maleBody;
+                            break;
+                        }
                     }
-                    else if (pawn.gender == Gender.Female && extension.femaleBody != null)
+                    if (extension.femaleBody != null)
                     {
-                        bodyType = extension.femaleBody;
-                        break;
+                        if (pawn.gender != Gender.Male) // Female or None
+                        {
+                            bodyType = extension.femaleBody;
+                            break;
+                        }
                     }
                 }
             }
