@@ -719,7 +719,7 @@ namespace taranchuk_flightcombat
                 if (props?.angularVelocityPropeller != null)
                 {
                     var rotationRate = props.angularVelocityPropeller.Evaluate(takeoffProgress);
-                    Vehicle.graphicOverlay?.rotationRegistry?.UpdateRegistry(rotationRate);
+                    Vehicle.overlayRenderer?.rotationRegistry?.UpdateRegistry(rotationRate);
                 }
             }
         }
@@ -1306,7 +1306,6 @@ namespace taranchuk_flightcombat
                     return false;
                 }
             }
-            return false;
         }
 
         private bool AngleInRange(float angle, float lower, float upper)

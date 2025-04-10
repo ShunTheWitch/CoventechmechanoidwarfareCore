@@ -40,7 +40,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="SmashTools">
-      <HintPath>..\..\..\..\Vehicle-Framework\1.5\Assemblies\SmashTools.dll</HintPath>
+        <HintPath>..\..\..\..\Vehicles\1.5\Assemblies\SmashTools.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -52,12 +52,12 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="Vehicles">
-      <HintPath>..\..\..\..\Vehicle-Framework\1.5\Assemblies\Vehicles.dll</HintPath>
+      <HintPath>..\..\..\..\Vehicles\1.5\Assemblies\Vehicles.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Krafs.Publicizer" Version="2.*">
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -67,7 +67,8 @@
       <ExcludeAssets>runtime</ExcludeAssets>
       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <Publicize Include="Assembly-CSharp;Vehicles" />
+    <Publicize Include="Assembly-CSharp" />
+    <Publicize Include="Vehicles" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AISettings.cs" />
