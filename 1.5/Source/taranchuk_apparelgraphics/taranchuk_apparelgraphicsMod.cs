@@ -127,27 +127,35 @@ namespace taranchuk_apparelgraphics
 
         public static void TryOverrideBody(this Pawn pawn, ref BodyTypeDef bodyType)
         {
+            var shell = pawn.apparel.WornApparel.Find(x => x.def.apparel.layers.Contains(ApparelLayerDefOf.Shell));
             foreach (var apparel2 in pawn.apparel.WornApparel)
             {
-                var extension = apparel2.def.GetModExtension<ApparelExtension>();
-                if (extension != null)
+                if (shell != apparel2)
                 {
-                    //flango's fix for genderless pawns
-                    if (extension.maleBody != null)
+                    SetBodyType(pawn, ref bodyType, apparel2);
+                }
+            }
+            SetBodyType(pawn, ref bodyType, shell);
+        }
+
+        private static void SetBodyType(Pawn pawn, ref BodyTypeDef bodyType, Apparel apparel2)
+        {
+            var extension = apparel2?.def?.GetModExtension<ApparelExtension>();
+            if (extension != null)
+            {
+                //flango's fix for genderless pawns
+                if (extension.maleBody != null)
+                {
+                    if (pawn.gender != Gender.Female) // Male or None
                     {
-                        if (pawn.gender != Gender.Female) // Male or None
-                        {
-                            bodyType = extension.maleBody;
-                            break;
-                        }
+                        bodyType = extension.maleBody;
                     }
-                    if (extension.femaleBody != null)
+                }
+                if (extension.femaleBody != null)
+                {
+                    if (pawn.gender != Gender.Male) // Female or None
                     {
-                        if (pawn.gender != Gender.Male) // Female or None
-                        {
-                            bodyType = extension.femaleBody;
-                            break;
-                        }
+                        bodyType = extension.femaleBody;
                     }
                 }
             }
