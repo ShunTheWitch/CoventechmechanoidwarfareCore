@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <AbilityDef Name="CVN_MechanitorAbility" Abstract="True">
+    <hostile>false</hostile>
+    <verbProperties>
+      <verbClass>VehicleMechanitorControl.Verb_CastAbilityVehicle</verbClass>
+      <violent>false</violent>
+      <targetParams>
+        <canTargetPawns>true</canTargetPawns>
+        <canTargetBuildings>false</canTargetBuildings>
+        <canTargetCorpses>false</canTargetCorpses>
+      </targetParams>
+    </verbProperties>
+  </AbilityDef>
+
+  <AbilityDef ParentName="CVN_MechanitorAbility">
+    <defName>CVN_ControlMech</defName>
+    <label>control mech</label>
+    <description>text.</description>
+    <iconPath>UI/Abilities/MechLongJump</iconPath>
+    <cooldownTicksRange>480</cooldownTicksRange>
+    <verbProperties>
+      <label>control mech</label>
+      <warmupTime>5</warmupTime>
+      <requireLineOfSight>false</requireLineOfSight>
+      <range>100</range>
+    </verbProperties>
+	<comps>
+		<li Class="VehicleMechanitorControl.CompProperties_ControlMech">
+		</li>
+	</comps>
+  </AbilityDef>
+  
+  <AbilityDef ParentName="CVN_MechanitorAbility">
+    <defName>CVN_RepairMech</defName>
+    <label>repair mech</label>
+    <description>text.</description>
+    <iconPath>UI/Abilities/MechLongJump</iconPath>
+    <cooldownTicksRange>480</cooldownTicksRange>
+    <verbProperties>
+      <label>repair mech</label>
+      <warmupTime>10</warmupTime>
+      <range>100</range>
+      <requireLineOfSight>false</requireLineOfSight>
+    </verbProperties>
+	<comps>
+		<li Class="VehicleMechanitorControl.CompProperties_RepairMech">
+		</li>
+	</comps>
+  </AbilityDef>
+  
+  <AbilityDef ParentName="CVN_MechanitorAbility">
+    <defName>CVN_DisassembleMech</defName>
+    <label>disassemble mech</label>
+    <description>text.</description>
+    <iconPath>UI/Abilities/MechLongJump</iconPath>
+    <cooldownTicksRange>480</cooldownTicksRange>
+    <verbProperties>
+      <label>disassemble mech</label>
+      <warmupTime>5</warmupTime>
+      <range>100</range>
+      <requireLineOfSight>false</requireLineOfSight>
+    </verbProperties>
+	<comps>
+		<li Class="VehicleMechanitorControl.CompProperties_DisassembleMech">
+		</li>
+	</comps>
+  </AbilityDef>
+  
+  <AbilityDef ParentName="CVN_MechanitorAbility">
+    <defName>CVN_DisconnectMech</defName>
+    <label>disconnect mech</label>
+    <description>text.</description>
+    <iconPath>UI/Abilities/MechLongJump</iconPath>
+    <cooldownTicksRange>480</cooldownTicksRange>
+    <verbProperties>
+      <label>disconnect mech</label>
+      <range>100</range>
+    </verbProperties>
+	<comps>
+		<li Class="VehicleMechanitorControl.CompProperties_DisconnectMech">
+		</li>
+	</comps>
+  </AbilityDef>
+  
+</Defs>

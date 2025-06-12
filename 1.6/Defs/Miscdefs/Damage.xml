@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <DamageDef>
+    <defName>DamageTest</defName>
+    <deathMessage>{0} has been smashed to death.</deathMessage>
+    <label>damage test attack</label>
+    <workerClass>Fusrodah.DamageWorker_Fusrodah</workerClass>
+	<modExtensions>
+		<li Class="Fusrodah.Extension">
+			<rangeToLand>1~3</rangeToLand>
+			<damageToApply>Cut</damageToApply>
+			<damageAmount>10</damageAmount>
+		</li>
+	</modExtensions>
+  </DamageDef>
+  
+</Defs>
