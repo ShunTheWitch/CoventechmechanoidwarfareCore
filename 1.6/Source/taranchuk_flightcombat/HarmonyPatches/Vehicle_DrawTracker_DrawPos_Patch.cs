@@ -6,10 +6,10 @@ using Verse;
 namespace taranchuk_flightcombat
 {
     [HotSwappable]
-    [HarmonyPatch(typeof(Vehicle_DrawTracker), nameof(Vehicle_DrawTracker.DrawPos), MethodType.Getter)]
-    public static class Vehicle_DrawTracker_DrawPos_Patch
+    [HarmonyPatch(typeof(VehicleDrawTracker), nameof(VehicleDrawTracker.DrawPos), MethodType.Getter)]
+    public static class VehicleDrawTracker_DrawPos_Patch
     {
-        public static bool Prefix(Vehicle_DrawTracker __instance, ref Vector3 __result)
+        public static bool Prefix(VehicleDrawTracker __instance, ref Vector3 __result)
         {
             var comp = __instance.vehicle.GetComp<CompFlightMode>();
             if (comp != null && comp.InAir)

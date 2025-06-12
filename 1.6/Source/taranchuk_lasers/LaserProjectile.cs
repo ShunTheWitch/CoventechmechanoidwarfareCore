@@ -106,11 +106,10 @@ namespace taranchuk_lasers
                         }
                     }
                 }
-                if (Rand.Chance(def.projectile.bulletChanceToStartFire) && (pawn2 == null || Rand.Chance(FireUtility.ChanceToAttachFireFromEvent(pawn2))))
+                if (Rand.Chance(base.DamageDef.igniteCellChance))
                 {
-                    hitThing.TryAttachFire(def.projectile.bulletFireSizeRange.RandomInRange, launcher);
+                    FireUtility.TryStartFireIn(base.Position, map, Rand.Range(0.55f, 0.85f), launcher);
                 }
-                return;
             }
         }
 

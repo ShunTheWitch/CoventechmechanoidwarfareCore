@@ -422,7 +422,7 @@ namespace taranchuk_flightcombat
                     {
                         bombardmentOptionInd = Props.bombOptions.IndexOf(option);
                         tickToStartFiring = null;
-                    }, itemIcon: ContentFinder<Texture2D>.Get(option.texPath), iconColor: Color.white));
+                    }, iconTex: ContentFinder<Texture2D>.Get(option.texPath), iconColor: Color.white));
                 }
 
                 BombOption bombOption = BombOption;
@@ -719,7 +719,7 @@ namespace taranchuk_flightcombat
                 if (props?.angularVelocityPropeller != null)
                 {
                     var rotationRate = props.angularVelocityPropeller.Evaluate(takeoffProgress);
-                    Vehicle.graphicOverlay?.rotationRegistry?.UpdateRegistry(rotationRate);
+                    Vehicle.overlayRenderer?.rotationRegistry?.UpdateRegistry(rotationRate);
                 }
             }
         }

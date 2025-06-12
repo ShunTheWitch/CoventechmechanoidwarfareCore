@@ -19,12 +19,10 @@ namespace taranchuk_flightcombat
             if (equipment != null)
             {
                 equipmentDef = equipment.def;
-                weaponDamageMultiplier = equipment.GetStatValue(StatDefOf.RangedWeapon_DamageMultiplier);
             }
             else
             {
                 equipmentDef = null;
-                weaponDamageMultiplier = 1f;
             }
             destination = usedTarget.Cell.ToVector3Shifted();
             ticksToImpact = Mathf.CeilToInt(StartingTicksToImpact);

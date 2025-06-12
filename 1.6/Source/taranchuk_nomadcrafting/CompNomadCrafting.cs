@@ -15,7 +15,7 @@ namespace taranchuk_nomadcrafting
         public float craftingSpeed;
         public List<RecipeDef> recipes;
         public List<ThingDef> pullRecipesFrom;
-        public List<MechWeightClass> mechClassesToGestate;
+        public List<MechWeightClassDef> mechClassesToGestate;
         public List<QualityCategory> qualityRange;
 
         public CompProperties_NomadCrafting()
