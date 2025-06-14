@@ -1,4 +1,4 @@
-﻿using RimWorld;
+using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +12,7 @@ namespace BM_PowerArmor
         {
             get
             {
-                return PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists
+                return PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists
                     .Where(x => Validator(x)).ToList();
             }
         }
@@ -31,7 +31,7 @@ namespace BM_PowerArmor
         public override TaggedString GetExplanation()
         {
             var list = new StringBuilder();
-            foreach (var pawn in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists
+            foreach (var pawn in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists
                     .Where(x => x.RaceProps.Humanlike))
             {
                 foreach (var apparel in pawn.apparel.WornApparel)

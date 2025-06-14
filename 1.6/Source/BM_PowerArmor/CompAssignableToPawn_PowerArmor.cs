@@ -1,4 +1,4 @@
-﻿using RimWorld;
+using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
@@ -7,9 +7,9 @@ namespace BM_PowerArmor
 {
     public class CompAssignableToPawn_PowerArmor : CompAssignableToPawn
     {
-        public override void PostDeSpawn(Map map)
-        {
 
+        public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+        {
         }
 
         public override IEnumerable<Pawn> AssigningCandidates

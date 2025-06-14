@@ -568,7 +568,7 @@ namespace BM_PowerArmor
 				var comp = parent.GetComp<CompRefuelable>();
 				if (comp.Props.showFuelGizmo && Find.Selector.SingleSelectedThing == apparel.Wearer)
 				{
-					Gizmo_RefuelableFuelStatus gizmo_RefuelableFuelStatus = new Gizmo_RefuelableFuelStatus();
+					var gizmo_RefuelableFuelStatus = new Command_SetTargetFuelLevel();
 					gizmo_RefuelableFuelStatus.refuelable = comp;
 					yield return gizmo_RefuelableFuelStatus;
 				}
