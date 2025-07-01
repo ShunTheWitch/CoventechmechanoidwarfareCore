@@ -8,6 +8,10 @@ namespace universalflight
     {
         public static void Postfix(Pawn pawn, ref Graphic __result)
         {
+            if (CompFlightMode.skipFlightGraphic)
+            {
+                return;
+            }
             var comp = pawn.GetComp<CompFlightMode>();
             if (comp != null && comp.InAir)
             {

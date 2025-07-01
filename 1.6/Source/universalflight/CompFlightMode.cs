@@ -117,6 +117,7 @@ namespace universalflight
 
         public Graphic cachedFlightGraphic;
 
+        public static bool skipFlightGraphic;
         public Graphic FlightGraphic
         {
             get
@@ -125,16 +126,19 @@ namespace universalflight
                 {
                     cachedFlightGraphic = CreateFlightGraphic(Props.flightGraphicData);
                 }
+                skipFlightGraphic = true;
+                var bodyGraphic = Pawn.ageTracker.CurKindLifeStage.bodyGraphicData.Graphic;
+                skipFlightGraphic = false;
                 if (Flying)
                 {
-                    var x = Mathf.Lerp(Pawn.DrawSize.x, Props.flightGraphicData.drawSize.x, takeoffProgress);
-                    var y = Mathf.Lerp(Pawn.DrawSize.y, Props.flightGraphicData.drawSize.y, takeoffProgress);
+                    var x = Mathf.Lerp(bodyGraphic.drawSize.x, Props.flightGraphicData.drawSize.x, takeoffProgress);
+                    var y = Mathf.Lerp(bodyGraphic.drawSize.y, Props.flightGraphicData.drawSize.y, takeoffProgress);
                     cachedFlightGraphic.drawSize = new Vector2(x, y);
                 }
                 else if (Landing)
                 {
-                    var x = Mathf.Lerp(Props.flightGraphicData.drawSize.x, Pawn.DrawSize.x, 1f - takeoffProgress);
-                    var y = Mathf.Lerp(Props.flightGraphicData.drawSize.y, Pawn.DrawSize.y, 1f - takeoffProgress);
+                    var x = Mathf.Lerp(Props.flightGraphicData.drawSize.x, bodyGraphic.drawSize.x, 1f - takeoffProgress);
+                    var y = Mathf.Lerp(Props.flightGraphicData.drawSize.y, bodyGraphic.drawSize.y, 1f - takeoffProgress);
                     cachedFlightGraphic.drawSize = new Vector2(x, y);
                 }
                 return cachedFlightGraphic;
@@ -456,11 +460,9 @@ namespace universalflight
                 {
                     Pawn.pather.StopDead();
                 }
-                UpdateVehicleAngleAndRotation();
             }
             else
             {
-
                 target = LocalTargetInfo.Invalid;
                 Pawn.Rotation = Rot4.FromAngleFlat(CurAngle);
             }
@@ -508,15 +510,19 @@ namespace universalflight
             landingStage = LandingStage.Inactive;
             Pawn.drawer.renderer.SetAllGraphicsDirty();
         }
-        
+
         private CompRefuelable _compFueledTravel;
-        public CompRefuelable CompFueledTravel => _compFueledTravel ??=Pawn.GetComp<CompRefuelable>();
+        public CompRefuelable CompFueledTravel => _compFueledTravel ??= Pawn.GetComp<CompRefuelable>();
 
         public override void CompTick()
         {
             base.CompTick();
             if (InAir)
             {
+                if (takeoffProgress < 1)
+                {
+                    Pawn.drawer.renderer.SetAllGraphicsDirty();
+                }
                 if (CompFueledTravel != null && Props.fuelConsumptionPerTick > 0)
                 {
                     if (CompFueledTravel.Fuel < Props.fuelConsumptionPerTick)
@@ -624,7 +630,6 @@ namespace universalflight
                         return;
                     }
                 }
-                UpdateVehicleAngleAndRotation();
             }
             //LogData("flightMode: " + flightMode);
         }
@@ -674,7 +679,7 @@ namespace universalflight
                 Pawn.inventory.innerContainer.TryAdd(pawn);
             }
         }
-        
+
         private void GotoWorld()
         {
             var map = Pawn.Map;
@@ -912,11 +917,6 @@ namespace universalflight
             }
             data.velocitySpeed = fleckData.velocitySpeed;
             Pawn.Map.flecks.CreateFleck(data);
-        }
-
-        private void UpdateVehicleAngleAndRotation()
-        {
-            UpdateRotation();
         }
 
         public List<IntVec3> GetRunwayCells(bool takingOff)
@@ -1215,9 +1215,6 @@ namespace universalflight
                             bool angleInRange = AngleInRange(curAngle, AngleAdjusted(targetAngle - Props.turnAnglePerTick), AngleAdjusted(targetAngle + Props.turnAnglePerTick));
                             if (angleInRange)
                             {
-                                Log.Message("curAngle: " + curAngle + " - targetAngle: " + targetAngle + " - i: " + i + " - ticksPassedSimulated: " + ticksPassedSimulated);
-                                //Pawn.Map.debugDrawer.FlashCell(runwayStartingSpot.Cell);
-                                //Pawn.Map.debugDrawer.FlashCell(landingSpot.Cell, 0.5f);
                             }
                             if (angleInRange && i >= ticksPassedSimulated - 3)
                             {
@@ -1261,13 +1258,6 @@ namespace universalflight
 
         private bool CanLand() => OccupiedRect().All(x => Pawn.CanReach(x, PathEndMode.Touch, Danger.Deadly));
 
-        public void UpdateRotation()
-        {
-            if (Pawn.rotationInt != FlightRotation)
-            {
-                Pawn.rotationInt = FlightRotation;
-            }
-        }
 
         public List<IntVec3> OccupiedRect()
         {
@@ -1275,9 +1265,7 @@ namespace universalflight
             {
                 var pawn = Pawn;
                 var angle = AngleAdjusted(CurAngle + FlightAngleOffset);
-                pawn.rotationInt = Rot4.FromAngleFlat(angle);
-                var cells = Pawn.OccupiedRect().Cells.ToList();
-                UpdateRotation();
+                var cells = GenAdj.OccupiedRect(pawn.Position, Rot4.FromAngleFlat(angle), pawn.def.size).Cells.ToList();
                 return cells;
             }
             return Pawn.OccupiedRect().Cells.ToList();
@@ -1394,7 +1382,7 @@ namespace universalflight
         {
             Log.Message(this.Pawn + " - " + prefix + " - Pawn.Position: " + Pawn.Position + " - takeoffProgress: " + takeoffProgress
                 + " - IsFlying: " + Flying + " - IsTakingOff: " + TakingOff + " - IsDescending: " + Landing
-                + " - CurAngle: " + CurAngle 
+                + " - CurAngle: " + CurAngle
                 + " - Rotation: " + Pawn.Rotation.ToStringHuman() + " - Rotation: " + Pawn.Rotation.ToStringHuman()
                 + " - initialTarget: " + initialTarget + " - target: " + target + " - targetToFace: " + targetToFace);
             Log.ResetMessageCount();

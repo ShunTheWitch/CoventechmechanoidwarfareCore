@@ -14,6 +14,7 @@ namespace universalflight
             if (compFlightMode != null && compFlightMode.InAir)
             {
                 __result = compFlightMode.curPosition;
+                __result.y = Altitudes.AltitudeFor(AltitudeLayer.Skyfaller);
             }
         }
     }
