@@ -71,6 +71,7 @@
     <Publicize Include="Assembly-CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HotSwappableAttribute.cs" />
     <Compile Include="LaserProjectile.cs" />
     <Compile Include="LaserProperties.cs" />
     <Compile Include="Utilities.cs" />

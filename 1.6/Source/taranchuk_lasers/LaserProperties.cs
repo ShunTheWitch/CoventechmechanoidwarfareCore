@@ -24,5 +24,8 @@ namespace taranchuk_lasers
         public EffecterDef endEffecterDef;
         public Vector2 textureScrollOffsetPerTick;
         public float explosionRadius;
+        public SoundDef sustainerSoundDef;
+        public int sustainerTickPeriod;
+        public SoundDef trailSoundDef;
     }
 }

@@ -1,17 +1,12 @@
 ﻿using RimWorld;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace taranchuk_lasers
 {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    public class HotSwappableAttribute : Attribute
-    {
-    }
-
     [HotSwappable]
     public class LaserProjectile : Projectile
     {
@@ -25,6 +20,8 @@ namespace taranchuk_lasers
         public LaserProperties LaserProperties => laserProperties ??= def.GetModExtension<LaserProperties>();
         private float angleOffset;
         private Effecter endEffecter;
+        private Sustainer activeSustainer;
+        private int sustainerStartTick;
 
         public override void Launch(Thing launcher, Vector3 origin, LocalTargetInfo usedTarget, 
             LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, bool preventFriendlyFire = false, 
@@ -117,6 +114,11 @@ namespace taranchuk_lasers
 
         public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
         {
+            if (activeSustainer != null)
+            {
+                activeSustainer.End();
+                activeSustainer = null;
+            }
             if (shouldBeDestroyed)
             {
                 base.Destroy(mode);
@@ -160,6 +162,34 @@ namespace taranchuk_lasers
                 endEffecter.EffectTick(new TargetInfo(intVec, Map), TargetInfo.Invalid);
                 endEffecter.ticksLeft--;
             }
+
+            if (LaserProperties.sustainerSoundDef != null)
+            {
+                if (activeSustainer == null)
+                {
+                    if (LaserProperties.sustainerTickPeriod <= 0 || sustainerStartTick == 0)
+                    {
+                        activeSustainer = SoundStarter.TrySpawnSustainer(LaserProperties.sustainerSoundDef, SoundInfo.InMap(this, MaintenanceType.PerTick));
+                        sustainerStartTick = Find.TickManager.TicksGame;
+                    }
+                }
+                else if (LaserProperties.sustainerTickPeriod > 0 && sustainerStartTick > 0 && Find.TickManager.TicksGame - sustainerStartTick >= LaserProperties.sustainerTickPeriod)
+                {
+                    activeSustainer.End();
+                    activeSustainer = null;
+                    sustainerStartTick = -1;
+                    if (LaserProperties.trailSoundDef != null)
+                    {
+                        SoundStarter.PlayOneShot(LaserProperties.trailSoundDef, SoundInfo.InMap(this, MaintenanceType.None));
+                    }
+                }
+
+                if (activeSustainer != null)
+                {
+                    activeSustainer.Maintain();
+                }
+            }
+
             if (Find.TickManager.TicksGame > launchTick + LaserProperties.lifetimeTicks) 
             {
                 Explode();
@@ -310,6 +340,7 @@ namespace taranchuk_lasers
             Scribe_Values.Look(ref originDest, "originDest");
             Scribe_Values.Look(ref launcherPosOld, "launcherPosOld");
             Scribe_Values.Look(ref launcherAngleOld, "launcherAngleOld");
+            Scribe_Values.Look(ref sustainerStartTick, "sustainerStartTick");
         }
     }
 }
