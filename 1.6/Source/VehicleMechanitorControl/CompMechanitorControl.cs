@@ -37,13 +37,16 @@ namespace VehicleMechanitorControl
                     {
                         if (pawn is VehiclePawn vehicle)
                         {
-                            foreach (var passenger in vehicle.handlers.SelectMany(x => x.handlers.OfType<Pawn>()))
+                            foreach (var handler in vehicle.Handlers)
                             {
-                                if (passenger == overseer)
+                                foreach (var passenger in handler.thingOwner)
                                 {
-                                    if (passenger.mechanitor.AnySelectedDraftedMechs)
+                                    if (passenger == overseer)
                                     {
-                                        GenDraw.DrawRadiusRing(vehicle.Position, 24.9f, Color.white, (IntVec3 c) => passenger.mechanitor.CanCommandTo(c));
+                                        if (passenger.mechanitor.AnySelectedDraftedMechs)
+                                        {
+                                            GenDraw.DrawRadiusRing(vehicle.Position, 24.9f, Color.white, (IntVec3 c) => passenger.mechanitor.CanCommandTo(c));
+                                        }
                                     }
                                 }
                             }

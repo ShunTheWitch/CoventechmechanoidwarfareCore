@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +8,7 @@ using Verse;
 
 namespace taranchuk_flightcombat
 {
-    [HarmonyPatch(typeof(PawnCollisionTweenerUtility), "GetPawnsStandingAtOrAboutToStandAt")]
+    [HarmonyPatch(typeof(PawnCollisionTweenerUtility), nameof(PawnCollisionTweenerUtility.GetPawnsStandingAtOrAboutToStandAt))]
     public static class PawnCollisionTweenerUtility_GetPawnsStandingAtOrAboutToStandAt_Patch
     {
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> codeInstructions)

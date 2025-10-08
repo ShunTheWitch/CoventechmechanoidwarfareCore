@@ -10,12 +10,12 @@ namespace VehicleMechanitorControl
     {
         public static void Postfix(Pawn_MechanitorTracker __instance, ref bool __result, LocalTargetInfo target)
         {
-            if (__instance.pawn.ParentHolder is VehicleHandler vehicleHandler
-                && vehicleHandler.vehicle.GetComp<CompMechanitorControl>() != null)
+            if (__instance.pawn.ParentHolder?.ParentHolder is VehicleRoleHandler roleHandler
+                && roleHandler.vehicle.GetComp<CompMechanitorControl>() != null)
             {
                 if (target.Cell.InBounds(__instance.pawn.MapHeld))
                 {
-                    __result = (float)vehicleHandler.vehicle.Position.DistanceToSquared(target.Cell) < 620.01f;
+                    __result = (float)roleHandler.vehicle.Position.DistanceToSquared(target.Cell) < 620.01f;
                 }
             }
         }

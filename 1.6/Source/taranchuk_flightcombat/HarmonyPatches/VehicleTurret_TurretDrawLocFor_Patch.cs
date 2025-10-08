@@ -7,7 +7,7 @@ using Verse;
 namespace taranchuk_flightcombat
 {
     [HotSwappable]
-    [HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.TurretDrawLocFor))]
+    [HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.DrawPosition), typeof(Rot8))]
     public static class VehicleTurret_TurretDrawLocFor_Patch
     {
         public static void Prefix(VehicleTurret __instance, ref Rot8 rot, out CompFlightMode __state)

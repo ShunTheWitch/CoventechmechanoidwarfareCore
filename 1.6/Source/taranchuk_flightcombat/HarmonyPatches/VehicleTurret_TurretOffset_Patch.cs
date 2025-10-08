@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using SmashTools;
 using System;
 using System.Diagnostics;
@@ -19,7 +19,7 @@ namespace taranchuk_flightcombat
                 var comp = __instance.vehicle.GetComp<CompFlightMode>();
                 if (comp != null && __instance.vehicle.InFlightModeOrNonStandardAngle(comp))
                 {
-                    __result = __instance.TurretDrawLocFor(rot);
+                    __result = __instance.DrawPosition(rot);
                     return false;
                 }
             }

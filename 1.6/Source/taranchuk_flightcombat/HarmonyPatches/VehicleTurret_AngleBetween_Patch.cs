@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using SmashTools;
 using System;
 using UnityEngine;
@@ -11,21 +11,21 @@ namespace taranchuk_flightcombat
     [HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.AngleBetween))]
     public static class VehicleTurret_AngleBetween_Patch
     {
-        public static bool Prefix(VehicleTurret __instance, Vector3 mousePosition, ref bool __result)
+        public static bool Prefix(VehicleTurret __instance, Vector3 position, ref bool __result)
         {
             if (__instance.angleRestricted != Vector2.zero && __instance.attachedTo is null)
             {
                 var comp = __instance.vehicle.GetComp<CompFlightMode>();
                 if (comp != null && comp.InAir)
                 {
-                    __result = AngleBetween(__instance, mousePosition, comp);
+                    __result = AngleBetween(__instance, position, comp);
                     return false;
                 }
             }
             return true;
         }
 
-        public static bool AngleBetween(VehicleTurret __instance, Vector3 mousePosition, CompFlightMode comp)
+        public static bool AngleBetween(VehicleTurret __instance, Vector3 position, CompFlightMode comp)
         {
             float rotationOffset = comp.AngleAdjusted(comp.CurAngle + comp.FlightAngleOffset);
             float start = __instance.angleRestricted.x + rotationOffset;
@@ -39,7 +39,7 @@ namespace taranchuk_flightcombat
             {
                 end -= 360;
             }
-            float mid = (mousePosition - __instance.TurretLocation).AngleFlat();
+            float mid = (position - __instance.TurretLocation).AngleFlat();
             end = (end - start) < 0f ? end - start + 360 : end - start;
             mid = (mid - start) < 0f ? mid - start + 360 : mid - start;
             var result = mid < end;
@@ -74,7 +74,7 @@ namespace taranchuk_flightcombat
     //    }
     //
     //    public static float TurretRotation(VehicleTurret __instance)
-    //    {
+    //    { 
     //        if (!__instance.IsTargetable && __instance.attachedTo is null)
     //        {
     //            Log.Message(__instance + " TurretRotation return 1");

@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using Verse;
 
 namespace taranchuk_flightcombat
 {
-    [HarmonyPatch(typeof(Bullet), "Impact")]
+    [HarmonyPatch(typeof(Bullet), nameof(Bullet.Impact))]
     public static class Bullet_Impact_Patch
     {
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilGen)

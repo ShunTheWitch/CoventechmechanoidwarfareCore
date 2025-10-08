@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
@@ -6,7 +6,7 @@ using Verse;
 
 namespace taranchuk_flightcombat
 {
-    [HarmonyPatch(typeof(DamageWorker), "ExplosionDamageThing")]
+    [HarmonyPatch(typeof(DamageWorker), nameof(DamageWorker.ExplosionDamageThing))]
     public static class DamageWorker_ExplosionDamageThing_Patch
     {
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilGen)

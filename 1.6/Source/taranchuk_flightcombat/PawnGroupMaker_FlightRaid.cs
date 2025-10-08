@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace taranchuk_flightcombat
 
         public int? maxAircraftCount;
         [HotSwappable]
-        [HarmonyPatch(typeof(PawnGroupMaker), "GeneratePawns")]
+        [HarmonyPatch(typeof(PawnGroupMaker), nameof(PawnGroupMaker.GeneratePawns))]
         public static class PawnGroupMaker_GeneratePawns_Patch
         {
             public static List<List<Pawn>> pawnsBeingGeneratedNow = new List<List<Pawn>>();
@@ -83,7 +83,7 @@ namespace taranchuk_flightcombat
                 bool allowFood = parms.raidStrategy == null || parms.raidStrategy.pawnsCanBringFood || (parms.faction != null && !parms.faction.HostileTo(Faction.OfPlayer));
                 Predicate<Pawn> validatorPostGear = ((parms.raidStrategy != null) ? ((Predicate<Pawn>)((Pawn p) => parms.raidStrategy.Worker.CanUsePawn(parms.points, p, outPawns))) : null);
                 bool flag = false;
-                foreach (PawnGenOptionWithXenotype item in ChoosePawnGenOptionsByPoints(__instance,parms.points, outPawns, groupMaker.options, parms))
+                foreach (PawnGenOptionWithXenotype item in ChoosePawnGenOptionsByPoints(__instance, parms.points, outPawns, groupMaker.options, parms))
                 {
                     PawnGenerationRequest request = new PawnGenerationRequest(item.Option.kind, parms.faction, PawnGenerationContext.NonPlayer, fixedIdeo: parms.ideo, forcedXenotype: item.Xenotype, tile: parms.tile, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: true, colonistRelationChanceFactor: 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: true, allowFood: allowFood, allowAddictions: true, inhabitant: parms.inhabitants, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, biocodeWeaponChance: 0f, biocodeApparelChance: 0f, extraPawnForExtraRelationChance: null, relationWithExtraPawnChanceFactor: 1f, validatorPreGear: null, validatorPostGear: validatorPostGear);
                     if (parms.raidAgeRestriction != null && parms.raidAgeRestriction.Worker.ShouldApplyToKind(item.Option.kind))
@@ -178,7 +178,7 @@ namespace taranchuk_flightcombat
             }
         }
 
-        [HarmonyPatch(typeof(PawnGroupMaker), "CanGenerateFrom")]
+        [HarmonyPatch(typeof(PawnGroupMaker), nameof(PawnGroupMaker.CanGenerateFrom))]
         public static class PawnGroupMaker_CanGenerateFrom_Patch
         {
             public static void Postfix(PawnGroupMaker __instance, ref bool __result, PawnGroupMakerParms parms)

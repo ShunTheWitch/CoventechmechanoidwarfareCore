@@ -11,8 +11,8 @@ namespace VehicleMechanitorControl
         public static void Postfix(ref AcceptanceReport __result, Pawn_MechanitorTracker __instance)
         {
             if (__result.Reason.NullOrEmpty() && __result.Accepted is false && __instance.pawn.Spawned is false 
-                && __instance.pawn.ParentHolder is VehicleHandler vehicleHandler 
-                && vehicleHandler.vehicle.GetComp<CompMechanitorControl>() != null)
+                && __instance.pawn.ParentHolder?.ParentHolder is VehicleRoleHandler roleHandler
+                && roleHandler.vehicle.GetComp<CompMechanitorControl>() != null)
             {
                 __result = true;
             }

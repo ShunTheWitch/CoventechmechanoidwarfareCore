@@ -1,9 +1,9 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using Verse;
 
 namespace taranchuk_flightcombat
 {
-    [HarmonyPatch(typeof(Verb), "TryFindShootLineFromTo")]
+    [HarmonyPatch(typeof(Verb), nameof(Verb.TryFindShootLineFromTo))]
     public static class Verb_TryFindShootLineFromTo_Patch
     {
         public static void Prefix(Verb __instance, IntVec3 root, LocalTargetInfo targ, out bool __state)
@@ -36,7 +36,7 @@ namespace taranchuk_flightcombat
                 resultingLine = default(ShootLine);
                 __result = false;
             }
-            else if (__instance.IsMeleeAttack && targ.HasThing 
+            else if (__instance.IsMeleeAttack && targ.HasThing
                 && targ.Thing.TryGetComp<CompFlightMode>() is CompFlightMode comp && comp.InAir)
             {
                 resultingLine = default(ShootLine);

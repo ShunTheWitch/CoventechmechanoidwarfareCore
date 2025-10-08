@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using UnityEngine;
 using Vehicles;
+using Vehicles.Rendering;
 using Verse;
 
 namespace taranchuk_flightcombat

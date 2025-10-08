@@ -1,11 +1,11 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld;
 using Vehicles;
 using Verse;
 
 namespace taranchuk_flightcombat
 {
-    [HarmonyPatch(typeof(PawnUtility), "PawnsCanShareCellBecauseOfBodySize")]
+    [HarmonyPatch(typeof(PawnUtility), nameof(PawnUtility.PawnsCanShareCellBecauseOfBodySize))]
     public static class PawnUtility_PawnsCanShareCellBecauseOfBodySize_Patch
     {
         public static void Postfix(ref bool __result, Pawn p1, Pawn p2)
@@ -19,7 +19,7 @@ namespace taranchuk_flightcombat
                 }
             }
         }
-    
+
         private static bool CanShareCell(Pawn pawn)
         {
             if (pawn is VehiclePawn vehicle)

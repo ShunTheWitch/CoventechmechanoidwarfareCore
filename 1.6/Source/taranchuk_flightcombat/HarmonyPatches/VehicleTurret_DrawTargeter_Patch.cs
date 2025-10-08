@@ -1,9 +1,9 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using Vehicles;
 
 namespace taranchuk_flightcombat
 {
-    [HarmonyPatch(typeof(VehicleTurret), "DrawTargeter")]
+    [HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.DrawTargeter))]
     public static class VehicleTurret_DrawTargeter_Patch
     {
         public static VehicleTurret curTurret;

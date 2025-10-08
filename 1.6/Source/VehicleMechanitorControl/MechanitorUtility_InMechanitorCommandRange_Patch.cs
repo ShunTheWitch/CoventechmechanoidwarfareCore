@@ -29,12 +29,15 @@ namespace VehicleMechanitorControl
                                     return;
                                 }
                             }
-                            foreach (var passenger in vehicle.handlers.SelectMany(x => x.handlers.OfType<Pawn>()))
+                            foreach (var handler in vehicle.Handlers)
                             {
-                                if (passenger == overseer && overseer.mechanitor.CanCommandTo(target))
+                                foreach (var passenger in handler.thingOwner)
                                 {
-                                    __result = true;
-                                    return;
+                                    if (passenger == overseer && overseer.mechanitor.CanCommandTo(target))
+                                    {
+                                        __result = true;
+                                        return;
+                                    }
                                 }
                             }
                         }

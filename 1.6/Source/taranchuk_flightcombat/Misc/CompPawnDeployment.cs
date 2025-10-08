@@ -71,7 +71,7 @@ namespace taranchuk_flightcombat
                 pawnLoad.action = () =>
                 {
                     var pawns = GetPawnsInPickupCells().Where(x => x != Vehicle).OrderBy(LoadOrder).ToList();
-                    var passengerHandler = Vehicle.handlers.Find(x => x.role.handlingTypes == HandlingTypeFlags.None);
+                    var passengerHandler = Vehicle.handlers.Find(x => x.role.handlingTypes == HandlingType.None);
                     foreach (var pawn in pawns.ToList())
                     {
                         if (Props.takePawnsOfAnyFaction || pawn.Faction == Vehicle.Faction)

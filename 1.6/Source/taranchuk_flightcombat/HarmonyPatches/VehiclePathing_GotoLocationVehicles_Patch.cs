@@ -1,16 +1,17 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld;
 using Vehicles;
 using Verse;
+using Verse.AI;
 
 namespace taranchuk_flightcombat
 {
-    [HarmonyPatch(typeof(VehiclePathing), nameof(VehiclePathing.GotoLocationVehicles))]
+    [HarmonyPatch(typeof(VehiclePathFollower), nameof(VehiclePathFollower.StartPath), typeof(LocalTargetInfo), typeof(PathEndMode), typeof(bool))]
     public static class VehiclePathing_GotoLocationVehicles_Patch
     {
-        public static bool Prefix(IntVec3 __0, Pawn __1, ref bool __result)
+        public static bool Prefix(VehiclePathFollower __instance, LocalTargetInfo __0, PathEndMode __1, bool __2)
         {
-            var vehicle = __1 as VehiclePawn;
+            var vehicle = __instance.vehicle as VehiclePawn;
             if (vehicle != null && vehicle.Faction == Faction.OfPlayer)
             {
                 var comp = vehicle.GetComp<CompFlightMode>();
@@ -19,9 +20,8 @@ namespace taranchuk_flightcombat
                     comp.SetTarget(__0);
                     if (comp.Props.waypointFleck != null)
                     {
-                        FleckMaker.Static(__0, __1.Map, comp.Props.waypointFleck);
+                        FleckMaker.Static(__0.Cell, vehicle.Map, comp.Props.waypointFleck);
                     }
-                    __result = false;
                     return false;
                 }
             }

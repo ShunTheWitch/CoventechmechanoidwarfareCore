@@ -1,13 +1,15 @@
-﻿using HarmonyLib;
+using HarmonyLib;
+using System;
 using Vehicles;
 using Verse;
+using RimWorld.Planet;
 
 namespace taranchuk_flightcombat
 {
 
     [HotSwappable]
-    [HarmonyPatch(typeof(TurretTargeter), "TargetMeetsRequirements")]
-    public static class TurretTargeter_TargetMeetsRequirements_Patch
+    [HarmonyPatch(typeof(TargetingHelper), nameof(TargetingHelper.TargetMeetsRequirements), new Type[] { typeof(VehicleTurret), typeof(LocalTargetInfo), typeof(IntVec3) }, new ArgumentType[] { ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Out })]
+    public static class TargetingHelper_TargetMeetsRequirements_Patch
     {
         public static void Prefix(VehicleTurret turret, LocalTargetInfo target, out bool __state)
         {

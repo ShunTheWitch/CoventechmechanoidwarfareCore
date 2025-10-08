@@ -1,4 +1,4 @@
-﻿using RimWorld;
+using RimWorld;
 using RimWorld.Planet;
 using SmashTools;
 using System;
@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 using Vehicles;
+using Vehicles.World;
 using Verse;
 using Verse.AI;
 
@@ -50,7 +51,7 @@ namespace taranchuk_flightcombat
     [HotSwappable]
     public class CompFlightMode : VehicleComp, IMaterialCacheTarget
     {
-        public AerialVehicleArrivalAction arrivalAction;
+        public VehicleArrivalAction arrivalAction;
         public List<FlightNode> flightPath;
         public bool orderRecon;
 
@@ -113,7 +114,7 @@ namespace taranchuk_flightcombat
                 //    + " - flightSpeed: " + flightSpeed
                 //    + " - flightControl: " + flightControl);
                 //return deploying && canMove && flightSpeed && flightControl;
-                return Vehicle.Deploying is false && Vehicle.CanMoveFinal
+                return Vehicle.CompVehicleTurrets.Deploying is false && Vehicle.CanMoveFinal
                     && Vehicle.GetStatValue(VehicleStatDefOf.FlightSpeed) >
                     Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightSpeed) / 2f
                     && Vehicle.GetStatValue(VehicleStatDefOf.FlightControl) >
@@ -123,7 +124,7 @@ namespace taranchuk_flightcombat
 
         public float AngleAdjusted(float angle)
         {
-            return angle.ClampAndWrap(0, 360);
+            return angle.ClampAngle();
         }
 
         public float BaseFlightSpeed => Props.flightSpeedPerTick;
@@ -167,6 +168,8 @@ namespace taranchuk_flightcombat
         public PatternDef PatternDef => Vehicle.PatternDef;
 
         public string Name => $"CompFlightMode_{Vehicle.ThingID}";
+
+        public MaterialPropertyBlock PropertyBlock { get; private set; } = new MaterialPropertyBlock();
 
         private BombOption BombOption => Props.bombOptions.FirstOrDefault(x => Props.bombOptions.IndexOf(x) == bombardmentOptionInd);
 
@@ -492,7 +495,7 @@ namespace taranchuk_flightcombat
             if (flightMode)
             {
                 SetTarget(Vehicle.vehiclePather.Moving ? Vehicle.vehiclePather.Destination : Vehicle.Position);
-                curPosition = Vehicle.Drawer.DrawPos;
+                curPosition = Vehicle.DrawTracker.DrawPos;
                 CurAngle = Vehicle.FullRotation.AsAngle - FlightAngleOffset;
                 if (Vehicle.vehiclePather.Moving)
                 {
@@ -523,7 +526,7 @@ namespace taranchuk_flightcombat
                 SetTarget(Vehicle.Position);
                 if (InAir is false)
                 {
-                    curPosition = Vehicle.Drawer.DrawPos;
+                    curPosition = Vehicle.DrawTracker.DrawPos;
                     CurAngle = Vehicle.FullRotation.AsAngle - FlightAngleOffset;
                 }
                 if (Vehicle.vehiclePather.Moving)
@@ -719,7 +722,7 @@ namespace taranchuk_flightcombat
                 if (props?.angularVelocityPropeller != null)
                 {
                     var rotationRate = props.angularVelocityPropeller.Evaluate(takeoffProgress);
-                    Vehicle.overlayRenderer?.rotationRegistry?.UpdateRegistry(rotationRate);
+                    Vehicle.DrawTracker.overlayRenderer?.SetAcceleration(rotationRate);
                 }
             }
         }
@@ -734,7 +737,7 @@ namespace taranchuk_flightcombat
                 Messages.Message("VF_AerialVehicleLeft".Translate(Vehicle.LabelShort), MessageTypeDefOf.PositiveEvent);
             }
             AerialVehicleInFlight aerialVehicle = AerialVehicleInFlight.Create(Vehicle, map.Tile);
-            aerialVehicle.OrderFlyToTiles(new List<FlightNode>(flightPath), WorldHelper.GetTilePos(map.Tile), arrivalAction);
+            aerialVehicle.OrderFlyToTiles(new List<FlightNode>(flightPath), arrivalAction);
             if (orderRecon)
             {
                 aerialVehicle.flightPath.ReconCircleAt(flightPath.LastOrDefault().tile);
@@ -767,8 +770,8 @@ namespace taranchuk_flightcombat
                 if (turret.HasAmmo is false)
                 {
                     ThingDef ammoType = Vehicle.inventory.innerContainer
-                        .FirstOrDefault(t => turret.turretDef.ammunition.Allows(t) 
-                        || turret.turretDef.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
+                        .FirstOrDefault(t => turret.def.ammunition.Allows(t)
+                        || turret.def.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
                     if (ammoType != null)
                     {
                         turret.ReloadInternal(ammoType);
@@ -1306,7 +1309,6 @@ namespace taranchuk_flightcombat
                     return false;
                 }
             }
-            return false;
         }
 
         private bool AngleInRange(float angle, float lower, float upper)

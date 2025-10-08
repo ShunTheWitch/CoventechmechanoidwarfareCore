@@ -5,10 +5,10 @@ using Verse;
 
 namespace VehicleMechanitorControl
 {
-    [HarmonyPatch(typeof(Vehicle_IgnitionController), "GetGizmos")]
-    public static class Vehicle_IgnitionController_GetGizmos_Patch
+    [HarmonyPatch(typeof(VehicleIgnitionController), "GetGizmos")]
+    public static class VehicleIgnitionController_GetGizmos_Patch
     {
-        public static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> __result, Vehicle_IgnitionController __instance)
+        public static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> __result, VehicleIgnitionController __instance)
         {
             foreach (var r in __result)
             {

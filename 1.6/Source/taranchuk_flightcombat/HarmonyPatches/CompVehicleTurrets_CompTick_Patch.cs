@@ -1,11 +1,11 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System.Linq;
 using Vehicles;
 using Verse;
 
 namespace taranchuk_flightcombat
 {
-    [HarmonyPatch(typeof(CompVehicleTurrets), "CompTick")]
+    [HarmonyPatch(typeof(CompVehicleTurrets), nameof(CompVehicleTurrets.CompTick))]
     public static class CompVehicleTurrets_CompTick_Patch
     {
         public static bool Prefix(CompVehicleTurrets __instance)
