@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using Vehicles;
 using Verse;
 
@@ -12,8 +12,12 @@ namespace taranchuk_flightcombat
             var comp = __instance.GetComp<CompFlightMode>();
             if (comp != null && comp.InAir && comp.Props.flightGraphicData != null)
             {
-                __result = comp.FlightGraphic;
-                return false;
+                var flightGraphic = comp.FlightGraphic;
+                if (flightGraphic != null)
+                {
+                    __result = flightGraphic;
+                    return false;
+                }
             }
             return true;
         }
