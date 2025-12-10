@@ -145,9 +145,13 @@ namespace taranchuk_flightcombat
                 {
                     LongEventHandler.ExecuteWhenFinished(delegate
                     {
-                        cachedFlightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
+                        if (UnityData.IsInMainThread)
+                        {
+                            cachedFlightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
+                        }
                     });
                 }
+                if (cachedFlightGraphic is null) return null;
                 if (Flying)
                 {
                     var x = Mathf.Lerp(Vehicle.DrawSize.x, Props.flightGraphicData.drawSize.x, takeoffProgress);
