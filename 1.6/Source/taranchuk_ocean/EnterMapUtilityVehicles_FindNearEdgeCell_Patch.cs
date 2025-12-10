@@ -8,27 +8,25 @@ using Verse;
 
 namespace taranchuk_ocean
 {
-    [HarmonyPatch(typeof(EnterMapUtilityVehicles), "FindNearEdgeCell")]
+    [HarmonyPatch(typeof(EnterMapUtilityVehicles), "FindNearEdgeCell", new System.Type[] { typeof(Map), typeof(VehicleDef), typeof(Faction), typeof(EnterMapUtilityVehicles.SpawnParams) })]
     public static class EnterMapUtilityVehicles_FindNearEdgeCell_Patch
     {
-        public static bool Prefix(ref IntVec3 __result, Map map, VehicleDef vehicleDef, Predicate<IntVec3> extraCellValidator)
+        public static bool Prefix(ref IntVec3 __result, Map map, VehicleDef vehicleDef, Faction faction, EnterMapUtilityVehicles.SpawnParams spawnParams)
         {
             if (map.IsWaterBiome())
             {
-                __result = FindNearEdgeCell(map, vehicleDef, extraCellValidator);
+                __result = FindNearEdgeCell(map, vehicleDef, spawnParams);
                 return false;
             }
             return true;
         }
 
-        private static IntVec3 FindNearEdgeCell(Map map, VehicleDef vehicleDef, Predicate<IntVec3> extraCellValidator)
+        private static IntVec3 FindNearEdgeCell(Map map, VehicleDef vehicleDef, EnterMapUtilityVehicles.SpawnParams spawnParams)
         {
-            Faction hostFaction = map.ParentFaction;
             IntVec3 result;
             try
             {
-                if (CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => baseValidator(x)
-                    && (extraCellValidator == null || extraCellValidator(x)), map, Rot4.Random,
+                if (CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => (spawnParams.extraCellValidator == null || spawnParams.extraCellValidator(x, map, vehicleDef)), map, Rot4.Random,
                     CellFinder.EdgeRoadChance_Ignore, out result))
                 {
                     return CellFinderExtended.RandomClosewalkCellNear(result, map, vehicleDef, 5);
@@ -40,8 +38,7 @@ namespace taranchuk_ocean
             }
             try
             {
-                if (CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => baseValidator(x)
-                    && (extraCellValidator == null || extraCellValidator(x)), map, CellFinder.EdgeRoadChance_Always, out result))
+                if (CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => (spawnParams.extraCellValidator == null || spawnParams.extraCellValidator(x, map, vehicleDef)), map, CellFinder.EdgeRoadChance_Always, out result))
                 {
                     return CellFinderExtended.RandomClosewalkCellNear(result, map, vehicleDef, 5);
                 }
@@ -52,10 +49,6 @@ namespace taranchuk_ocean
             }
             Log.Warning("Could not find any valid edge cell.");
             return CellFinder.RandomCell(map);
-            bool baseValidator(IntVec3 x)
-            {
-                return true;
-            }
         }
     }
 }
