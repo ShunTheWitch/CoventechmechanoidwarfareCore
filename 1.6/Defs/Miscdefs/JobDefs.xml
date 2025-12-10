@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <JobDef>
+    <defName>BM_ReloadOtherPawns</defName>
+    <driverClass>BM_HeavyWeapon.JobDriver_ReloadOtherPawns</driverClass>
+    <reportString>Reloading TargetA.</reportString>
+    <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
+  </JobDef>
+
+  <JobDef>
+    <defName>BM_WearPowerArmorBuilding</defName>
+    <driverClass>BM_PowerArmor.JobDriver_WearPowerArmorBuilding</driverClass>
+    <reportString>Wearing TargetA.</reportString>
+    <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
+  </JobDef>
+
+  <JobDef>
+    <defName>BM_RefuelPowerArmor</defName>
+    <driverClass>BM_PowerArmor.JobDriver_RefuelPowerArmor</driverClass>
+    <reportString>Refueling TargetA.</reportString>
+    <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
+  </JobDef>
+    <WorkGiverDef>
+    <defName>WorkGiver_UpgradePowerArmor</defName>
+    <giverClass>BM_PowerArmor.WorkGiver_UpgradePowerArmor</giverClass>
+    <priorityInType>100</priorityInType>
+    <workType>Construction</workType>
+    <verb>upgrade</verb>
+    <gerund>upgrading</gerund>
+  </WorkGiverDef>
+    <WorkGiverDef>
+    <defName>WorkGiver_DowngradePowerArmor</defName>
+    <giverClass>BM_PowerArmor.WorkGiver_DowngradePowerArmor</giverClass>
+    <priorityInType>100</priorityInType>
+    <workType>Construction</workType>
+    <verb>downgrade</verb>
+    <gerund>downgrading</gerund>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>UpgradePowerArmor</defName>
+    <driverClass>BM_PowerArmor.JobDriver_UpgradePowerArmor</driverClass>
+    <reportString>upgrading power armor</reportString>
+    <casualInterruptible>false</casualInterruptible>
+    <suspendable>false</suspendable>
+  </JobDef>
+  <JobDef>
+    <defName>DowngradePowerArmor</defName>
+    <driverClass>BM_PowerArmor.JobDriver_UpgradePowerArmor</driverClass>
+    <reportString>downgrading power armor</reportString>
+    <casualInterruptible>false</casualInterruptible>
+    <suspendable>false</suspendable>
+  </JobDef>
+  
+   <JobDef>
+    <defName>BM_EquipWeaponBuilding</defName>
+    <driverClass>BuildingEquipment.JobDriver_EquipWeaponBuilding</driverClass>
+    <reportString>Equipping TargetA.</reportString>
+    <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
+  </JobDef>
+    
+  <JobDef>
+    <defName>BM_ParkPowerArmor</defName>
+    <driverClass>BM_PowerArmor.JobDriver_ParkPowerArmor</driverClass>
+    <reportString>parking TargetA.</reportString>
+    <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
+  </JobDef>
+</Defs>

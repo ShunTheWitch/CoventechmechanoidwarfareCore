@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+	<StatDef>
+		<defName>UF_FlightSpeed</defName>
+		<label>Flight Speed</label>
+		<description>Speed of movement on the world map while flying.</description>
+		<defaultBaseValue>1</defaultBaseValue>
+		<minValue>0</minValue>
+		<category>PawnCombat</category>
+		<toStringStyle>FloatOne</toStringStyle>
+		<formatString>{0} t/s</formatString>
+	</StatDef>
+
+	<StatDef>
+		<defName>UF_FlightControl</defName>
+		<label>Flight Control</label>
+		<description>Capacity of this creature for flight.  If value reaches 0, the creature will be forced to crash land.</description>
+		<defaultBaseValue>1</defaultBaseValue>
+		<category>PawnCombat</category>
+		<minValue>0</minValue>
+		<maxValue>1</maxValue>
+		<toStringStyle>PercentZero</toStringStyle>
+	</StatDef>
+</Defs>
