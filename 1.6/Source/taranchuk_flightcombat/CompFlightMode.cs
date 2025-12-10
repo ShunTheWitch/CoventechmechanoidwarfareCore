@@ -143,7 +143,10 @@ namespace taranchuk_flightcombat
             {
                 if (cachedFlightGraphic == null)
                 {
-                    cachedFlightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
+                    LongEventHandler.ExecuteWhenFinished(delegate
+                    {
+                        cachedFlightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
+                    });
                 }
                 if (Flying)
                 {
