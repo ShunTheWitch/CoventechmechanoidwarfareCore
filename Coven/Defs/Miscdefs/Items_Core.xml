@@ -268,6 +268,17 @@
     </costList>
   </ThingDef>
 
-
+  <ThingDef ParentName="SubcoreBase">
+    <defName>SubcoreHive</defName>
+    <label>hive subcore</label>
+    <description>This subcore is made by scanning the brain of a mechanitor, the facilities to understand mechanoids, using this and then the machine taking the mechlink will allow a subcore capable of wielding mechanoids of considerable might.</description>
+    <graphicData>
+      <texPath>Things/HiveSubcore</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+    </graphicData>
+    <statBases>
+      <MarketValue>300</MarketValue>
+    </statBases>
+  </ThingDef>
 
 </Defs>
