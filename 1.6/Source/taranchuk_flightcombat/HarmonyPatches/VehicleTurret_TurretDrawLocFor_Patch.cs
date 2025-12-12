@@ -10,25 +10,12 @@ namespace taranchuk_flightcombat
     [HarmonyPatch(typeof(VehicleTurret), nameof(VehicleTurret.DrawPosition), typeof(Rot8))]
     public static class VehicleTurret_TurretDrawLocFor_Patch
     {
-        public static void Prefix(VehicleTurret __instance, ref Rot8 rot, out CompFlightMode __state)
+        public static void Prefix(VehicleTurret __instance, ref Rot8 rot)
         {
             var comp = __instance.vehicle?.GetComp<CompFlightMode>();
             if (comp != null && __instance.vehicle.InFlightModeOrNonStandardAngle(comp))
             {
-                __state = comp;
                 rot = comp.FlightRotation;
-            }
-            else
-            {
-                __state = null;
-            }
-        }
-
-        public static void Postfix(ref Vector3 __result, CompFlightMode __state)
-        {
-            if (__state != null)
-            {
-                __result = __result.RotatedBy(__state.AngleAdjusted(__state.CurAngle + __state.FlightAngleOffset));
             }
         }
     }

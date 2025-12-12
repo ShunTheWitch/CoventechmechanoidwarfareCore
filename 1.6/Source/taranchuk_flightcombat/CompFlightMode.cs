@@ -1,6 +1,7 @@
 using RimWorld;
 using RimWorld.Planet;
 using SmashTools;
+using SmashTools.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -572,6 +573,11 @@ namespace taranchuk_flightcombat
             //LogData("flightMode: " + flightMode);
             if (InAir)
             {
+                if (Vehicle.DrawTracker?.renderer is IParallelRenderer renderer)
+                {
+                    renderer.IsDirty = true;
+                }
+
                 if (Vehicle.CompFueledTravel != null && Props.fuelConsumptionPerTick > 0)
                 {
                     if (Vehicle.CompFueledTravel.Fuel < Props.fuelConsumptionPerTick)
@@ -992,6 +998,11 @@ namespace taranchuk_flightcombat
         private void UpdateVehicleAngleAndRotation()
         {
             Vehicle.Angle = AngleAdjusted(CurAngle + FlightAngleOffset);
+            if (Vehicle.Transform != null)
+            {
+                Vehicle.Transform.rotation = Vehicle.Angle;
+            }
+
             UpdateRotation();
         }
 
