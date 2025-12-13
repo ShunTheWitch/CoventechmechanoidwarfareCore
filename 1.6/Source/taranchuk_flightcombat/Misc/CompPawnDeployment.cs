@@ -1,4 +1,4 @@
-﻿using RimWorld;
+using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -32,15 +32,6 @@ namespace taranchuk_flightcombat
         {
             base.PostSpawnSetup(respawningAfterLoad);
             compFlightMode = this.parent.GetComp<CompFlightMode>();
-        }
-
-        public override void PostDrawExtraSelectionOverlays()
-        {
-            base.PostDrawExtraSelectionOverlays();
-            if (Vehicle.Map != null)
-            {
-                GenDraw.DrawFieldEdges(GetPickupCells());
-            }
         }
 
         public List<IntVec3> GetPickupCells()

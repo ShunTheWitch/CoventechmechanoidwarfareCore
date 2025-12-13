@@ -16,6 +16,7 @@ namespace taranchuk_flightcombat
                 if (flightGraphic != null)
                 {
                     __result = flightGraphic;
+                    comp.DrawShadow();
                 }
             }
         }

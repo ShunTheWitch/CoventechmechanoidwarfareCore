@@ -1,4 +1,4 @@
-using RimWorld;
+﻿using RimWorld;
 using RimWorld.Planet;
 using SmashTools;
 using SmashTools.Rendering;
@@ -128,6 +128,41 @@ namespace taranchuk_flightcombat
             return angle.ClampAngle();
         }
 
+        public Vector2 GetCurrentDrawSize()
+        {
+            if (!InAir || Props.flightGraphicData == null)
+            {
+                return Vehicle.DrawSize;
+            }
+
+            var originalSize = Vehicle.VehicleDef.graphicData.drawSize;
+            var flightSize = Props.flightGraphicData.drawSize;
+
+            if (Flying)
+            {
+                var x = Mathf.Lerp(originalSize.x, flightSize.x, takeoffProgress);
+                var y = Mathf.Lerp(originalSize.y, flightSize.y, takeoffProgress);
+                return new Vector2(x, y);
+            }
+            else if (Landing)
+            {
+                var x = Mathf.Lerp(flightSize.x, originalSize.x, 1f - takeoffProgress);
+                var y = Mathf.Lerp(flightSize.y, originalSize.y, 1f - takeoffProgress);
+                return new Vector2(x, y);
+            }
+            else
+            {
+                return flightSize;
+            }
+        }
+
+        public Vector2 GetScaleFactors()
+        {
+            var originalSize = Vehicle.VehicleDef.graphicData.drawSize;
+            var currentSize = GetCurrentDrawSize();
+            return new Vector2(currentSize.x / originalSize.x, currentSize.y / originalSize.y);
+        }
+
         public float BaseFlightSpeed => Props.flightSpeedPerTick;
         public Vector3 curPosition;
         private bool? clockwiseTurn;
@@ -138,34 +173,30 @@ namespace taranchuk_flightcombat
 
         public Graphic_Vehicle cachedFlightGraphic;
 
+        private Graphic_Vehicle flightGraphic;
+        private Vector2 lastFlightGraphicDrawSize = Vector2.zero;
+
         public Graphic_Vehicle FlightGraphic
         {
             get
             {
-                if (cachedFlightGraphic == null)
+                var currentDrawSize = GetCurrentDrawSize();
+                bool needsUpdate = flightGraphic == null || lastFlightGraphicDrawSize != currentDrawSize;
+                
+                if (needsUpdate)
                 {
                     LongEventHandler.ExecuteWhenFinished(delegate
                     {
                         if (UnityData.IsInMainThread)
                         {
-                            cachedFlightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
+                            flightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
+                            flightGraphic.drawSize = currentDrawSize;
                         }
                     });
+                    lastFlightGraphicDrawSize = currentDrawSize;
                 }
-                if (cachedFlightGraphic is null) return null;
-                if (Flying)
-                {
-                    var x = Mathf.Lerp(Vehicle.DrawSize.x, Props.flightGraphicData.drawSize.x, takeoffProgress);
-                    var y = Mathf.Lerp(Vehicle.DrawSize.y, Props.flightGraphicData.drawSize.y, takeoffProgress);
-                    cachedFlightGraphic.drawSize = new Vector2(x, y);
-                }
-                else if (Landing)
-                {
-                    var x = Mathf.Lerp(Props.flightGraphicData.drawSize.x,Vehicle.DrawSize.x, 1f - takeoffProgress);
-                    var y = Mathf.Lerp(Props.flightGraphicData.drawSize.y, Vehicle.DrawSize.y, 1f - takeoffProgress);
-                    cachedFlightGraphic.drawSize = new Vector2(x, y);
-                }
-                return cachedFlightGraphic;
+
+                return flightGraphic;
             }
         }
 
@@ -178,6 +209,8 @@ namespace taranchuk_flightcombat
         public string Name => $"CompFlightMode_{Vehicle.ThingID}";
 
         public MaterialPropertyBlock PropertyBlock { get; private set; } = new MaterialPropertyBlock();
+        
+        private Material shadowMaterial;
 
         private BombOption BombOption => Props.bombOptions.FirstOrDefault(x => Props.bombOptions.IndexOf(x) == bombardmentOptionInd);
 
@@ -249,7 +282,7 @@ namespace taranchuk_flightcombat
                     yield return g;
                 }
             }
-            
+
             if (Prefs.DevMode)
             {
                 yield return new Command_Action
@@ -485,7 +518,7 @@ namespace taranchuk_flightcombat
 
         private void FillGaps(List<IntVec3> cells)
         {
-            foreach (var cell in cells.ToList()) 
+            foreach (var cell in cells.ToList())
             {
                 var adjcells = GenAdj.CellsAdjacent8Way(cell, Vehicle.FullRotation, IntVec2.One);
                 foreach (var adjcell in adjcells)
@@ -543,7 +576,7 @@ namespace taranchuk_flightcombat
                 }
             }
             targetToFace = targetToChase = LocalTargetInfo.Invalid;
-            this.flightMode = hoverMode ? FlightMode.Hover : FlightMode.Flight; 
+            this.flightMode = hoverMode ? FlightMode.Hover : FlightMode.Flight;
         }
 
         public void SetTarget(LocalTargetInfo targetInfo)
@@ -570,7 +603,6 @@ namespace taranchuk_flightcombat
         public override void CompTick()
         {
             base.CompTick();
-            //LogData("flightMode: " + flightMode);
             if (InAir)
             {
                 if (Vehicle.DrawTracker?.renderer is IParallelRenderer renderer)
@@ -585,7 +617,6 @@ namespace taranchuk_flightcombat
                         if (shouldCrash is false)
                         {
                             SetToCrash();
-                            //Log.Message("should crash because of lack of fuel");
                         }
                     }
                     else
@@ -597,21 +628,19 @@ namespace taranchuk_flightcombat
                 if (CanFly is false && shouldCrash is false)
                 {
                     SetToCrash();
-                    //Log.Message("should crash because of CanFly");
-                    //Find.TickManager.CurTimeSpeed = TimeSpeed.Paused;
                 }
 
-                if (TakingOff is false && initialTarget.IsValid && curPosition.ToIntVec3().InBounds(Vehicle.Map) 
+                if (TakingOff is false && initialTarget.IsValid && curPosition.ToIntVec3().InBounds(Vehicle.Map)
                     && OccupiedRect().Contains(initialTarget.Cell))
                 {
                     initialTarget = LocalTargetInfo.Invalid;
                 }
-                        
+
                 if (InAIMode && !GoingToWorld)
                 {
                     AITick();
                 }
-        
+
                 if (TakingOff)
                 {
                     Takeoff();
@@ -646,12 +675,12 @@ namespace taranchuk_flightcombat
                 }
                 else if (Flying)
                 {
-                    Flight(); 
+                    Flight();
                 }
 
                 ProcessRotors();
                 SpawnFlecks();
-                
+
                 var curPositionIntVec = curPosition.ToIntVec3();
                 if (curPositionIntVec != Vehicle.Position && curPositionIntVec.InBounds(Vehicle.Map))
                 {
@@ -694,7 +723,6 @@ namespace taranchuk_flightcombat
                 }
                 UpdateVehicleAngleAndRotation();
             }
-            //LogData("flightMode: " + flightMode);
         }
 
         private void FlightEnd()
@@ -852,17 +880,10 @@ namespace taranchuk_flightcombat
                 .Concat(Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.PowerTrader));
             if (Vehicle.Faction != Faction.OfPlayer)
             {
-                //Log.Message("1 targets: " + string.Join(", ", targets));
             }
 
             targets = targets.Distinct().Where(x => IsValidTarget(x)).OrderByDescending(x => CombatPoints(x)).Take(3);
-            //Log.Message("Got first 3 targets: " + string.Join(", ", targets));
-            //foreach (var target in targets)
-            //{
-            //    Log.Message(target + " - NearbyAreaCombatPoints(target): " + (NearbyAreaCombatPoints(target)));
-            //}
             var result = targets.OrderByDescending(x => NearbyAreaCombatPoints(x)).FirstOrDefault();
-            //Log.Message("Got result: " + result);
             return result;
         }
 
@@ -1229,7 +1250,6 @@ namespace taranchuk_flightcombat
                 if (landingStage == LandingStage.GotoInitialSpot)
                 {
                     bool shouldRotate = ShouldRotate(out bool? clockturn);
-                    //Log.Message("Should rotate: " + shouldRotate + " - " + clockturn); ;
                     if (shouldRotate)
                     {
                         if (clockturn.Value)
@@ -1308,8 +1328,6 @@ namespace taranchuk_flightcombat
                             if (angleInRange)
                             {
                                 Log.Message("curAngle: " + curAngle + " - targetAngle: " + targetAngle + " - i: " + i + " - ticksPassedSimulated: " + ticksPassedSimulated);
-                                //Vehicle.Map.debugDrawer.FlashCell(runwayStartingSpot.Cell);
-                                //Vehicle.Map.debugDrawer.FlashCell(landingSpot.Cell, 0.5f);
                             }
                             if (angleInRange && i >= ticksPassedSimulated - 3)
                             {
@@ -1347,7 +1365,6 @@ namespace taranchuk_flightcombat
         public override void PostDrawExtraSelectionOverlays()
         {
             base.PostDrawExtraSelectionOverlays();
-            //LogData("flightMode: " + flightMode);
         }
 
         private bool CanLand() => OccupiedRect().All(x => Vehicle.Drivable(x));
@@ -1483,7 +1500,7 @@ namespace taranchuk_flightcombat
 
         private void LogData(string prefix)
         {
-            Log.Message(this.Vehicle + " - " + prefix + " - Vehicle.Position: " + Vehicle.Position + " - takeoffProgress: " + takeoffProgress 
+            Log.Message(this.Vehicle + " - " + prefix + " - Vehicle.Position: " + Vehicle.Position + " - takeoffProgress: " + takeoffProgress
                 + " - IsFlying: " + Flying + " - IsTakingOff: " + TakingOff + " - IsDescending: " + Landing
                 + " - CurAngle: " + CurAngle + " - Vehicle.Angle: " + Vehicle.Angle
                 + " - FullRotation: " + Vehicle.FullRotation.ToStringNamed() + " - Rotation: " + Vehicle.Rotation.ToStringHuman()
@@ -1507,10 +1524,33 @@ namespace taranchuk_flightcombat
             PathingHelper.RecalculateAllPerceivedPathCosts(previousMap);
         }
 
+
+        private int drawThisFrame;
+        public void DrawShadow()
+        {
+            if (InAir && shadowMaterial != null && FlightGraphic != null && drawThisFrame != Time.frameCount)
+            {
+                drawThisFrame = Time.frameCount;
+                Vector3 drawPos = curPosition;
+                drawPos.y = Vehicle.DrawPos.y - 1;
+                drawPos.z -= 3f;
+
+                Vector2 size = FlightGraphic.drawSize;
+                Vector3 scale = new Vector3(size.x, 1f, size.y);
+
+                float visualAngle = AngleAdjusted(CurAngle + FlightAngleOffset);
+                Quaternion rot = Quaternion.AngleAxis(visualAngle, Vector3.up);
+
+                Matrix4x4 matrix = Matrix4x4.TRS(drawPos, rot, scale);
+
+                Graphics.DrawMesh(MeshPool.plane10, matrix, shadowMaterial, 0);
+            }
+        }
         private void DestroyFlightGraphic()
         {
             RGBMaterialPool.Release(this);
             cachedFlightGraphic = null;
+            shadowMaterial = null;
         }
 
         private Graphic_Vehicle CreateFlightGraphic(IMaterialCacheTarget cacheTarget, GraphicDataRGB copyGraphicData)
@@ -1541,6 +1581,15 @@ namespace taranchuk_flightcombat
             {
                 graphic = ((GraphicData)graphicData).Graphic as Graphic_Vehicle;
             }
+            if (graphic != null && graphic.MatNorth != null)
+            {
+                shadowMaterial = MaterialPool.MatFrom(
+                    (Texture2D)graphic.MatNorth.mainTexture,
+                    ShaderDatabase.Transparent,
+                        new Color(0f, 0f, 0f, 0.25f)
+                );
+            }
+
             return graphic;
         }
 
