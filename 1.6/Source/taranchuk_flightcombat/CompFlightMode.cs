@@ -1533,7 +1533,7 @@ namespace taranchuk_flightcombat
                 drawThisFrame = Time.frameCount;
                 Vector3 drawPos = curPosition;
                 drawPos.y = Vehicle.DrawPos.y - 1;
-                drawPos.z -= 3f;
+                drawPos.z -= 3f * takeoffProgress;
 
                 Vector2 size = FlightGraphic.drawSize;
                 Vector3 scale = new Vector3(size.x, 1f, size.y);
