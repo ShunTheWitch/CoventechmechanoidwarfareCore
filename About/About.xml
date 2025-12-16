@@ -16,12 +16,6 @@
       <downloadUrl>https://github.com/pardeike/HarmonyRimWorld/releases/latest</downloadUrl>
       <steamWorkshopUrl>https://steamcommunity.com/workshop/filedetails/?id=2009463077</steamWorkshopUrl>
     </li>
-    <li>
-      <packageId>SmashPhil.VehicleFramework</packageId>
-      <displayName>Vehicle Framework</displayName>
-      <downloadUrl>https://github.com/SmashPhil/Vehicles/releases/latest</downloadUrl>
-      <steamWorkshopUrl />
-    </li>
 	<li>
 		<packageId>Ludeon.RimWorld.Biotech</packageId>
 		<displayName>RimWorld - Biotech</displayName>

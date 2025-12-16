@@ -1,6 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Defs>
-
+	<FleckDef Name = "CVN_FleckBaseSmoke" ParentName = "FleckBase_Thrown" Abstract = "True">
+		<fadeOutTime>0.15</fadeOutTime>
+		<growthRate>0.3</growthRate>
+	</FleckDef>
+	
 	<FleckDef ParentName = "FleckBase_Thrown">
 		<defName>CVN_RocketSmoke</defName>
 		<graphicData>
@@ -14,7 +18,7 @@
 		<growthRate>0.01</growthRate>
 	</FleckDef>
 	
-	<FleckDef ParentName="FleckBaseSmoke">
+	<FleckDef ParentName="CVN_FleckBaseSmoke">
 		<defName>CVN_RocketExhaust</defName>
 		<graphicData>
 			<texPath>Things/Mote/FireGlow</texPath>

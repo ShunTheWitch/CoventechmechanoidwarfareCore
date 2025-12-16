@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <loadFolders>
-	<v1.5>
-    <li>/</li>
-    <li>1.5</li>
-<li IfModActive="ShunTheWitch.CVNmechanoidnavalwarfare,ShunTheWitch.CVNupdatedmechanoidcombinedwarfare,ShunTheWitch.CVNDreamWarfare,ShunTheWitch.CVNLeviathansone,ShunTheWitch.CVNshotgunforcrab">Coven</li>
-	</v1.5>
-	<v1.6>
-    <li>/</li>
-    <li>1.6</li>
-<li IfModActive="ShunTheWitch.CVNmechanoidnavalwarfare,ShunTheWitch.CVNupdatedmechanoidcombinedwarfare,ShunTheWitch.CVNDreamWarfare,ShunTheWitch.CVNLeviathansone,ShunTheWitch.CVNshotgunforcrab">Coven</li>
-	</v1.6>
+    <v1.5>
+        <li>/</li>
+        <li>1.5</li>
+        <li IfModActive="ShunTheWitch.CVNmechanoidnavalwarfare,ShunTheWitch.CVNupdatedmechanoidcombinedwarfare,ShunTheWitch.CVNDreamWarfare,ShunTheWitch.CVNLeviathansone,ShunTheWitch.CVNshotgunforcrab">Coven</li>
+    </v1.5>
+    <v1.6>
+        <li>/</li>
+        <li>1.6</li>
+        <li IfModActive="ShunTheWitch.CVNmechanoidnavalwarfare,ShunTheWitch.CVNupdatedmechanoidcombinedwarfare,ShunTheWitch.CVNDreamWarfare,ShunTheWitch.CVNLeviathansone,ShunTheWitch.CVNshotgunforcrab">Coven</li>
+        <li IfModActive="SmashPhil.VehicleFramework">1.6/VehicleFramework</li>
+    </v1.6>
 </loadFolders>
