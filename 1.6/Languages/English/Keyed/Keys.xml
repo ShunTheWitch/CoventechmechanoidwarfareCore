@@ -5,5 +5,6 @@
 	<CVN_OnCooldown>On cooldown. It will be available in {0}.</CVN_OnCooldown>
 	<CVN_CannotLand>Cannot land. This runway is impossible to use.</CVN_CannotLand>
 	<CVN_CannotTakeoff>Cannot takeoff. This runway is impossible to use.</CVN_CannotTakeoff>
+	<CVN_CannotTakeoffInSpace>Cannot takeoff in space.</CVN_CannotTakeoffInSpace>
 	<CVN.Bill>Bill progress: {0} ({1})</CVN.Bill>
 </LanguageData>

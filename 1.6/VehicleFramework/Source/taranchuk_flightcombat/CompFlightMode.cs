@@ -398,6 +398,10 @@ namespace taranchuk_flightcombat
                 {
                     flightModeCommand.Disable("CVN_CannotLandOnImpassableTiles".Translate());
                 }
+                if (Props.canFlyInSpace is false && parent.Map.Biome.inVacuum)
+                {
+                    flightModeCommand.Disable("CVN_CannotTakeoffInSpace".Translate());
+                }
                 yield return flightModeCommand;
             }
 
