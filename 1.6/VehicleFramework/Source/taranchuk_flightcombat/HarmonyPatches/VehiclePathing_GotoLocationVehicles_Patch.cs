@@ -18,10 +18,6 @@ namespace taranchuk_flightcombat
                 if (comp != null && comp.InAir)
                 {
                     comp.SetTarget(__0);
-                    if (comp.Props.waypointFleck != null)
-                    {
-                        FleckMaker.Static(__0.Cell, vehicle.Map, comp.Props.waypointFleck);
-                    }
                     return false;
                 }
             }

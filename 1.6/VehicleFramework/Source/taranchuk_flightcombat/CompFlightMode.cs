@@ -1,4 +1,4 @@
-﻿using RimWorld;
+using RimWorld;
 using RimWorld.Planet;
 using SmashTools;
 using SmashTools.Rendering;
@@ -21,6 +21,7 @@ namespace taranchuk_flightcombat
         public int landingTicks;
         public bool moveWhileTakingOff = true;
         public bool moveWhileLanding = true;
+        public bool canFlyInSpace;
         public List<TerrainAffordanceDef> runwayTerrainRequirements;
         public float flightSpeedPerTick;
         public float flightSpeedTurningPerTick;
@@ -1108,14 +1109,17 @@ namespace taranchuk_flightcombat
             {
                 if (cell.InBounds(Vehicle.Map))
                 {
-                    if (Vehicle.Drivable(cell) is false || cell.GetThingList(Vehicle.Map).Any(x => x is Plant
-                        && x.def.plant.IsTree || x is Building))
+                    var terrain = cell.GetTerrain(Vehicle.Map);
+                    if (Props.canFlyInSpace && terrain == TerrainDefOf.Space)
+                    {
+                        continue;
+                    }
+                    if (Vehicle.Drivable(cell) is false || cell.GetThingList(Vehicle.Map).Any(x => x is Plant && x.def.plant.IsTree || x is Building))
                     {
                         cells.Add(cell);
                     }
                     if (Props.runwayTerrainRequirements != null)
                     {
-                        var terrain = cell.GetTerrain(Vehicle.Map);
                         if (Props.runwayTerrainRequirements.Intersect(terrain.affordances).Any() is false)
                         {
                             cells.Add(cell);

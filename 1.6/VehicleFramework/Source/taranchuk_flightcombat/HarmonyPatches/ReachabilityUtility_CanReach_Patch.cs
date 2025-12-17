@@ -1,4 +1,5 @@
 using HarmonyLib;
+using RimWorld;
 using System;
 using Vehicles;
 using Verse;
@@ -12,9 +13,21 @@ namespace taranchuk_flightcombat
 {
     public static void Postfix(ref bool __result, Pawn pawn, LocalTargetInfo dest)
     {
-        if (dest.Thing is VehiclePawn vehicle)
+        if (pawn is VehiclePawn vehicle)
         {
             var comp = vehicle.GetComp<CompFlightMode>();
+            if (comp != null && comp.InAir && comp.Props.canFlyInSpace)
+            {
+                var terrain = dest.Cell.GetTerrain(vehicle.Map);
+                if (terrain == TerrainDefOf.Space)
+                {
+                    __result = true;
+                }
+            }
+        }
+        else if (dest.Thing is VehiclePawn destVehicle)
+        {
+            var comp = destVehicle.GetComp<CompFlightMode>();
             if (comp != null && comp.InAir)
             {
                 __result = false;
