@@ -88,4 +88,24 @@
 			</li>
 		</value>
 	</Operation>
+	<Operation Class="PatchOperationConditional">
+		<xpath>Defs/ThingDef[defName="Apparel_PowerArmor"]/comps</xpath>
+		<nomatch Class="PatchOperationAdd">
+			<xpath>Defs/ThingDef[defName="Apparel_PowerArmor"]</xpath>
+			<value>
+				<comps/>
+			</value>
+		</nomatch>
+	</Operation>
+	<Operation Class="PatchOperationAdd">
+		<xpath>Defs/ThingDef[defName="Apparel_PowerArmor"]/comps</xpath>
+		<value>
+			<li Class="ApparelSwitch.CompProperties_ChangeGraphicIfLayersWorn">
+				<changeGraphicIfLayersWorn>
+					<li>Middle</li>
+				</changeGraphicIfLayersWorn>
+				<alternateGraphicPath>Things/Pawn/Humanlike/Apparel/PowerArmor/PowerArmor_Alt</alternateGraphicPath>
+			</li>
+		</value>
+	</Operation>
 </Patch>
