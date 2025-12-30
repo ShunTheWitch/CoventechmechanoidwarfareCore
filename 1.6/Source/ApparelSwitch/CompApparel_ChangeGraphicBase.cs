@@ -13,14 +13,14 @@ namespace ApparelSwitch
     {
         public abstract bool ShouldChangeGraphic(Pawn pawn);
 
-        public Graphic GetAlternateGraphic(Apparel apparel, bool forStatue)
+        public Graphic GetAlternateGraphic(Apparel apparel, BodyTypeDef bodyType, bool forStatue)
         {
             var graphicProps = props as CompProperties_ChangeGraphicBase;
             if (graphicProps == null || graphicProps.alternateGraphicPath.NullOrEmpty())
             {
                 return null;
             }
-            string path = graphicProps.alternateGraphicPath;
+            string path = ((apparel.def.apparel.LastLayer != ApparelLayerDefOf.Overhead && apparel.def.apparel.LastLayer != ApparelLayerDefOf.EyeCover && !apparel.RenderAsPack() && !(graphicProps.alternateGraphicPath == BaseContent.PlaceholderImagePath) && !(graphicProps.alternateGraphicPath == BaseContent.PlaceholderGearImagePath)) ? (graphicProps.alternateGraphicPath + "_" + bodyType.defName) : graphicProps.alternateGraphicPath);
             Shader shader = ShaderDatabase.Cutout;
             if (!forStatue)
             {

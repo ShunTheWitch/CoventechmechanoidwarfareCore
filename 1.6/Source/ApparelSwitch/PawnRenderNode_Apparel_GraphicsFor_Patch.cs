@@ -24,7 +24,7 @@ namespace ApparelSwitch
                 {
                     if (comp is CompApparel_ChangeGraphicBase changeGraphicComp && changeGraphicComp.ShouldChangeGraphic(pawn))
                     {
-                        var alternateGraphic = changeGraphicComp.GetAlternateGraphic(apparel, pawn.Drawer.renderer.StatueColor.HasValue);
+                        var alternateGraphic = changeGraphicComp.GetAlternateGraphic(apparel, pawn.story.bodyType, pawn.Drawer.renderer.StatueColor.HasValue);
                         if (alternateGraphic != null)
                         {
                             var result = new List<Graphic>();
