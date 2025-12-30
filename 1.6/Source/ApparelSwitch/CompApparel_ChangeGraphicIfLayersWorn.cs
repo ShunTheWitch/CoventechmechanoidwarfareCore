@@ -1,14 +1,12 @@
 using System.Collections.Generic;
 using RimWorld;
-using UnityEngine;
 using Verse;
 
 namespace ApparelSwitch
 {
-    public class CompProperties_ChangeGraphicIfLayersWorn : CompProperties
+    public class CompProperties_ChangeGraphicIfLayersWorn : CompProperties_ChangeGraphicBase
     {
         public List<ApparelLayerDef> changeGraphicIfLayersWorn;
-        public string alternateGraphicPath;
 
         public CompProperties_ChangeGraphicIfLayersWorn()
         {
@@ -16,11 +14,11 @@ namespace ApparelSwitch
         }
     }
 
-    public class CompApparel_ChangeGraphicIfLayersWorn : ThingComp
+    public class CompApparel_ChangeGraphicIfLayersWorn : CompApparel_ChangeGraphicBase
     {
         public CompProperties_ChangeGraphicIfLayersWorn Props => props as CompProperties_ChangeGraphicIfLayersWorn;
 
-        public bool ShouldChangeGraphic(Pawn pawn)
+        public override bool ShouldChangeGraphic(Pawn pawn)
         {
             if (Props.changeGraphicIfLayersWorn == null || Props.changeGraphicIfLayersWorn.Count == 0)
             {
@@ -41,28 +39,6 @@ namespace ApparelSwitch
                 }
             }
             return false;
-        }
-
-        public Graphic GetAlternateGraphic(Apparel apparel, BodyTypeDef bodyType, bool forStatue)
-        {
-            if (Props.alternateGraphicPath.NullOrEmpty())
-            {
-                return null;
-            }
-            string path = Props.alternateGraphicPath;
-            Shader shader = ShaderDatabase.Cutout;
-            if (!forStatue)
-            {
-                if (apparel.StyleDef?.graphicData.shaderType != null)
-                {
-                    shader = apparel.StyleDef.graphicData.shaderType.Shader;
-                }
-                else if ((apparel.StyleDef == null && apparel.def.apparel.useWornGraphicMask) || (apparel.StyleDef != null && apparel.StyleDef.UseWornGraphicMask))
-                {
-                    shader = ShaderDatabase.CutoutComplex;
-                }
-            }
-            return GraphicDatabase.Get<Graphic_Multi>(path, shader, apparel.def.graphicData.drawSize, apparel.DrawColor);
         }
     }
 }

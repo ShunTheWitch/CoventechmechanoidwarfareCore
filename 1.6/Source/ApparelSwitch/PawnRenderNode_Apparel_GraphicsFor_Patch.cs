@@ -20,16 +20,18 @@ namespace ApparelSwitch
                     return false;
                 }
 
-                var changeGraphicComp = apparel.TryGetComp<CompApparel_ChangeGraphicIfLayersWorn>();
-                if (changeGraphicComp != null && changeGraphicComp.ShouldChangeGraphic(pawn))
+                foreach (var comp in apparel.AllComps)
                 {
-                    var alternateGraphic = changeGraphicComp.GetAlternateGraphic(apparel, pawn.story.bodyType, pawn.Drawer.renderer.StatueColor.HasValue);
-                    if (alternateGraphic != null)
+                    if (comp is CompApparel_ChangeGraphicBase changeGraphicComp && changeGraphicComp.ShouldChangeGraphic(pawn))
                     {
-                        var result = new List<Graphic>();
-                        result.Add(alternateGraphic);
-                        __result = result;
-                        return false;
+                        var alternateGraphic = changeGraphicComp.GetAlternateGraphic(apparel, pawn.Drawer.renderer.StatueColor.HasValue);
+                        if (alternateGraphic != null)
+                        {
+                            var result = new List<Graphic>();
+                            result.Add(alternateGraphic);
+                            __result = result;
+                            return false;
+                        }
                     }
                 }
             }
