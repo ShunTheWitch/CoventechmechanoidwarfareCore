@@ -4,22 +4,27 @@ using Verse;
 
 namespace ApparelSwitch
 {
-    public class CompProperties_ChangeGraphicIfLayersWorn : CompProperties_ChangeGraphicBase
+    public class CompProperties_ChangeGraphicIfLayersWornAndGender : CompProperties_ChangeGraphicBase
     {
         public List<ApparelLayerDef> changeGraphicIfLayersWorn;
+        public Gender gender;
 
-        public CompProperties_ChangeGraphicIfLayersWorn()
+        public CompProperties_ChangeGraphicIfLayersWornAndGender()
         {
-            compClass = typeof(CompApparel_ChangeGraphicIfLayersWorn);
+            compClass = typeof(CompApparel_ChangeGraphicIfLayersWornAndGender);
         }
     }
 
-    public class CompApparel_ChangeGraphicIfLayersWorn : CompApparel_ChangeGraphicBase
+    public class CompApparel_ChangeGraphicIfLayersWornAndGender : CompApparel_ChangeGraphicBase
     {
-        public CompProperties_ChangeGraphicIfLayersWorn Props => props as CompProperties_ChangeGraphicIfLayersWorn;
+        public CompProperties_ChangeGraphicIfLayersWornAndGender Props => props as CompProperties_ChangeGraphicIfLayersWornAndGender;
 
         public override bool ShouldChangeGraphic(Pawn pawn)
         {
+            if (pawn.gender != Props.gender)
+            {
+                return false;
+            }
             foreach (var apparel in pawn.apparel.WornApparel)
             {
                 if (apparel == parent)
