@@ -9,8 +9,6 @@ namespace ApparelSwitch
 	public class ApparelSwitchOption : IExposable
 	{
 		public string label;
-		public string description;
-		public string texPath;
 		public ThingDef apparel;
 		public int ticksToSwitchApparel;
 		public void ExposeData()
@@ -81,7 +79,7 @@ namespace ApparelSwitch
 			}
 			if (!generatedApparel.TryGetValue(apparelDef, out var newApparel))
 			{
-				newApparel = ThingMaker.MakeThing(apparelDef);
+				newApparel = ThingMaker.MakeThing(apparelDef, apparelDef.MadeFromStuff ? parent.Stuff ?? GenStuff.DefaultStuffFor(apparelDef) : null);
 				generatedApparel[apparelDef] = newApparel;
 			}
 			newApparel.HitPoints = parent.HitPoints;
@@ -93,9 +91,14 @@ namespace ApparelSwitch
 					qualityComp.qualityInt = qc;
 				}
 			}
-			if (parent.Stuff != null)
+			var parentColorable = parent.TryGetComp<CompColorable>();
+			if (parentColorable != null)
 			{
-				newApparel.SetStuffDirect(parent.Stuff);
+				var newColorable = newApparel.TryGetComp<CompColorable>();
+				if (newColorable != null)
+				{
+					newColorable.SetColor(parentColorable.Color);
+				}
 			}
 			generatedApparel[parent.def] = parent;
 			newApparel.TryGetComp<CompSwitchApparel>().generatedApparel = generatedApparel;
@@ -118,6 +121,7 @@ namespace ApparelSwitch
 			}
 			pawn.apparel.Remove(parent as Apparel);
 			pawn.apparel.Wear(newApparel as Apparel);
+			newApparel.Notify_ColorChanged();
 		}
 
 		public override void PostExposeData()
