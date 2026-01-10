@@ -11,7 +11,7 @@ namespace universalflight
         public static MethodBase targetMethod;
         public static bool Prepare()
         {
-            var type = AccessTools.TypeByName("taranchuk_mechsuits.Utils");
+            var type = AccessTools.TypeByName("taranchuk_mechsuits.ModCompatability");
             if (type == null) return false;
             targetMethod = AccessTools.Method(type, "GetAdditionalAngle");
             return targetMethod != null;
