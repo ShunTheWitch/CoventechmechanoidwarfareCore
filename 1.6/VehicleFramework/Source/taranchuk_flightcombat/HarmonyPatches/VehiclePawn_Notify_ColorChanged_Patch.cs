@@ -9,9 +9,9 @@ namespace taranchuk_flightcombat
         public static void Postfix(VehiclePawn __instance)
         {
             var comp = __instance.GetComp<CompFlightMode>();
-            if (comp != null && comp.Props.flightGraphicData != null) 
+            if (comp != null && comp.Props.flightGraphicData != null)
             {
-                comp.cachedFlightGraphic = null;
+                comp.DestroyFlightGraphic();
             }
         }
     }

@@ -172,29 +172,28 @@ namespace taranchuk_flightcombat
         private int bombingRunCount;
         private int bombingCooldownTicks;
 
-        public Graphic_Vehicle cachedFlightGraphic;
-
         private Graphic_Vehicle flightGraphic;
-        private Vector2 lastFlightGraphicDrawSize = Vector2.zero;
 
         public Graphic_Vehicle FlightGraphic
         {
             get
             {
                 var currentDrawSize = GetCurrentDrawSize();
-                bool needsUpdate = flightGraphic == null || lastFlightGraphicDrawSize != currentDrawSize;
                 
-                if (needsUpdate)
+                if (flightGraphic == null)
                 {
-                    LongEventHandler.ExecuteWhenFinished(delegate
+                    if (UnityData.IsInMainThread)
                     {
-                        if (UnityData.IsInMainThread)
+                        flightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
+                        if (flightGraphic != null)
                         {
-                            flightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
                             flightGraphic.drawSize = currentDrawSize;
                         }
-                    });
-                    lastFlightGraphicDrawSize = currentDrawSize;
+                    }
+                }
+                else
+                {
+                    flightGraphic.drawSize = currentDrawSize;
                 }
 
                 return flightGraphic;
@@ -253,6 +252,12 @@ namespace taranchuk_flightcombat
                 }
             }
 
+        }
+
+        public override void PostDraw()
+        {
+            base.PostDraw();
+            DrawShadow();
         }
 
         private void GenerateStock(List<ThingDefCountRangeClass> stock)
@@ -1554,10 +1559,10 @@ namespace taranchuk_flightcombat
                 Graphics.DrawMesh(MeshPool.plane10, matrix, shadowMaterial, 0);
             }
         }
-        private void DestroyFlightGraphic()
+        public void DestroyFlightGraphic()
         {
             RGBMaterialPool.Release(this);
-            cachedFlightGraphic = null;
+            flightGraphic = null;
             shadowMaterial = null;
         }
 
