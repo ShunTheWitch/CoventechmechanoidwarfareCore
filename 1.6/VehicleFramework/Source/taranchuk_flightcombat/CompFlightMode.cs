@@ -171,29 +171,27 @@ namespace taranchuk_flightcombat
 
         private int bombingRunCount;
         private int bombingCooldownTicks;
-
         private Graphic_Vehicle flightGraphic;
+        private Vector2 lastFlightGraphicDrawSize = Vector2.zero;
 
         public Graphic_Vehicle FlightGraphic
         {
             get
             {
                 var currentDrawSize = GetCurrentDrawSize();
-                
-                if (flightGraphic == null)
+                bool needsUpdate = flightGraphic == null || lastFlightGraphicDrawSize != currentDrawSize;
+
+                if (needsUpdate)
                 {
-                    if (UnityData.IsInMainThread)
+                    LongEventHandler.ExecuteWhenFinished(delegate
                     {
-                        flightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
-                        if (flightGraphic != null)
+                        if (UnityData.IsInMainThread)
                         {
+                            flightGraphic = CreateFlightGraphic(this, Props.flightGraphicData);
                             flightGraphic.drawSize = currentDrawSize;
                         }
-                    }
-                }
-                else
-                {
-                    flightGraphic.drawSize = currentDrawSize;
+                    });
+                    lastFlightGraphicDrawSize = currentDrawSize;
                 }
 
                 return flightGraphic;
@@ -209,7 +207,7 @@ namespace taranchuk_flightcombat
         public string Name => $"CompFlightMode_{Vehicle.ThingID}";
 
         public MaterialPropertyBlock PropertyBlock { get; private set; } = new MaterialPropertyBlock();
-        
+
         private Material shadowMaterial;
 
         private BombOption BombOption => Props.bombOptions.FirstOrDefault(x => Props.bombOptions.IndexOf(x) == bombardmentOptionInd);
@@ -1374,7 +1372,6 @@ namespace taranchuk_flightcombat
             }
         }
 
-
         public override void PostDrawExtraSelectionOverlays()
         {
             base.PostDrawExtraSelectionOverlays();
@@ -1536,7 +1533,6 @@ namespace taranchuk_flightcombat
             }
             PathingHelper.RecalculateAllPerceivedPathCosts(previousMap);
         }
-
 
         private int drawThisFrame;
         public void DrawShadow()
