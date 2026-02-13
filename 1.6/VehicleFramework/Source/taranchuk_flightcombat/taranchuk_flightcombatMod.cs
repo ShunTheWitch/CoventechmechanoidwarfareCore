@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System.Linq;
 using Verse;
 
@@ -8,7 +8,10 @@ namespace taranchuk_flightcombat
     {
         public taranchuk_flightcombatMod(ModContentPack pack) : base(pack)
         {
-			new Harmony("taranchuk_flightcombatMod").PatchAll();
+            LongEventHandler.ExecuteWhenFinished(delegate
+            {
+                new Harmony("taranchuk_flightcombatMod").PatchAll();
+            });
         }
     }
 }
