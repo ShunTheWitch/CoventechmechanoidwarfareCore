@@ -1,4 +1,4 @@
-﻿using Verse;
+using Verse;
 
 namespace taranchuk_flightcombat
 {
@@ -6,5 +6,7 @@ namespace taranchuk_flightcombat
     {
         public bool antiAir;
         public bool ground;
+        public bool antiVehicle;
+        public bool antiBuilding;
     }
 }

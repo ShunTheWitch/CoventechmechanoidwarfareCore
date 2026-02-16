@@ -7,4 +7,9 @@
 	<CVN_CannotTakeoff>Cannot takeoff. This runway is impossible to use.</CVN_CannotTakeoff>
 	<CVN_CannotTakeoffInSpace>Cannot takeoff in space.</CVN_CannotTakeoffInSpace>
 	<CVN.Bill>Bill progress: {0} ({1})</CVN.Bill>
+	<CVN_ChaseMode>Chase Mode</CVN_ChaseMode>
+	<CVN_ChaseModeDesc>Select a target to chase. Click to choose chase behavior.</CVN_ChaseModeDesc>
+	<CVN_ChaseMode_Circling>Circling</CVN_ChaseMode_Circling>
+	<CVN_ChaseMode_Direct>Direct</CVN_ChaseMode_Direct>
+	<CVN_ChaseMode_Elliptical>Elliptical</CVN_ChaseMode_Elliptical>
 </LanguageData>

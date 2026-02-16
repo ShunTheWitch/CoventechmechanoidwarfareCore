@@ -47,30 +47,32 @@ namespace taranchuk_flightcombat
         {
             if (projectile == null) return true;
             var modExtension = projectile.GetModExtension<ProjectileModes>();
-            if (modExtension != null)
+            if (modExtension == null) return true;
+
+            if (!target.HasThing)
             {
-                if (target.HasThing is false && modExtension.antiAir)
-                {
-                    return false;
-                }
-                var comp = target.Thing.TryGetComp<CompFlightMode>();
-                if (comp != null)
-                {
-                    if (modExtension.ground && modExtension.antiAir is false && comp.InAir)
-                    {
-                        return false;
-                    }
-                    else if (modExtension.ground is false && modExtension.antiAir && comp.InAir is false)
-                    {
-                        return false;
-                    }
-                }
-                else if (modExtension.antiAir)
-                {
-                    return false;
-                }
+                bool hasAnySpecialization = modExtension.antiAir || modExtension.antiVehicle || modExtension.antiBuilding;
+                return !hasAnySpecialization;
             }
-            return true;
+
+            var targetThing = target.Thing;
+            
+            var flightComp = targetThing.TryGetComp<CompFlightMode>();
+            if (flightComp != null && flightComp.InAir)
+            {
+                return modExtension.antiAir;
+            }
+
+            if (modExtension.ground) return true;
+
+            bool hasSpecialization = modExtension.antiAir || modExtension.antiVehicle || modExtension.antiBuilding;
+            
+            if (!hasSpecialization) return true;
+
+            if (targetThing is VehiclePawn && modExtension.antiVehicle) return true;
+            if (targetThing is Building && modExtension.antiBuilding) return true;
+            
+            return false;
         }
     }
 }

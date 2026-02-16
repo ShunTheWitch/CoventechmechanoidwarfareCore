@@ -1,11 +1,18 @@
-﻿using RimWorld;
+using RimWorld;
 using Vehicles;
 using Verse;
+using UnityEngine;
 
 namespace taranchuk_flightcombat
 {
     public static class Utils
     {
+        public static float AngleDiff(float from, float to)
+        {
+            float delta = (to - from + 180) % 360 - 180;
+            return delta < -180 ? delta + 360 : delta;
+        }
+
         public static float GetMass(this Pawn pawn)
         {
             if (pawn is VehiclePawn vehicle)
