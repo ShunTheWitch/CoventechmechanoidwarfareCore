@@ -1,4 +1,4 @@
-﻿namespace taranchuk_flightcombat
+namespace taranchuk_flightcombat
 {
     public class FlightCommands
     {

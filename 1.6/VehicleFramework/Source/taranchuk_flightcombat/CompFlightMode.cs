@@ -34,8 +34,8 @@ namespace taranchuk_flightcombat
         public float flightSpeedTurningPerTick;
         public float turnAnglePerTick;
         public float turnAngleCirclingPerTick;
-        public float distanceFromTargetToStartTurningCircleMode;
-        public float distanceFromTargetToStartTurningChaseMode;
+        public float maxDistanceFromTargetCircle;
+        public float maxDistanceFromTargetElliptical;
         public float fuelConsumptionPerTick;
         public List<BombOption> bombOptions;
         public GraphicDataRGB flightGraphicData;
@@ -72,14 +72,12 @@ namespace taranchuk_flightcombat
         private bool GoingToWorld => arrivalAction != null;
 
         private LocalTargetInfo target;
-        private LocalTargetInfo targetToFace = LocalTargetInfo.Invalid;
-        private LocalTargetInfo targetToChase = LocalTargetInfo.Invalid;
+        private LocalTargetInfo faceTarget = LocalTargetInfo.Invalid;
         private LocalTargetInfo landingSpot;
         private LocalTargetInfo runwayStartingSpot;
         private Vector3? targetForRunway;
         private LandingStage landingStage;
-
-        private LocalTargetInfo initialTarget = LocalTargetInfo.Invalid;
+        private bool reachedInitialTarget;
         private int bombardmentOptionInd;
         private int lastBombardmentTick;
         private int? tickToStartFiring;
@@ -95,15 +93,8 @@ namespace taranchuk_flightcombat
         private float curAngleInt;
         public float CurAngle
         {
-            get
-            {
-                return curAngleInt;
-            }
-            set
-            {
-                var newValue = AngleAdjusted(value);
-                curAngleInt = newValue;
-            }
+            get => curAngleInt;
+            set => curAngleInt = AngleAdjusted(value);
         }
 
         public bool CanFly
@@ -176,10 +167,13 @@ namespace taranchuk_flightcombat
 
         public float BaseFlightSpeed => Props.flightSpeedPerTick;
         public Vector3 curPosition;
-        private bool? clockwiseTurn;
         private bool continueRotating;
-        private bool inEllipseStrafingRun = false;
+        private bool orbitClockwise = true;
+        private Vector3 orbitPerpOffset;
+        private bool orbitInitialized;
+        private float orbitOrientAngle;
         private ChaseMode currentChaseMode = ChaseMode.Circling;
+        private FlightPattern flightPattern = FlightPattern.Around;
 
         private int bombingRunCount;
         private int bombingCooldownTicks;
@@ -433,12 +427,12 @@ namespace taranchuk_flightcombat
 
             if (Props.flightCommands.faceTarget != null)
             {
-                if (targetToFace.IsValid && Props.flightCommands.cancelFaceTarget != null)
+                if (faceTarget.IsValid && Props.flightCommands.cancelFaceTarget != null)
                 {
                     var cancelFaceTargetCommand = Props.flightCommands.cancelFaceTarget.GetCommand();
                     cancelFaceTargetCommand.action = () =>
                     {
-                        targetToFace = LocalTargetInfo.Invalid;
+                        faceTarget = LocalTargetInfo.Invalid;
                     };
                     yield return cancelFaceTargetCommand;
                 }
@@ -453,7 +447,7 @@ namespace taranchuk_flightcombat
                             {
                                 SetHoverMode(true);
                             }
-                            targetToFace = x;
+                            faceTarget = x;
                         });
                     };
                     yield return faceTargetCommand;
@@ -470,25 +464,43 @@ namespace taranchuk_flightcombat
                     action = () =>
                     {
                         var options = new List<FloatMenuOption>();
-                        foreach (ChaseMode mode in Enum.GetValues(typeof(ChaseMode)))
-                        {
-                            var modeCapture = mode;
-                            options.Add(new FloatMenuOption(
-                                ("CVN_ChaseMode_" + mode.ToString()).Translate(),
-                                delegate
-                                {
-                                    currentChaseMode = modeCapture;
+
+                        options.Add(new FloatMenuOption(
+                            ("CVN_ChaseMode_Direct").Translate(),
+                            delegate
+                            {
+                                SetChaseMode(ChaseMode.Direct);
+                                if (Hovering) SetFlightMode(true);
+                                if (!target.IsValid)
                                     Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
                                     {
-                                        if (Hovering)
-                                        {
-                                            SetFlightMode(true);
-                                        }
-                                        targetToChase = x;
+                                        target = x;
+                                        faceTarget = LocalTargetInfo.Invalid;
                                     });
-                                }
-                            ));
+                            }));
+
+                        foreach (ChaseMode mode in new[] { ChaseMode.Circling, ChaseMode.Elliptical })
+                        {
+                            var modeCapture = mode;
+                            foreach (FlightPattern pattern in Enum.GetValues(typeof(FlightPattern)))
+                            {
+                                var patternCapture = pattern;
+                                options.Add(new FloatMenuOption(
+                                    ("CVN_ChaseMode_" + mode).Translate() + ": " + ("CVN_FlightPattern_" + pattern).Translate(),
+                                    delegate
+                                    {
+                                        SetChaseMode(modeCapture, patternCapture);
+                                        if (Hovering) SetFlightMode(true);
+                                        if (!target.IsValid)
+                                            Find.Targeter.BeginTargeting(TargetingParamsForFacing, delegate (LocalTargetInfo x)
+                                            {
+                                                target = x;
+                                                faceTarget = LocalTargetInfo.Invalid;
+                                            });
+                                    }));
+                            }
                         }
+
                         Find.WindowStack.Add(new FloatMenu(options));
                     }
                 };
@@ -613,14 +625,14 @@ namespace taranchuk_flightcombat
                     Vehicle.vehiclePather.StopDead();
                 }
             }
-            targetToFace = targetToChase = LocalTargetInfo.Invalid;
+            faceTarget = LocalTargetInfo.Invalid;
             this.flightMode = hoverMode ? FlightMode.Hover : FlightMode.Flight;
         }
 
         public void SetTarget(LocalTargetInfo targetInfo)
         {
             this.target = targetInfo;
-            this.initialTarget = targetInfo.Cell;
+            this.reachedInitialTarget = false;
             ResetFlightData();
             if (Vehicle.jobs.curDriver is JobDriver_Goto)
             {
@@ -630,12 +642,19 @@ namespace taranchuk_flightcombat
 
         private void ResetFlightData()
         {
-            this.clockwiseTurn = null;
-            targetToChase = LocalTargetInfo.Invalid;
+            orbitClockwise = true;
+            orbitInitialized = false;
             runwayStartingSpot = LocalTargetInfo.Invalid;
             landingSpot = LocalTargetInfo.Invalid;
             targetForRunway = null;
             landingStage = LandingStage.Inactive;
+        }
+
+        private void SetChaseMode(ChaseMode mode, FlightPattern pattern = FlightPattern.Around)
+        {
+            currentChaseMode = mode;
+            flightPattern = pattern;
+            orbitInitialized = false;
         }
 
         public override void CompTick()
@@ -643,6 +662,8 @@ namespace taranchuk_flightcombat
             base.CompTick();
             if (InAir)
             {
+                var targetDist = target.IsValid ? Vector3.Distance(curPosition.Yto0(), target.CenterVector3.Yto0()) : (float?)null;
+                var faceTargetDist = faceTarget.IsValid ? Vector3.Distance(curPosition.Yto0(), faceTarget.CenterVector3.Yto0()) : (float?)null;
                 if (Vehicle.DrawTracker?.renderer is IParallelRenderer renderer)
                 {
                     renderer.IsDirty = true;
@@ -668,10 +689,10 @@ namespace taranchuk_flightcombat
                     SetToCrash();
                 }
 
-                if (TakingOff is false && initialTarget.IsValid && curPosition.ToIntVec3().InBounds(Vehicle.Map)
-                    && OccupiedRect().Contains(initialTarget.Cell))
+                if (TakingOff is false && !reachedInitialTarget && curPosition.ToIntVec3().InBounds(Vehicle.Map)
+                    && OccupiedRect().Contains(target.Cell))
                 {
-                    initialTarget = LocalTargetInfo.Invalid;
+                    reachedInitialTarget = true;
                 }
 
                 if (InAIMode && !GoingToWorld)
@@ -870,10 +891,10 @@ namespace taranchuk_flightcombat
                     var curTarget = GetTarget();
                     if (curTarget.IsValid && curTarget.HasThing)
                     {
-                        targetToChase = curTarget;
-                        target = targetToFace = LocalTargetInfo.Invalid;
+                        target = curTarget;
+                        faceTarget = LocalTargetInfo.Invalid;
                     }
-                    if (targetToChase.IsValid)
+                    if (target.IsValid)
                     {
                         if (Vehicle.Position.DistanceTo(curTarget.Cell) < bomberSettings.distanceFromTarget)
                         {
@@ -896,17 +917,17 @@ namespace taranchuk_flightcombat
                     if (gunshipSettings.gunshipMode == GunshipMode.Circling)
                     {
                         target = curTarget;
-                        targetToChase = targetToFace = LocalTargetInfo.Invalid;
+                        faceTarget = LocalTargetInfo.Invalid;
                     }
                     else if (gunshipSettings.gunshipMode == GunshipMode.Chasing)
                     {
-                        targetToChase = curTarget;
-                        target = targetToFace = LocalTargetInfo.Invalid;
+                        target = curTarget;
+                        faceTarget = LocalTargetInfo.Invalid;
                     }
                     else if (gunshipSettings.gunshipMode == GunshipMode.Hovering)
                     {
-                        targetToFace = curTarget;
-                        target = targetToChase = LocalTargetInfo.Invalid;
+                        faceTarget = curTarget;
+                        target = LocalTargetInfo.Invalid;
                     }
                 }
             }
@@ -1169,45 +1190,49 @@ namespace taranchuk_flightcombat
 
         private void Hover()
         {
-            if (initialTarget.IsValid)
+            if (!reachedInitialTarget)
             {
-                if (targetToFace.IsValid)
+                if (faceTarget.IsValid)
                 {
-                    bool rotated = RotateTowards(targetToFace.CenterVector3);
-                    MoveTowards(initialTarget.CenterVector3, rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
-                }
-                else
-                {
-                    bool rotated = RotateTowards(initialTarget.CenterVector3);
-                    MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
-                }
-            }
-            else if (target.IsValid && target.Cell != Vehicle.Position)
-            {
-                if (targetToFace.IsValid)
-                {
-                    bool rotated = RotateTowards(targetToFace.CenterVector3);
+                    bool rotated = RotateTowards(faceTarget.CenterVector3);
+                    var dist = Vector3.Distance(curPosition.Yto0(), target.CenterVector3.Yto0());
                     MoveTowards(target.CenterVector3, rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
                 }
                 else
                 {
                     bool rotated = RotateTowards(target.CenterVector3);
+                    var dist = Vector3.Distance(curPosition.Yto0(), target.CenterVector3.Yto0());
                     MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
                 }
             }
-            else if (targetToFace.IsValid)
+            else if (target.IsValid && target.Cell != Vehicle.Position)
             {
-                bool rotated = RotateTowards(targetToFace.CenterVector3);
+                if (faceTarget.IsValid)
+                {
+                    bool rotated = RotateTowards(faceTarget.CenterVector3);
+                    var dist = Vector3.Distance(curPosition.Yto0(), target.CenterVector3.Yto0());
+                    MoveTowards(target.CenterVector3, rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                }
+                else
+                {
+                    bool rotated = RotateTowards(target.CenterVector3);
+                    var dist = Vector3.Distance(curPosition.Yto0(), target.CenterVector3.Yto0());
+                    MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
+                }
+            }
+            else if (faceTarget.IsValid)
+            {
+                bool rotated = RotateTowards(faceTarget.CenterVector3);
                 if (InAIMode)
                 {
-                    var distance = targetToFace.Cell.DistanceTo(Vehicle.Position);
+                    var distance = faceTarget.Cell.DistanceTo(Vehicle.Position);
                     var baseSpeed = (rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
                     var targetDistance = (Props.AISettings.gunshipSettings.distanceFromTarget + 5);
                     if (distance > Props.AISettings.gunshipSettings.distanceFromTarget)
                     {
                         var speedMult = Mathf.Min(1, distance / targetDistance);
                         var speed = baseSpeed * speedMult;
-                        MoveFurther(speed, Props.AISettings.gunshipSettings.distanceFromTarget, targetToFace.CenterVector3);
+                        MoveFurther(speed, Props.AISettings.gunshipSettings.distanceFromTarget, faceTarget.CenterVector3);
                     }
                     else if (distance < Props.AISettings.gunshipSettings.distanceFromTarget - 1)
                     {
@@ -1229,27 +1254,9 @@ namespace taranchuk_flightcombat
             {
                 MoveToLandingSpot();
             }
-            else if (initialTarget.IsValid)
-            {
-                bool rotated = RotateTowards(initialTarget.CenterVector3);
-                MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
-            }
-            else if (targetToChase.IsValid)
-            {
-                MoveInChaseMode(targetToChase);
-            }
             else if (target.IsValid)
             {
-                if (target.Cell.DistanceTo(Vehicle.Position) < Props.distanceFromTargetToStartTurningCircleMode)
-                {
-                    MoveFurther(Props.flightSpeedPerTick);
-                }
-                else
-                {
-                    RotatePerperticular(target.CenterVector3, Props.distanceFromTargetToStartTurningCircleMode, Props.turnAngleCirclingPerTick);
-                    float speed = Props.flightSpeedCirclingPerTick ?? Props.flightSpeedTurningPerTick;
-                    MoveFurther(speed);
-                }
+                MoveInChaseMode(target);
             }
         }
 
@@ -1260,10 +1267,11 @@ namespace taranchuk_flightcombat
                 if (targetForRunway is null)
                 {
                     var newTarget = runwayStartingSpot.CenterVector3 + (Quaternion.AngleAxis(CurAngle, Vector3.up)
-                        * (Vector3.forward * (Props.distanceFromTargetToStartTurningChaseMode * 2))).RotatedBy(FlightAngleOffset);
+                        * (Vector3.forward * (Props.maxDistanceFromTargetElliptical * 2))).RotatedBy(FlightAngleOffset);
                     targetForRunway = newTarget;
                 }
                 bool rotated = RotateTowards(targetForRunway.Value);
+                var dist = Vector3.Distance(curPosition.Yto0(), targetForRunway.Value.Yto0());
                 MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
                 if (rotated is false)
                 {
@@ -1287,6 +1295,7 @@ namespace taranchuk_flightcombat
                         }
                         landingStage = LandingStage.GotoRunwayStartSpot;
                     }
+                    var dist = Vector3.Distance(curPosition.Yto0(), runwayStartingSpot.CenterVector3.Yto0());
                     MoveFurther(shouldRotate ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
                 }
                 else
@@ -1297,6 +1306,7 @@ namespace taranchuk_flightcombat
                         Vehicle.Map.debugDrawer.FlashCell(landingSpot.Cell, 0.5f);
                         Find.TickManager.CurTimeSpeed = TimeSpeed.Paused;
                         bool rotated = RotateTowards(runwayStartingSpot.CenterVector3);
+                        var dist = Vector3.Distance(curPosition.Yto0(), runwayStartingSpot.CenterVector3.Yto0());
                         MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
                         if (curPosition.ToIntVec3() == runwayStartingSpot.Cell)
                         {
@@ -1306,6 +1316,7 @@ namespace taranchuk_flightcombat
                     else if (landingStage == LandingStage.GotoLanding)
                     {
                         bool rotated = RotateTowards(landingSpot.CenterVector3);
+                        var dist = Vector3.Distance(curPosition.Yto0(), landingSpot.CenterVector3.Yto0());
                         MoveFurther(rotated ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
                         takeoffProgress = Mathf.Max(0, takeoffProgress - (1 / (float)Props.landingTicks));
                         Vehicle.Map.debugDrawer.FlashCell(runwayStartingSpot.Cell);
@@ -1350,10 +1361,6 @@ namespace taranchuk_flightcombat
                         {
                             curAngle = AngleAdjusted(curAngle + turnoffset);
                             bool angleInRange = AngleInRange(curAngle, AngleAdjusted(targetAngle - Props.turnAnglePerTick), AngleAdjusted(targetAngle + Props.turnAnglePerTick));
-                            if (angleInRange)
-                            {
-                                Log.Message("curAngle: " + curAngle + " - targetAngle: " + targetAngle + " - i: " + i + " - ticksPassedSimulated: " + ticksPassedSimulated);
-                            }
                             if (angleInRange && i >= ticksPassedSimulated - 3)
                             {
                                 return true;
@@ -1382,7 +1389,8 @@ namespace taranchuk_flightcombat
             takeoffProgress = Mathf.Min(1, takeoffProgress + (1 / (float)Props.takeoffTicks));
             if (Props.moveWhileTakingOff)
             {
-                MoveFurther(Props.flightSpeedPerTick * takeoffProgress);
+                var speed = Props.flightSpeedPerTick * takeoffProgress;
+                MoveFurther(speed);
             }
         }
 
@@ -1425,22 +1433,22 @@ namespace taranchuk_flightcombat
             return pos + offset;
         }
 
-        private void MoveFurther(float speed, float? minDistanceFromTarget = null, Vector3? target = null)
+        private void MoveFurther(float speed, float? minDistanceFromTarget = null, Vector3? stopTarget = null)
         {
             var newTarget = curPosition + (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.forward).RotatedBy(FlightAngleOffset);
-            MoveTowards(newTarget, speed, minDistanceFromTarget, target);
+            MoveTowards(newTarget, speed, minDistanceFromTarget, stopTarget);
         }
 
-        private void MoveBack(float speed, float? minDistanceFromTarget = null, Vector3? target = null)
+        private void MoveBack(float speed, float? minDistanceFromTarget = null, Vector3? stopTarget = null)
         {
             var newTarget = curPosition + (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.back).RotatedBy(FlightAngleOffset);
-            MoveTowards(newTarget, speed, minDistanceFromTarget, target);
+            MoveTowards(newTarget, speed, minDistanceFromTarget, stopTarget);
         }
 
-        private void MoveTowards(Vector3 to, float speed, float? minDistanceFromTarget = null, Vector3? target = null)
+        private void MoveTowards(Vector3 to, float speed, float? minDistanceFromTarget = null, Vector3? stopTarget = null)
         {
             var newPosition = Vector3.MoveTowards(Vehicle.DrawPos.Yto0(), to.Yto0(), speed);
-            if (minDistanceFromTarget.HasValue && Vector3.Distance(newPosition.Yto0(), target.Value.Yto0()) < minDistanceFromTarget)
+            if (minDistanceFromTarget.HasValue && stopTarget.HasValue && Vector3.Distance(newPosition.Yto0(), stopTarget.Value.Yto0()) < minDistanceFromTarget.Value)
             {
                 return;
             }
@@ -1449,28 +1457,29 @@ namespace taranchuk_flightcombat
 
         private void RotatePerperticular(Vector3 targetPos, float desiredRadius, float turnRate)
         {
-            float currentDist = Vector3.Distance(curPosition.Yto0(), targetPos.Yto0());
-            float angleToTarget = (targetPos.Yto0() - curPosition.Yto0()).AngleFlat();
+            Vector3 toPlane = curPosition.Yto0() - targetPos.Yto0();
+            float currentDist = toPlane.magnitude;
+            float radiusAngle = toPlane.AngleFlat();
 
-            if (clockwiseTurn == null)
-            {
-                float angleDiff = Utils.AngleDiff(CurAngle + FlightAngleOffset, angleToTarget);
-                clockwiseTurn = angleDiff > 0;
-            }
+            float tangentCW  = AngleAdjusted(radiusAngle + 180f);
+            float tangentCCW = AngleAdjusted(radiusAngle);
 
-            float offsetBase = clockwiseTurn.Value ? 90f : -90f;
+            float diffCW  = Mathf.Abs(Utils.AngleDiff(CurAngle, tangentCW));
+            float diffCCW = Mathf.Abs(Utils.AngleDiff(CurAngle, tangentCCW));
+
+            if (Mathf.Abs(diffCW - diffCCW) > 15f)
+                orbitClockwise = diffCW <= diffCCW;
+
+            float targetAngle = orbitClockwise ? tangentCW : tangentCCW;
 
             float distError = currentDist - desiredRadius;
-            float correction = Mathf.Clamp(distError * 2.5f, -45f, 45f);
+            float correction = Mathf.Clamp(distError * 3f, -40f, 40f);
 
-            float desiredAngle;
-            if (clockwiseTurn.Value)
-                desiredAngle = angleToTarget + 90f - correction;
-            else
-                desiredAngle = angleToTarget - 90f + correction;
+            targetAngle = orbitClockwise
+                ? AngleAdjusted(targetAngle + correction)
+                : AngleAdjusted(targetAngle - correction);
 
-            float targetFlightAngle = AngleAdjusted(desiredAngle - FlightAngleOffset);
-            RotateTo(targetFlightAngle, turnRate);
+            RotateTo(targetAngle, turnRate);
         }
 
         private bool RotateTo(float targetAngle, float turnRate)
@@ -1514,51 +1523,197 @@ namespace taranchuk_flightcombat
             return true;
         }
 
-        private void MoveInChaseMode(LocalTargetInfo target)
+        private float GetOrbitRadius()
         {
-            float distanceToTarget = Vector3.Distance(this.curPosition.Yto0(), target.CenterVector3.Yto0());
+            float radius = Props.maxDistanceFromTargetCircle;
+            if (InAIMode && Props.AISettings?.gunshipSettings != null)
+                radius = Props.AISettings.gunshipSettings.distanceFromTarget;
+            return radius;
+        }
+
+        private void GetEllipseAxes(out float a, out float b)
+        {
+            a = Props.ellipseMajorAxis;
+            b = Props.ellipseMinorAxis;
+
+            float maxRadius = Props.maxDistanceFromTargetElliptical;
+
+            if (InAIMode && Props.AISettings?.gunshipSettings != null)
+                maxRadius = Props.AISettings.gunshipSettings.distanceFromTarget;
+
+            if (maxRadius > 0 && a > maxRadius)
+            {
+                float ratio = a > 0 ? b / a : 0.5f;
+                a = maxRadius;
+                b = a * ratio;
+            }
+
+            if (a <= 0) a = 10f;
+            if (b <= 0) b = 5f;
+        }
+
+        private void InitOrbit(Vector3 targetPos)
+        {
+            Vector3 cur2D = curPosition.Yto0();
+            Vector3 tgt2D = targetPos.Yto0();
+            Vector3 toTarget = tgt2D - cur2D;
+            float dist = toTarget.magnitude;
+            Vector3 approachDir = dist > 0.001f ? toTarget / dist : Vector3.forward;
+
+            float approachAngle = Mathf.Atan2(approachDir.x, approachDir.z) * Mathf.Rad2Deg;
+            if (approachAngle < 0f) approachAngle += 360f;
+
+            if (currentChaseMode == ChaseMode.Circling && flightPattern == FlightPattern.Over)
+            {
+                Vector3 perp = new Vector3(approachDir.z, 0f, -approachDir.x);
+                orbitPerpOffset = perp * GetOrbitRadius();
+            }
+            else if (currentChaseMode == ChaseMode.Elliptical && flightPattern == FlightPattern.Over)
+            {
+                GetEllipseAxes(out float a, out float b);
+                Vector3 perp = new Vector3(approachDir.z, 0f, -approachDir.x);
+
+                orbitPerpOffset = perp * a;
+
+                orbitOrientAngle = approachAngle + 90f;
+            }
+            else if (currentChaseMode == ChaseMode.Elliptical && flightPattern == FlightPattern.Around)
+            {
+                orbitPerpOffset = Vector3.zero;
+                orbitOrientAngle = approachAngle + 90f;
+            }
+
+            orbitInitialized = true;
+        }
+
+        private void DoEllipseOrbit(Vector3 worldCenter, float a, float b, float orientDeg)
+        {
+            float baseSpeed = Props.flightSpeedCirclingPerTick ?? Props.flightSpeedTurningPerTick;
+
+            float minCurveRadius = Mathf.Max((b * b) / Mathf.Max(a, 0.001f), 1f);
+
+            float requiredTurnRate = (baseSpeed * 180f) / (Mathf.PI * minCurveRadius) * 1.5f;
+            float configuredTurnRate = Props.turnAngleCirclingPerTick > 0f ? Props.turnAngleCirclingPerTick : Props.turnAnglePerTick;
+            float turnRate = Mathf.Max(configuredTurnRate, requiredTurnRate);
+
+            float oRad = orientDeg * Mathf.Deg2Rad;
+
+            Vector3 mj = new Vector3(Mathf.Sin(oRad), 0f, Mathf.Cos(oRad));
+            Vector3 mn = new Vector3(Mathf.Cos(oRad), 0f, -Mathf.Sin(oRad));
+
+            Vector3 cur2D = curPosition.Yto0();
+            Vector3 c2D = new Vector3(worldCenter.x, 0f, worldCenter.z);
+            Vector3 d = cur2D - c2D;
+
+            float localA = Vector3.Dot(d, mj);
+            float localB = Vector3.Dot(d, mn);
+
+            float theta = Mathf.Atan2(localB / b, localA / a);
+
+            Vector3 ellipsePoint = c2D
+                + (a * Mathf.Cos(theta)) * mj
+                + (b * Mathf.Sin(theta)) * mn;
+
+            Vector3 tangentPos = (-a * Mathf.Sin(theta) * mj + b * Mathf.Cos(theta) * mn).normalized;
+
+            float tangentAngleFlat = Mathf.Atan2(tangentPos.x, tangentPos.z) * Mathf.Rad2Deg;
+            float curAngleCW = AngleAdjusted(tangentAngleFlat + 90f);
+            float curAngleCCW = AngleAdjusted(curAngleCW + 180f);
+
+            float diffCW  = Mathf.Abs(Utils.AngleDiff(CurAngle, curAngleCW));
+            float diffCCW = Mathf.Abs(Utils.AngleDiff(CurAngle, curAngleCCW));
+
+            if (Mathf.Abs(diffCW - diffCCW) > 15f)
+                orbitClockwise = diffCW <= diffCCW;
+
+            float targetAngle = orbitClockwise ? curAngleCW : curAngleCCW;
+
+            float currentDist = d.magnitude;
+            float expectedRadius = (ellipsePoint - c2D).magnitude;
+            float distError = currentDist - expectedRadius;
+
+            float correction = Mathf.Clamp(distError * 3f, -40f, 40f);
+
+            targetAngle = orbitClockwise
+                ? AngleAdjusted(targetAngle + correction)
+                : AngleAdjusted(targetAngle - correction);
+
+            bool turning = RotateTo(targetAngle, turnRate);
+
+            float maxPhysicalSpeed = (turnRate * Mathf.PI * minCurveRadius) / 180f;
+            float finalSpeed = Mathf.Min(baseSpeed, maxPhysicalSpeed);
+
+            MoveFurther(turning ? Mathf.Min(Props.flightSpeedTurningPerTick, finalSpeed) : finalSpeed);
+        }
+
+        private void MoveInChaseMode(LocalTargetInfo chaseTarget)
+        {
+            Vector3 targetPos = chaseTarget.CenterVector3.Yto0();
+            var distToTarget = Vector3.Distance(curPosition.Yto0(), targetPos);
+
+            if (!orbitInitialized)
+            {
+                InitOrbit(targetPos);
+            }
 
             switch (currentChaseMode)
             {
                 case ChaseMode.Direct:
+                {
                     float angleToTarget = GetAngleFromTarget(target.CenterVector3);
-                    bool stillRotating = RotateTo(angleToTarget, Props.turnAnglePerTick);
-                    MoveFurther(stillRotating ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick);
-                    break;
+                    float turnRate = Props.turnAnglePerTick > 0f ? Props.turnAnglePerTick : 1f;
+                    float turnSpeed = Props.flightSpeedTurningPerTick > 0f ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick;
 
-                case ChaseMode.Circling:
-                    float orbitRadius = Props.distanceFromTargetToStartTurningCircleMode;
-                    if (InAIMode && Props.AISettings?.gunshipSettings != null)
-                        orbitRadius = Props.AISettings.gunshipSettings.distanceFromTarget;
+                    float minTurnRadius = (turnSpeed * 180f) / (Mathf.PI * turnRate);
+                    float angleDiff = Mathf.Abs(Utils.AngleDiff(CurAngle, angleToTarget));
 
-                    RotatePerperticular(target.CenterVector3, orbitRadius, Props.turnAngleCirclingPerTick);
+                    bool stillRotating;
 
-                    float circleSpeed = Props.flightSpeedCirclingPerTick ?? Props.flightSpeedTurningPerTick;
-                    MoveFurther(circleSpeed);
-                    break;
-
-                case ChaseMode.Elliptical:
-                    if (inEllipseStrafingRun)
+                    if (distToTarget < minTurnRadius * 2.5f && angleDiff > 90f)
                     {
-                        if (distanceToTarget <= Props.ellipseMinorAxis + 2f)
-                            inEllipseStrafingRun = false;
+                        stillRotating = false;
                     }
                     else
                     {
-                        if (distanceToTarget >= Props.ellipseMajorAxis - 2f)
-                            inEllipseStrafingRun = true;
+                        stillRotating = RotateTo(angleToTarget, turnRate);
                     }
 
-                    float targetRadius = inEllipseStrafingRun ? Props.ellipseMinorAxis : Props.ellipseMajorAxis;
-                    float currentTurnRate = inEllipseStrafingRun ? Props.turnAnglePerTick : Props.turnAngleCirclingPerTick;
+                    MoveFurther(stillRotating ? turnSpeed : Props.flightSpeedPerTick);
+                    break;
+                }
 
-                    RotatePerperticular(target.CenterVector3, targetRadius, currentTurnRate);
+                case ChaseMode.Circling:
+                {
+                    float orbitRadius = GetOrbitRadius();
+                    Vector3 orbitCenter = flightPattern == FlightPattern.Around
+                        ? targetPos
+                        : new Vector3(targetPos.x + orbitPerpOffset.x, targetPos.y, targetPos.z + orbitPerpOffset.z);
 
-                    float speedAdjustment = (distanceToTarget - targetRadius) * 0.02f;
-                    float finalSpeed = Mathf.Clamp(Props.flightSpeedPerTick + speedAdjustment, Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick * 1.1f);
+                    float baseSpeed = Props.flightSpeedCirclingPerTick ?? Props.flightSpeedTurningPerTick;
+
+                    float requiredTurnRate = (baseSpeed * 180f) / (Mathf.PI * Mathf.Max(orbitRadius, 1f)) * 1.5f;
+                    float turnRate = Mathf.Max(Props.turnAngleCirclingPerTick > 0f ? Props.turnAngleCirclingPerTick : Props.turnAnglePerTick, requiredTurnRate);
+
+                    RotatePerperticular(orbitCenter, orbitRadius, turnRate);
+
+                    float maxPhysicalSpeed = (turnRate * Mathf.PI * Mathf.Max(orbitRadius, 1f)) / 180f;
+                    float finalSpeed = Mathf.Min(baseSpeed, maxPhysicalSpeed);
 
                     MoveFurther(finalSpeed);
                     break;
+                }
+
+                case ChaseMode.Elliptical:
+                {
+                    GetEllipseAxes(out float a, out float b);
+
+                    Vector3 orbitCenter = flightPattern == FlightPattern.Around
+                        ? targetPos
+                        : targetPos + orbitPerpOffset;
+                    var distToCenter = Vector3.Distance(curPosition.Yto0(), orbitCenter.Yto0());
+                    DoEllipseOrbit(orbitCenter, a, b, orbitOrientAngle);
+                    break;
+                }
             }
         }
 
@@ -1588,8 +1743,7 @@ namespace taranchuk_flightcombat
                 + " - IsFlying: " + Flying + " - IsTakingOff: " + TakingOff + " - IsDescending: " + Landing
                 + " - CurAngle: " + CurAngle + " - Vehicle.Angle: " + Vehicle.Angle
                 + " - FullRotation: " + Vehicle.FullRotation.ToStringNamed() + " - Rotation: " + Vehicle.Rotation.ToStringHuman()
-                + " - initialTarget: " + initialTarget + " - target: " + target + " - targetToFace: " + targetToFace);
-            Log.ResetMessageCount();
+                + " - reachedInitialTarget: " + reachedInitialTarget + " - target: " + target + " - faceTarget: " + faceTarget);
         }
 
         public override void PostDestroy(DestroyMode mode, Map previousMap)
@@ -1683,17 +1837,18 @@ namespace taranchuk_flightcombat
             Scribe_Values.Look(ref curPosition, "curPosition");
             Scribe_Values.Look(ref curAngleInt, "curAngle");
             Scribe_TargetInfo.Look(ref target, "target");
-            Scribe_TargetInfo.Look(ref targetToFace, "targetToFace", LocalTargetInfo.Invalid);
-            Scribe_TargetInfo.Look(ref targetToChase, "targetToChase", LocalTargetInfo.Invalid);
-            Scribe_TargetInfo.Look(ref initialTarget, "initialTarget", LocalTargetInfo.Invalid);
+            Scribe_TargetInfo.Look(ref faceTarget, "faceTarget", LocalTargetInfo.Invalid);
+            Scribe_Values.Look(ref reachedInitialTarget, "reachedInitialTarget", false);
             Scribe_TargetInfo.Look(ref landingSpot, "landingSpot", LocalTargetInfo.Invalid);
             Scribe_TargetInfo.Look(ref runwayStartingSpot, "runwayStartingSpot", LocalTargetInfo.Invalid);
             Scribe_Values.Look(ref targetForRunway, "targetForRunway");
             Scribe_Values.Look(ref landingStage, "landingStage");
-            Scribe_Values.Look(ref clockwiseTurn, "clockwiseTurn");
+            Scribe_Values.Look(ref orbitClockwise, "orbitClockwise", true);
             Scribe_Values.Look(ref continueRotating, "continueRotating");
-            Scribe_Values.Look(ref inEllipseStrafingRun, "inEllipseStrafingRun", false);
+            Scribe_Values.Look(ref orbitPerpOffset, "orbitPerpOffset");
+            Scribe_Values.Look(ref orbitOrientAngle, "orbitOrientAngle");
             Scribe_Values.Look(ref currentChaseMode, "currentChaseMode", ChaseMode.Circling);
+            Scribe_Values.Look(ref flightPattern, "flightPattern", FlightPattern.Around);
             Scribe_Values.Look(ref takeoffProgress, "takeoffProgress");
             Scribe_Values.Look(ref bombardmentOptionInd, "bombardmentOptionInd");
             Scribe_Values.Look(ref lastBombardmentTick, "lastBombardmentTick");
