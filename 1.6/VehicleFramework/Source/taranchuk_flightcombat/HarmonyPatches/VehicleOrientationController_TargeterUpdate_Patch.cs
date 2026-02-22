@@ -31,7 +31,6 @@ namespace taranchuk_flightcombat
             }
 
             var lineAngle = (__instance.end.ToVector3() - __instance.start.ToVector3()).AngleFlat() + 90f;
-            Log.Message("WtF:?");
             var vehicleAltitude = AltitudeLayer.MetaOverlays.AltitudeFor();
             var lineAltitude = vehicleAltitude - 0.03658537f;
 

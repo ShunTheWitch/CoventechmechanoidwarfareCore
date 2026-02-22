@@ -57,7 +57,7 @@ namespace taranchuk_flightcombat
                                     return GenAdj.OccupiedRect(x, spawnRotation, new IntVec2(maxSize, maxSize)).ExpandedBy(1).Cells.All(x => x.InBounds(map));
                                 }, out var loc);
                             GenSpawn.Spawn(pawn, loc, map, spawnRotation);
-                            if (comp.Props.AISettings?.gunshipSettings?.gunshipMode == GunshipMode.Hovering)
+                            if (comp.Props.AISettings?.gunshipSettings?.chaseMode == ChaseMode.Hovering)
                             {
                                 comp.SetHoverMode(true);
                             }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Verse;
 
 namespace taranchuk_flightcombat
@@ -17,11 +17,8 @@ namespace taranchuk_flightcombat
 
     public class GunshipSettings : AIFightSettings
     {
-        public GunshipMode gunshipMode;
-    }
-    public enum GunshipMode
-    {
-        Circling, Chasing, Hovering
+        public FlightPattern flightPattern = FlightPattern.Around;
+        public ChaseMode chaseMode = ChaseMode.Circling;
     }
 
     public class AISettings
