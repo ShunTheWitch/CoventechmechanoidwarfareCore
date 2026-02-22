@@ -172,10 +172,15 @@ namespace taranchuk_flightcombat
         public Vector3 curPosition;
         private Vector3 currentVelocity = Vector3.zero;
         private float angularVelocity = 0f;
+        private float cachedAvoidanceBias = 0f;
+        private float cachedAvoidanceSpeedMult = 1f;
+        private int avoidanceComputedTick = -1;
         private int nextTargetSearchTick = 0;
+        private int yieldUntilTick = 0;
         private bool continueRotating;
         private bool orbitClockwise = true;
         private Vector3 orbitPerpOffset;
+        private Vector3 orbitOffsetDir;
         private bool orbitInitialized;
         private float orbitOrientAngle;
         private ChaseMode currentChaseMode = ChaseMode.Circling;
@@ -1405,8 +1410,60 @@ namespace taranchuk_flightcombat
             }
             else if (target.IsValid)
             {
+                if (Find.TickManager.TicksGame < yieldUntilTick)
+                {
+                    MoveFurther(Props.flightSpeedTurningPerTick);
+                    return;
+                }
+
+                if (ShouldYieldToOther())
+                {
+                    yieldUntilTick = Find.TickManager.TicksGame + 30;
+                    MoveFurther(Props.flightSpeedTurningPerTick);
+                    return;
+                }
+
                 MoveInChaseMode(target);
             }
+        }
+
+        private bool ShouldYieldToOther()
+        {
+            if (Vehicle.Map is null) return false;
+
+            float myRadius = (Vehicle.def.Size.x + Vehicle.def.Size.z) / 2f;
+
+            Vector3 myDir = (Quaternion.AngleAxis(CurAngle, Vector3.up)
+                * Vector3.forward).RotatedBy(FlightAngleOffset).normalized;
+
+            var others = Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.Everything)
+                .OfType<VehiclePawn>()
+                .Where(v => v != Vehicle
+                    && v.GetComp<CompFlightMode>() is CompFlightMode c
+                    && c.InAir
+                    && v.thingIDNumber < Vehicle.thingIDNumber);
+
+            foreach (var other in others)
+            {
+                var otherComp = other.GetComp<CompFlightMode>();
+                float otherRadius = (other.def.Size.x + other.def.Size.z) / 2f;
+                float yieldRadius = (myRadius + otherRadius) * 2f;
+
+                Vector3 toOther = otherComp.curPosition.Yto0() - curPosition.Yto0();
+                float dist = toOther.magnitude;
+
+                if (dist >= yieldRadius) continue;
+
+                float dotAhead = Vector3.Dot(myDir, toOther.normalized);
+                if (dotAhead < 0.3f) continue;
+
+                Vector3 relVel = currentVelocity.Yto0() - otherComp.currentVelocity.Yto0();
+                float closingSpeed = Vector3.Dot(relVel, toOther.normalized);
+                if (closingSpeed < 0f) continue;
+
+                return true;
+            }
+            return false;
         }
 
         private void MoveToLandingSpot()
@@ -1644,8 +1701,9 @@ namespace taranchuk_flightcombat
 
         private void MoveFurther(float speed, float? minDistanceFromTarget = null, Vector3? stopTarget = null)
         {
+            ComputeAvoidance();
             Vector3 dir = (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.forward).RotatedBy(FlightAngleOffset);
-            MoveDirection(dir, speed, minDistanceFromTarget, stopTarget);
+            MoveDirection(dir, speed * cachedAvoidanceSpeedMult, minDistanceFromTarget, stopTarget);
         }
 
         private void MoveBack(float speed, float? minDistanceFromTarget = null, Vector3? stopTarget = null)
@@ -1727,82 +1785,98 @@ namespace taranchuk_flightcombat
             return RotateTo(targetAngle, turnRate, avoidanceStrength);
         }
 
-        private Vector3 GetAvoidanceVector()
+        private void ComputeAvoidance()
         {
-            Vector3 totalRepulsion = Vector3.zero;
-            if (Vehicle.Map is null)
-            {
-                return totalRepulsion;
-            }
+            if (avoidanceComputedTick == Find.TickManager.TicksGame) return;
+            avoidanceComputedTick = Find.TickManager.TicksGame;
+            cachedAvoidanceBias = 0f;
+            cachedAvoidanceSpeedMult = 1f;
 
-            var otherFlyingVehicles = Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.Everything)
+            if (Vehicle.Map is null) return;
+
+            var others = Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.Everything)
                 .OfType<VehiclePawn>()
-                .Where(v => v != Vehicle && v.GetComp<CompFlightMode>() is CompFlightMode comp && comp.InAir);
+                .Where(v => v != Vehicle
+                    && v.GetComp<CompFlightMode>() is CompFlightMode c
+                    && c.InAir);
 
-            float myAvgRadius = (this.Vehicle.def.Size.x + this.Vehicle.def.Size.z) / 2f;
-            int avoidanceCount = 0;
+            float myRadius = (Vehicle.def.Size.x + Vehicle.def.Size.z) / 2f;
+            const float LookaheadTicks = 60f;
 
-            foreach (var otherVehicle in otherFlyingVehicles)
+            float worstStrength = 0f;
+
+            foreach (var other in others)
             {
-                if (target.IsValid && target.HasThing && otherVehicle == target.Thing) continue;
-                if (faceTarget.IsValid && faceTarget.HasThing && otherVehicle == faceTarget.Thing) continue;
+                if (target.IsValid && target.HasThing && other == target.Thing) continue;
+                if (faceTarget.IsValid && faceTarget.HasThing && other == faceTarget.Thing) continue;
 
-                var otherComp = otherVehicle.GetComp<CompFlightMode>();
-                float otherAvgRadius = (otherVehicle.def.Size.x + otherVehicle.def.Size.z) / 2f;
-                float avoidanceRadius = (myAvgRadius + otherAvgRadius) * 1.5f;
+                var otherComp = other.GetComp<CompFlightMode>();
+                float otherRadius = (other.def.Size.x + other.def.Size.z) / 2f;
+                float dangerRadius = (myRadius + otherRadius) * 3f;
 
-                float distance = Vector3.Distance(this.curPosition, otherComp.curPosition);
+                Vector3 relPos = curPosition.Yto0() - otherComp.curPosition.Yto0();
+                float currentDist = relPos.magnitude;
 
-                if (distance < avoidanceRadius && distance > 0)
+                Vector3 relVel = currentVelocity.Yto0() - otherComp.currentVelocity.Yto0();
+                float relSpeedSq = relVel.sqrMagnitude;
+
+                float closestTime, closestDist;
+                if (relSpeedSq < 0.0001f)
                 {
-                    Vector3 repulsionVector = this.curPosition - otherComp.curPosition;
-                    float strength = 1f - (distance / avoidanceRadius);
-                    totalRepulsion += repulsionVector.normalized * strength;
-                    avoidanceCount++;
+                    closestTime = 0f;
+                    closestDist = currentDist;
                 }
+                else
+                {
+                    closestTime = Mathf.Clamp(-Vector3.Dot(relPos, relVel) / relSpeedSq, 0f, LookaheadTicks);
+                    closestDist = (relPos + relVel * closestTime).magnitude;
+                }
+
+                float effectiveDist = currentDist < dangerRadius ? Mathf.Min(currentDist, closestDist) : closestDist;
+
+                if (effectiveDist >= dangerRadius) continue;
+
+                float urgency = currentDist < dangerRadius
+                    ? 1f
+                    : 1f - (closestTime / LookaheadTicks);
+
+                float penetration = 1f - (effectiveDist / dangerRadius);
+                float strength = penetration * Mathf.Lerp(0.1f, 1f, urgency);
+
+                if (strength <= worstStrength) continue;
+                worstStrength = strength;
+
+                Vector3 toOther = (otherComp.curPosition.Yto0() - curPosition.Yto0()).normalized;
+                if (toOther.sqrMagnitude < 0.001f) toOther = Vector3.right;
+
+                Vector3 perpCW  = new Vector3( toOther.z, 0f, -toOther.x);
+                Vector3 perpCCW = new Vector3(-toOther.z, 0f,  toOther.x);
+
+                Vector3 myDir = (Quaternion.AngleAxis(CurAngle, Vector3.up)
+                    * Vector3.forward).RotatedBy(FlightAngleOffset).normalized;
+
+                Vector3 avoidDir = Vector3.Dot(myDir, perpCW) >= Vector3.Dot(myDir, perpCCW)
+                    ? perpCW : perpCCW;
+
+                float avoidAngle = AngleAdjusted(avoidDir.AngleFlat() + FlightAngleOffset);
+
+                cachedAvoidanceBias = Utils.AngleDiff(CurAngle, avoidAngle) * strength * 0.4f;
+                cachedAvoidanceSpeedMult = Mathf.Lerp(1f, 0.6f, strength);
             }
-
-            if (avoidanceCount > 0)
-            {
-                LogOnce("GetAvoidanceVector", $"avoidanceCount: {avoidanceCount}, totalRepulsion: {totalRepulsion}");
-            }
-
-            return totalRepulsion;
-        }
-
-        private float GetAvoidanceModifiedTargetAngle(float currentAngle, float targetAngle, float strength)
-        {
-            if (strength <= 0f) return targetAngle;
-
-            Vector3 avoidanceVector = GetAvoidanceVector();
-            if (avoidanceVector.sqrMagnitude < 0.01f)
-            {
-                return targetAngle;
-            }
-
-            float avoidanceTargetAngle = AngleAdjusted(avoidanceVector.AngleFlat() + FlightAngleOffset);
-            float avoidanceWeight = Mathf.Clamp01(avoidanceVector.magnitude);
-
-            float angleDifference = Utils.AngleDiff(targetAngle, avoidanceTargetAngle);
-
-            float maxNudge = 30f;
-            float nudge = Mathf.Clamp(angleDifference, -maxNudge, maxNudge) * avoidanceWeight * strength;
-
-            return AngleAdjusted(targetAngle + nudge);
         }
 
         private float RotateTo(float targetAngle, float turnRate, float avoidanceStrength = 1.0f)
         {
-            float adjustedTargetAngle = GetAvoidanceModifiedTargetAngle(this.CurAngle, targetAngle, avoidanceStrength);
-            float diff = Utils.AngleDiff(CurAngle, adjustedTargetAngle);
+            ComputeAvoidance();
+            float adjustedTarget = AngleAdjusted(targetAngle + cachedAvoidanceBias * avoidanceStrength);
+
+            float diff = Utils.AngleDiff(CurAngle, adjustedTarget);
             float absDiff = Mathf.Abs(diff);
 
             float proportionalSpeed = diff * 0.3f;
             float desiredAngularVelocity = Mathf.Clamp(proportionalSpeed, -turnRate, turnRate);
-
             float acceleration = turnRate * 0.5f;
             angularVelocity = Mathf.MoveTowards(angularVelocity, desiredAngularVelocity, acceleration);
-
             CurAngle += angularVelocity;
 
             return absDiff;
@@ -1862,9 +1936,12 @@ namespace taranchuk_flightcombat
 
             if (currentChaseMode == ChaseMode.Circling && flightPattern == FlightPattern.Over)
             {
-                Vector3 perp = new Vector3(approachDir.z, 0f, -approachDir.x);
-                orbitPerpOffset = perp * GetOrbitRadius();
-                LogOnce("InitOrbit", $"Circling/Over: orbitPerpOffset: {orbitPerpOffset}, orbitRadius: {GetOrbitRadius()}");
+                Vector3 perpCW  = new Vector3( approachDir.z, 0f, -approachDir.x);
+                Vector3 perpCCW = new Vector3(-approachDir.z, 0f,  approachDir.x);
+                Vector3 chosenPerp = PickUnoccupiedSide(targetPos, perpCW, perpCCW, GetOrbitRadius());
+                orbitOffsetDir = chosenPerp;
+                orbitPerpOffset = chosenPerp * GetOrbitRadius();
+                LogOnce("InitOrbit", $"Circling/Over: orbitOffsetDir: {orbitOffsetDir}, orbitPerpOffset: {orbitPerpOffset}, orbitRadius: {GetOrbitRadius()}");
             }
             else if (currentChaseMode == ChaseMode.Elliptical && flightPattern == FlightPattern.Over)
             {
@@ -1985,11 +2062,8 @@ namespace taranchuk_flightcombat
                         float minTurnRadius = (turnSpeed * 180f) / (Mathf.PI * turnRate);
                         float angleDiff = Mathf.Abs(Utils.AngleDiff(CurAngle, angleToTarget));
 
-                        float avoidanceStrength = 1.0f;
-                        if (distToTarget < 35f)
-                        {
-                            avoidanceStrength = Mathf.Clamp01((distToTarget - 15f) / 20f);
-                        }
+                        // Avoidance yields when ship needs a big turn - scales from full at 0° diff to zero at 90°+
+                        float avoidanceStrength = Mathf.Clamp01(1f - (angleDiff / 90f));
 
                         float rotateDiff = 0f;
                         if (!(distToTarget < minTurnRadius * 2.5f && angleDiff > 90f))
@@ -2009,7 +2083,7 @@ namespace taranchuk_flightcombat
                         float orbitRadius = GetOrbitRadius();
                         Vector3 orbitCenter = flightPattern == FlightPattern.Around
                             ? targetPos
-                            : new Vector3(targetPos.x + orbitPerpOffset.x, targetPos.y, targetPos.z + orbitPerpOffset.z);
+                            : targetPos + orbitOffsetDir * orbitRadius;
 
                         float baseSpeed = Props.flightSpeedCirclingPerTick ?? Props.flightSpeedTurningPerTick;
                         float requiredTurnRate = (baseSpeed * 180f) / (Mathf.PI * Mathf.Max(orbitRadius, 1f)) * 1.5f;
@@ -2033,6 +2107,7 @@ namespace taranchuk_flightcombat
                 case ChaseMode.Elliptical:
                     {
                         GetEllipseAxes(out float a, out float b);
+                        orbitPerpOffset = orbitOffsetDir * b;
 
                         Vector3 orbitCenter = flightPattern == FlightPattern.Around
                             ? targetPos
@@ -2063,6 +2138,38 @@ namespace taranchuk_flightcombat
             }
             LogOnce("ClockWiseTurn", $"targetAngle: {targetAngle}, CurAngle: {CurAngle}, diff: {diff}, result: true (clockwise)");
             return true;
+        }
+
+        private Vector3 PickUnoccupiedSide(Vector3 targetPos, Vector3 perpCW, Vector3 perpCCW, float offsetDist)
+        {
+            Vector3 posCW = targetPos + perpCW * offsetDist;
+            Vector3 posCCW = targetPos + perpCCW * offsetDist;
+
+            IntVec3 cellCW = posCW.ToIntVec3();
+            IntVec3 cellCCW = posCCW.ToIntVec3();
+
+            int occupiedCW = 0;
+            int occupiedCCW = 0;
+
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int z = -1; z <= 1; z++)
+                {
+                    IntVec3 checkCell = cellCW + new IntVec3(x, 0, z);
+                    if (checkCell.InBounds(Vehicle.Map) && Vehicle.Map.thingGrid.ThingsAt(checkCell).Any(t => t is Pawn || t is Building))
+                    {
+                        occupiedCW++;
+                    }
+
+                    checkCell = cellCCW + new IntVec3(x, 0, z);
+                    if (checkCell.InBounds(Vehicle.Map) && Vehicle.Map.thingGrid.ThingsAt(checkCell).Any(t => t is Pawn || t is Building))
+                    {
+                        occupiedCCW++;
+                    }
+                }
+            }
+
+            return occupiedCW <= occupiedCCW ? perpCW : perpCCW;
         }
 
         private float GetAngleFromTarget(Vector3 target)
@@ -2210,6 +2317,7 @@ namespace taranchuk_flightcombat
             Scribe_Values.Look(ref orbitClockwise, "orbitClockwise", true);
             Scribe_Values.Look(ref continueRotating, "continueRotating");
             Scribe_Values.Look(ref orbitPerpOffset, "orbitPerpOffset");
+            Scribe_Values.Look(ref orbitOffsetDir, "orbitOffsetDir");
             Scribe_Values.Look(ref orbitOrientAngle, "orbitOrientAngle");
             Scribe_Values.Look(ref currentChaseMode, "currentChaseMode", ChaseMode.Circling);
             Scribe_Values.Look(ref flightPattern, "flightPattern", FlightPattern.Around);
@@ -2225,6 +2333,7 @@ namespace taranchuk_flightcombat
             Scribe_Values.Look(ref orderRecon, "orderRecon");
             Scribe_Values.Look(ref shouldCrash, "shouldCrash");
             Scribe_Values.Look(ref detailedLoggingMode, "detailedLoggingMode");
+            Scribe_Values.Look(ref yieldUntilTick, "yieldUntilTick");
         }
     }
 }
