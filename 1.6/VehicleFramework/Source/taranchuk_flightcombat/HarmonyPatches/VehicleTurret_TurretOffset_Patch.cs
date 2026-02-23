@@ -17,7 +17,7 @@ namespace taranchuk_flightcombat
             if (UnityData.IsInMainThread && Current.ProgramState == ProgramState.Playing)
             {
                 var comp = __instance.vehicle.GetComp<CompFlightMode>();
-                if (comp != null && __instance.vehicle.InFlightModeOrNonStandardAngle(comp))
+                if (comp != null && comp.InAir)
                 {
                     __result = __instance.DrawPosition(rot);
                     return false;

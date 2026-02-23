@@ -1,4 +1,5 @@
 using RimWorld;
+using System.Collections.Generic;
 using Vehicles;
 using Verse;
 using UnityEngine;
@@ -7,6 +8,26 @@ namespace taranchuk_flightcombat
 {
     public static class Utils
     {
+        public static readonly HashSet<ThingDef> flightCapableDefs;
+        static Utils()
+        {
+            flightCapableDefs = new HashSet<ThingDef>();
+            foreach (var def in DefDatabase<ThingDef>.AllDefs)
+            {
+                if (def.IsCorpse is false && def.comps != null)
+                {
+                    foreach (var compProps in def.comps)
+                    {
+                        if (compProps is CompProperties_FlightMode)
+                        {
+                            flightCapableDefs.Add(def);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         public static float AngleDiff(float from, float to)
         {
             float delta = (to - from + 180) % 360 - 180;

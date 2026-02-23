@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using Vehicles;
 
 namespace taranchuk_flightcombat
@@ -9,17 +9,12 @@ namespace taranchuk_flightcombat
         public static bool Prefix(VehiclePawn __instance)
         {
             var comp = __instance.GetComp<CompFlightMode>();
-            if (comp != null && __instance.InFlightModeOrNonStandardAngle(comp))
+            if (comp != null && comp.InAir)
             {
                 comp.UpdateRotation();
                 return false;
             }
             return true;
-        }
-
-        public static bool InFlightModeOrNonStandardAngle(this VehiclePawn __instance, CompFlightMode comp)
-        {
-            return comp.InAir || (__instance.Angle != 0 && __instance.Angle != -45 && __instance.Angle != 45);
         }
     }
 }

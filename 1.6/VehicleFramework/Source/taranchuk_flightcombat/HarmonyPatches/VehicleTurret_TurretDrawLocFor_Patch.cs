@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using SmashTools;
 using UnityEngine;
 using Vehicles;
@@ -13,7 +13,7 @@ namespace taranchuk_flightcombat
         public static void Prefix(VehicleTurret __instance, ref Rot8 rot)
         {
             var comp = __instance.vehicle?.GetComp<CompFlightMode>();
-            if (comp != null && __instance.vehicle.InFlightModeOrNonStandardAngle(comp))
+            if (comp != null && comp.InAir)
             {
                 rot = comp.FlightRotation;
             }

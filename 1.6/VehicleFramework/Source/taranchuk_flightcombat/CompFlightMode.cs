@@ -4,7 +4,6 @@ using SmashTools;
 using SmashTools.Rendering;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 using Vehicles;
@@ -67,13 +66,11 @@ namespace taranchuk_flightcombat
         public VehicleArrivalAction arrivalAction;
         public List<FlightNode> flightPath;
         public bool orderRecon;
-        public bool detailedLoggingMode;
+        public bool loggingMode;
         private Dictionary<string, string> lastLoggedMessages = new Dictionary<string, string>();
-
         public FlightMode flightMode;
         private bool Flying => flightMode != FlightMode.Off;
         private bool GoingToWorld => arrivalAction != null;
-
         private LocalTargetInfo target;
         private LocalTargetInfo faceTarget = LocalTargetInfo.Invalid;
         private LocalTargetInfo landingSpot;
@@ -86,10 +83,11 @@ namespace taranchuk_flightcombat
         private int? tickToStartFiring;
         public float takeoffProgress;
         public bool shouldCrash;
+        public Rot4? designatedLandingRotation;
         private bool TakingOff => flightMode != FlightMode.Off && takeoffProgress < 1f && runwayStartingSpot.IsValid is false;
         private bool Hovering => flightMode == FlightMode.Hover;
         private bool Landing => flightMode == FlightMode.Off && takeoffProgress > 0f;
-        public bool InAir => Vehicle.Spawned && (Flying || TakingOff || Landing);
+        public bool InAir => Flying || TakingOff || Landing;
         public Rot4 FlightRotation => Rot4.North;
         public float FlightAngleOffset => -90;
         public bool InAIMode => Props.AISettings != null && Vehicle.Faction != Faction.OfPlayer;
@@ -104,27 +102,12 @@ namespace taranchuk_flightcombat
         {
             get
             {
-                //var deploying = Vehicle.Deploying is false;
-                //var canMove = Vehicle.CanMoveFinal;
-                //var canMove2 = Vehicle.CanMove;
-                //var stat = Vehicle.GetStatValue(VehicleStatDefOf.MoveSpeed);
-                //var moveSpeed = Vehicle.GetStatValue(VehicleStatDefOf.MoveSpeed) > 0.1f;
-                //var perm = Vehicle.MovementPermissions > VehiclePermissions.NotAllowed 
-                //    && Vehicle.movementStatus == VehicleMovementStatus.Online;
-                //var flightSpeed = Vehicle.GetStatValue(VehicleStatDefOf.FlightSpeed) >
-                //    Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightSpeed) / 2f;
-                //var flightControl = Vehicle.GetStatValue(VehicleStatDefOf.FlightControl) >
-                //    Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightControl) / 2f;
-                //Log.Message("deploying: " + deploying + " - canMove: " + canMove + " - canMove2: " + canMove2
-                //    + " - moveSpeed: " + moveSpeed + " - perm: " + perm + " - stat: " + stat
-                //    + " - flightSpeed: " + flightSpeed
-                //    + " - flightControl: " + flightControl);
-                //return deploying && canMove && flightSpeed && flightControl;
-                return Vehicle.CompVehicleTurrets.Deploying is false && Vehicle.CanMoveFinal
-                    && Vehicle.GetStatValue(VehicleStatDefOf.FlightSpeed) >
-                    Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightSpeed) / 2f
-                    && Vehicle.GetStatValue(VehicleStatDefOf.FlightControl) >
-                    Vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightControl) / 2f;
+                var vehicle = Vehicle;
+                return vehicle.CompVehicleTurrets.Deploying is false && vehicle.CanMoveFinal
+                    && vehicle.GetStatValue(VehicleStatDefOf.FlightSpeed) >
+                    vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightSpeed) / 2f
+                    && vehicle.GetStatValue(VehicleStatDefOf.FlightControl) >
+                    vehicle.VehicleDef.GetStatValueAbstract(VehicleStatDefOf.FlightControl) / 2f;
             }
         }
 
@@ -140,7 +123,8 @@ namespace taranchuk_flightcombat
                 return Vehicle.DrawSize;
             }
 
-            var originalSize = Vehicle.VehicleDef.graphicData.drawSize;
+            var vehicle = Vehicle;
+            var originalSize = vehicle.VehicleDef.graphicData.drawSize;
             var flightSize = Props.flightGraphicData.drawSize;
 
             if (Flying)
@@ -163,7 +147,8 @@ namespace taranchuk_flightcombat
 
         public Vector2 GetScaleFactors()
         {
-            var originalSize = Vehicle.VehicleDef.graphicData.drawSize;
+            var vehicle = Vehicle;
+            var originalSize = vehicle.VehicleDef.graphicData.drawSize;
             var currentSize = GetCurrentDrawSize();
             return new Vector2(currentSize.x / originalSize.x, currentSize.y / originalSize.y);
         }
@@ -177,6 +162,9 @@ namespace taranchuk_flightcombat
         private int avoidanceComputedTick = -1;
         private int nextTargetSearchTick = 0;
         private int yieldUntilTick = 0;
+        private Dictionary<VehicleTurret, ThingDef> cachedAmmoTypes;
+        private Vector3 lastRenderPosition;
+        private float lastRenderAngle;
         private bool continueRotating;
         private bool orbitClockwise = true;
         private Vector3 orbitPerpOffset;
@@ -277,6 +265,7 @@ namespace taranchuk_flightcombat
 
         private void GenerateStock(List<ThingDefCountRangeClass> stock)
         {
+            var vehicle = Vehicle;
             foreach (var entry in stock)
             {
                 var stack = entry.countRange.RandomInRange;
@@ -285,14 +274,15 @@ namespace taranchuk_flightcombat
                     var thing = ThingMaker.MakeThing(entry.thingDef);
                     thing.stackCount = Mathf.Min(stack, thing.def.stackLimit);
                     stack -= thing.stackCount;
-                    Vehicle.inventory.TryAddItemNotForSale(thing);
+                    vehicle.inventory.TryAddItemNotForSale(thing);
                 }
             }
         }
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
-            if (Vehicle.Faction == Faction.OfPlayer && Vehicle.Drafted)
+            var vehicle = Vehicle;
+            if (vehicle.Faction == Faction.OfPlayer && vehicle.Drafted)
             {
                 foreach (var g in GetAircraftGizmos())
                 {
@@ -358,9 +348,63 @@ namespace taranchuk_flightcombat
                             {
                                 SetFlightMode(true);
                             }
-                            detailedLoggingMode = true;
-                            LogAlways("Gunship", $"Gunship mode: {Props.AISettings?.gunshipSettings?.chaseMode}, pattern: {Props.AISettings?.gunshipSettings?.flightPattern}, moveWhileTakingOff: {Props.moveWhileTakingOff}");
+                            loggingMode = true;
+                            LogAlways(() => "Gunship", () => $"Gunship mode: {Props.AISettings?.gunshipSettings?.chaseMode}, pattern: {Props.AISettings?.gunshipSettings?.flightPattern}, moveWhileTakingOff: {Props.moveWhileTakingOff}");
                         }
+                    }
+                };
+
+                yield return new Command_Toggle
+                {
+                    defaultLabel = "DEV: Toggle runway requirement",
+                    defaultDesc = "Toggles runway requirement (VTOL vs Runway mode).",
+                    isActive = () => Props.moveWhileLanding,
+                    toggleAction = () =>
+                    {
+                        Props.moveWhileLanding = !Props.moveWhileLanding;
+                        Props.moveWhileTakingOff = !Props.moveWhileTakingOff;
+                        LogAlways(() => "Dev", () => $"Runway requirement set to: {Props.moveWhileLanding}");
+                    }
+                };
+
+                yield return new Command_Action
+                {
+                    defaultLabel = "DEV: Copy Rotation Stats",
+                    defaultDesc = "Copies internal rotation variables to clipboard for troubleshooting.",
+                    action = () =>
+                    {
+                        var sb = new System.Text.StringBuilder();
+                        sb.AppendLine($"--- Rotation Stats for {vehicle.LabelShort} (ID: {vehicle.ThingID}) ---");
+                        sb.AppendLine($"[CompFlightMode]");
+                        sb.AppendLine($"flightMode: {flightMode}");
+                        sb.AppendLine($"InAir (Calculated): {InAir}");
+                        sb.AppendLine($"TakingOff: {TakingOff}");
+                        sb.AppendLine($"Landing: {Landing}");
+                        sb.AppendLine($"Flying: {Flying}");
+                        sb.AppendLine($"takeoffProgress: {takeoffProgress}");
+                        sb.AppendLine($"CurAngle: {CurAngle}");
+                        sb.AppendLine($"FlightAngleOffset: {FlightAngleOffset}");
+                        sb.AppendLine($"designatedLandingRotation: {designatedLandingRotation}");
+
+                        sb.AppendLine($"[VehiclePawn]");
+                        sb.AppendLine($"Angle: {vehicle.Angle}");
+                        sb.AppendLine($"Rotation (Rot4): {vehicle.Rotation} (Int: {vehicle.Rotation.AsInt})");
+                        sb.AppendLine($"FullRotation (Rot8): {vehicle.FullRotation} (Int: {vehicle.FullRotation.AsInt})");
+                        sb.AppendLine($"FullRotation.AsAngle: {vehicle.FullRotation.AsAngle}");
+
+                        sb.AppendLine($"[Transform]");
+                        if (vehicle.Transform != null)
+                        {
+                           sb.AppendLine($"Transform.rotation: {vehicle.Transform.rotation}");
+                        }
+                        else
+                        {
+                           sb.AppendLine($"Transform is null");
+                        }
+
+                        Log.Message(sb.ToString());
+                        GUIUtility.systemCopyBuffer = sb.ToString();
+                        Messages.Message("Rotation stats copied to clipboard", MessageTypeDefOf.TaskCompletion, false);
                     }
                 };
 
@@ -376,7 +420,7 @@ namespace taranchuk_flightcombat
                             delegate
                             {
                                 Props.AISettings.gunshipSettings.chaseMode = ChaseMode.Direct;
-                                LogAlways("Gunship", $"Gunship AI set to: Direct");
+                                LogAlways(() => "Gunship", () => $"Gunship AI set to: Direct");
                             }));
 
                         options.Add(new FloatMenuOption(
@@ -384,10 +428,10 @@ namespace taranchuk_flightcombat
                             delegate
                             {
                                 Props.AISettings.gunshipSettings.chaseMode = ChaseMode.Hovering;
-                                LogAlways("Gunship", $"Gunship AI set to: Hovering");
+                                LogAlways(() => "Gunship", () => $"Gunship AI set to: Hovering");
                             }));
 
-                        foreach (ChaseMode mode in new[] { ChaseMode.Circling, ChaseMode.Elliptical })
+                        foreach (var mode in new[] { ChaseMode.Circling, ChaseMode.Elliptical })
                         {
                             var modeCapture = mode;
                             foreach (FlightPattern pattern in Enum.GetValues(typeof(FlightPattern)))
@@ -400,7 +444,7 @@ namespace taranchuk_flightcombat
                                     {
                                         Props.AISettings.gunshipSettings.chaseMode = modeCapture;
                                         Props.AISettings.gunshipSettings.flightPattern = patternCapture;
-                                        LogAlways("Gunship", $"Gunship AI set to: {modeCapture} / {patternCapture}");
+                                        LogAlways(() => "Gunship", () => $"Gunship AI set to: {modeCapture} / {patternCapture}");
                                     }));
                             }
                         }
@@ -413,11 +457,11 @@ namespace taranchuk_flightcombat
                 {
                     defaultLabel = "DEV: Toggle detailed logging",
                     defaultDesc = "Toggle detailed flight mode logging",
-                    isActive = () => detailedLoggingMode,
+                    isActive = () => loggingMode,
                     toggleAction = () =>
                     {
-                        detailedLoggingMode = !detailedLoggingMode;
-                        LogAlways("Gunship", $"Detailed logging {(detailedLoggingMode ? "enabled" : "disabled")} for {Vehicle}");
+                        loggingMode = !loggingMode;
+                        LogAlways(() => "Gunship", () => $"Detailed logging {(loggingMode ? "enabled" : "disabled")} for {vehicle}");
                     }
                 };
             }
@@ -425,53 +469,24 @@ namespace taranchuk_flightcombat
 
         private IEnumerable<Gizmo> GetAircraftGizmos()
         {
-            if (Flying && Props.flightCommands.landOnGround != null)
-            {
-                var landOnGround = Props.flightCommands.landOnGround.GetCommand();
-                landOnGround.defaultLabel = "WIP: " + landOnGround.defaultLabel;
-                landOnGround.action = () =>
-                {
-                    Find.Targeter.BeginTargeting(TargetingParamsForLanding, delegate (LocalTargetInfo landingSpot)
-                    {
-                        Find.Targeter.BeginTargeting(TargetingParamsForLanding, delegate (LocalTargetInfo runwayStartingSpot)
-                        {
-                            var runwayCells = GetRunwayCells(takingOff: false, runwayStartingSpot.Cell, (landingSpot.Cell - runwayStartingSpot.Cell).AngleFlat);
-                            var blockingCells = GetBlockingCells(runwayCells);
-                            if (blockingCells.Any())
-                            {
-                                Messages.Message("CVN_CannotLand".Translate(), MessageTypeDefOf.RejectInput);
-                            }
-                            else
-                            {
-                                this.landingSpot = landingSpot;
-                                this.runwayStartingSpot = runwayStartingSpot;
-                                if (flightMode != FlightMode.Flight)
-                                {
-                                    this.SetFlightMode(true);
-                                }
-                            }
-                        }, highlightAction: delegate (LocalTargetInfo x)
-                        {
-                            if (x.IsValid && x.Cell != landingSpot.Cell)
-                            {
-                                var runwayCells = GetRunwayCells(takingOff: false, x.Cell, (landingSpot.Cell - x.Cell).AngleFlat);
-                                GenDraw.DrawFieldEdges(runwayCells);
-                                var blockingCells = GetBlockingCells(runwayCells);
-                                GenDraw.DrawFieldEdges(blockingCells, Color.red);
-                            }
-                        }, null);
-                    });
-                };
-                yield return landOnGround;
-            }
-
+            var vehicle = Vehicle;
             if (Props.flightCommands.flightMode != null)
             {
                 var flightModeCommand = Props.flightCommands.flightMode.GetCommand();
                 flightModeCommand.isActive = () => Flying;
                 flightModeCommand.toggleAction = () =>
                 {
-                    SetFlightMode(this.flightMode != FlightMode.Flight);
+                    LogAlways(() => "FlightModeCommand", () => $"Toggle called. Current flightMode: {this.flightMode}");
+                    if (this.flightMode != FlightMode.Off)
+                    {
+                        LogAlways(() => "FlightModeCommand", () => "Opening landing designator");
+                        Find.DesignatorManager.Select(new Designator_LandVehicle(this));
+                    }
+                    else
+                    {
+                        LogAlways(() => "FlightModeCommand", () => "Starting takeoff");
+                        SetFlightMode(true);
+                    }
                 };
                 if (Props.moveWhileTakingOff)
                 {
@@ -481,7 +496,7 @@ namespace taranchuk_flightcombat
                         {
                             DrawRunway(takingOff: true);
                         }
-                        else
+                        else if(InAir && !targetForRunway.HasValue)
                         {
                             DrawRunway(takingOff: false);
                         }
@@ -495,21 +510,9 @@ namespace taranchuk_flightcombat
                             flightModeCommand.Disable("CVN_CannotTakeoff".Translate());
                         }
                     }
-                    else if (InAir)
-                    {
-                        var runwayCells = GetRunwayCells(takingOff: false);
-                        var blockingCells = GetBlockingCells(runwayCells);
-                        if (blockingCells.Any())
-                        {
-                            flightModeCommand.Disable("CVN_CannotLand".Translate());
-                        }
-                    }
                 }
-                else if (InAir && !CanLand())
-                {
-                    flightModeCommand.Disable("CVN_CannotLandOnImpassableTiles".Translate());
-                }
-                if (Props.canFlyInSpace is false && parent.Map.Biome.inVacuum)
+
+                if (Props.canFlyInSpace is false && vehicle.Map.Biome.inVacuum)
                 {
                     flightModeCommand.Disable("CVN_CannotTakeoffInSpace".Translate());
                 }
@@ -648,14 +651,7 @@ namespace taranchuk_flightcombat
         {
             canTargetPawns = true,
             canTargetLocations = true,
-            validator = (TargetInfo x) => x.Thing != this.Vehicle
-        };
-
-        private TargetingParameters TargetingParamsForLanding => new TargetingParameters
-        {
-            canTargetPawns = false,
-            canTargetLocations = true,
-            validator = (TargetInfo x) => Vehicle.Drivable(x.Cell)
+            validator = (TargetInfo x) => x.Thing != Vehicle
         };
 
         private void DrawRunway(bool takingOff)
@@ -668,9 +664,10 @@ namespace taranchuk_flightcombat
 
         private void FillGaps(List<IntVec3> cells)
         {
+            var vehicle = Vehicle;
             foreach (var cell in cells.ToList())
             {
-                var adjcells = GenAdj.CellsAdjacent8Way(cell, Vehicle.FullRotation, IntVec2.One);
+                var adjcells = GenAdj.CellsAdjacent8Way(cell, vehicle.FullRotation, IntVec2.One);
                 foreach (var adjcell in adjcells)
                 {
                     if (cells.Contains(adjcell) is false)
@@ -683,18 +680,19 @@ namespace taranchuk_flightcombat
 
         public void SetFlightMode(bool flightMode)
         {
-            LogOnce("SetFlightMode", $"flightMode: {flightMode}, current flightMode: {this.flightMode}");
+            LogOnce(() => "SetFlightMode", () => $"flightMode: {flightMode}, current flightMode: {this.flightMode}");
+            var vehicle = Vehicle;
             if (flightMode)
             {
-                SetTarget(Vehicle.vehiclePather.Moving ? Vehicle.vehiclePather.Destination : Vehicle.Position);
+                SetTarget(vehicle.vehiclePather.Moving ? vehicle.vehiclePather.Destination : vehicle.Position);
                 if (!InAir)
                 {
-                    curPosition = Vehicle.DrawTracker.DrawPos;
-                    CurAngle = Vehicle.FullRotation.AsAngle - FlightAngleOffset;
+                    curPosition = vehicle.DrawTracker.DrawPos;
+                    CurAngle = vehicle.FullRotation.AsAngle - FlightAngleOffset;
                 }
-                if (Vehicle.vehiclePather.Moving)
+                if (vehicle.vehiclePather.Moving)
                 {
-                    Vehicle.vehiclePather.StopDead();
+                    vehicle.vehiclePather.StopDead();
                 }
                 UpdateVehicleAngleAndRotation();
                 foreach (var turret in VehicleTurrets)
@@ -705,10 +703,28 @@ namespace taranchuk_flightcombat
             }
             else
             {
-
                 target = LocalTargetInfo.Invalid;
-                Vehicle.FullRotation = Rot8.FromAngle(CurAngle);
-                Vehicle.UpdateAngle();
+
+                if (designatedLandingRotation.HasValue)
+                {
+                    vehicle.FullRotation = Rot8.FromAngle(designatedLandingRotation.Value.AsAngle);
+                    vehicle.Rotation = designatedLandingRotation.Value;
+                    designatedLandingRotation = null;
+                }
+                else
+                {
+                    var landingAngle = AngleAdjusted(CurAngle + FlightAngleOffset);
+                    var snappedRot = Rot4.FromAngleFlat(landingAngle);
+                    vehicle.Rotation = snappedRot;
+                    vehicle.FullRotation = Rot8.FromAngle(snappedRot.AsAngle);
+                }
+
+                vehicle.Angle = vehicle.FullRotation.AsAngle;
+
+                if (vehicle.Transform != null)
+                {
+                    vehicle.Transform.rotation = 0f;
+                }
             }
             ResetFlightData();
             this.flightMode = flightMode ? FlightMode.Flight : FlightMode.Off;
@@ -716,18 +732,19 @@ namespace taranchuk_flightcombat
 
         public void SetHoverMode(bool hoverMode)
         {
-            LogOnce("SetHoverMode", $"hoverMode: {hoverMode}, current flightMode: {this.flightMode}");
+            LogOnce(() => "SetHoverMode", () => $"hoverMode: {hoverMode}, current flightMode: {this.flightMode}");
+            var vehicle = Vehicle;
             if (hoverMode)
             {
-                SetTarget(Vehicle.Position);
+                SetTarget(vehicle.Position);
                 if (InAir is false)
                 {
-                    curPosition = Vehicle.DrawTracker.DrawPos;
-                    CurAngle = Vehicle.FullRotation.AsAngle - FlightAngleOffset;
+                    curPosition = vehicle.DrawTracker.DrawPos;
+                    CurAngle = vehicle.FullRotation.AsAngle - FlightAngleOffset;
                 }
-                if (Vehicle.vehiclePather.Moving)
+                if (vehicle.vehiclePather.Moving)
                 {
-                    Vehicle.vehiclePather.StopDead();
+                    vehicle.vehiclePather.StopDead();
                 }
             }
             faceTarget = LocalTargetInfo.Invalid;
@@ -736,33 +753,64 @@ namespace taranchuk_flightcombat
 
         public void SetTarget(LocalTargetInfo targetInfo)
         {
-            LogOnce("SetTarget", $"targetInfo: {targetInfo}, previous target: {this.target}");
+            LogOnce(() => "SetTarget", () => $"targetInfo: {targetInfo}, previous target: {this.target}");
             this.target = targetInfo;
             this.reachedInitialTarget = false;
             ResetFlightData();
-            if (Vehicle.jobs.curDriver is JobDriver_Goto)
+            var vehicle = Vehicle;
+            if (vehicle.jobs.curDriver is JobDriver_Goto)
             {
-                Vehicle.vehiclePather.PatherFailed();
+                vehicle.vehiclePather.PatherFailed();
             }
         }
 
         private void ResetFlightData()
         {
-            LogOnce("ResetFlightData", $"orbitClockwise: {orbitClockwise}, orbitInitialized: {orbitInitialized}");
+            LogOnce(() => "ResetFlightData", () => $"orbitClockwise: {orbitClockwise}, orbitInitialized: {orbitInitialized}");
             orbitClockwise = true;
             orbitInitialized = false;
             runwayStartingSpot = LocalTargetInfo.Invalid;
             landingSpot = LocalTargetInfo.Invalid;
             targetForRunway = null;
             landingStage = LandingStage.Inactive;
+            designatedLandingRotation = null;
+        }
 
-            currentVelocity = Vector3.zero;
-            angularVelocity = 0f;
+        public void OrderLanding(IntVec3 finalCell, Rot4 finalRotation)
+        {
+            this.landingSpot = finalCell;
+            this.designatedLandingRotation = finalRotation;
+
+            float runwayDistance = 0f;
+
+            if (Props.moveWhileLanding)
+            {
+                float curTakeoffProgress = 1f;
+                while (curTakeoffProgress > 0)
+                {
+                    curTakeoffProgress = Mathf.Max(0, curTakeoffProgress - (1 / (float)Props.landingTicks));
+                    runwayDistance += Props.flightSpeedPerTick * curTakeoffProgress;
+                }
+            }
+
+            var direction = finalRotation.FacingCell.ToVector3();
+            Vector3 touchDownVec = finalCell.ToVector3Shifted() - (direction * runwayDistance);
+            this.runwayStartingSpot = new LocalTargetInfo(touchDownVec.ToIntVec3());
+
+            if (flightMode != FlightMode.Flight)
+            {
+                this.SetFlightMode(true);
+            }
+
+            this.targetForRunway = null;
+            this.landingStage = LandingStage.Inactive;
+
+            LogAlways(() => "OrderLanding", () => $"Landing at {landingSpot}, touchdown {runwayStartingSpot}, dist {runwayDistance}, rot {finalRotation}");
         }
 
         private void SetChaseMode(ChaseMode mode, FlightPattern pattern = FlightPattern.Around)
         {
-            LogOnce("SetChaseMode", $"mode: {mode}, pattern: {pattern}, previous mode: {currentChaseMode}, previous pattern: {flightPattern}");
+            LogOnce(() => "SetChaseMode", () => $"mode: {mode}, pattern: {pattern}, previous mode: {currentChaseMode}, previous pattern: {flightPattern}");
             currentChaseMode = mode;
             flightPattern = pattern;
             orbitInitialized = false;
@@ -775,14 +823,22 @@ namespace taranchuk_flightcombat
             {
                 var targetDist = target.IsValid ? Vector3.Distance(curPosition.Yto0(), target.CenterVector3.Yto0()) : (float?)null;
                 var faceTargetDist = faceTarget.IsValid ? Vector3.Distance(curPosition.Yto0(), faceTarget.CenterVector3.Yto0()) : (float?)null;
-                if (Vehicle.DrawTracker?.renderer is IParallelRenderer renderer)
+                LogAlways(() => "CompTick_Start", () => $"InAir: true, flightMode: {flightMode}, takeoffProgress: {takeoffProgress:F3}, TakingOff: {TakingOff}, Landing: {Landing}, Hovering: {Hovering}, Flying: {Flying}");
+
+                var vehicle = Vehicle;
+                if (vehicle.DrawTracker?.renderer is IParallelRenderer renderer)
                 {
-                    renderer.IsDirty = true;
+                    if (curPosition != lastRenderPosition || CurAngle != lastRenderAngle)
+                    {
+                        renderer.IsDirty = true;
+                        lastRenderPosition = curPosition;
+                        lastRenderAngle = CurAngle;
+                    }
                 }
 
-                if (Vehicle.CompFueledTravel != null && Props.fuelConsumptionPerTick > 0)
+                if (vehicle.CompFueledTravel != null && Props.fuelConsumptionPerTick > 0)
                 {
-                    if (Vehicle.CompFueledTravel.Fuel < Props.fuelConsumptionPerTick)
+                    if (vehicle.CompFueledTravel.Fuel < Props.fuelConsumptionPerTick)
                     {
                         if (shouldCrash is false)
                         {
@@ -791,19 +847,21 @@ namespace taranchuk_flightcombat
                     }
                     else
                     {
-                        Vehicle.CompFueledTravel.ConsumeFuel(Props.fuelConsumptionPerTick);
+                        vehicle.CompFueledTravel.ConsumeFuel(Props.fuelConsumptionPerTick);
                     }
                 }
 
                 if (CanFly is false && shouldCrash is false)
                 {
+                    LogOnce(() => "CompTick", () => "CanFly is false, setting to crash");
                     SetToCrash();
                 }
 
-                if (TakingOff is false && !reachedInitialTarget && curPosition.ToIntVec3().InBounds(Vehicle.Map)
+                if (TakingOff is false && !reachedInitialTarget && curPosition.ToIntVec3().InBounds(vehicle.Map)
                     && OccupiedRect().Contains(target.Cell))
                 {
                     reachedInitialTarget = true;
+                    LogOnce(() => "CompTick", () => "Reached initial target");
                 }
 
                 if (InAIMode && !GoingToWorld)
@@ -813,16 +871,22 @@ namespace taranchuk_flightcombat
 
                 if (TakingOff)
                 {
+                    LogOnce(() => "CompTick", () => "Taking off");
                     Takeoff();
                 }
                 else if (Landing)
                 {
+                    LogAlways(() => "CompTick_Landing", () => $"Starting landing. takeoffProgress: {takeoffProgress:F3}, runwayStartingSpot: {runwayStartingSpot}, landingSpot: {landingSpot}");
+
                     var takeoffOffset = (1 / (float)Props.landingTicks);
                     if (shouldCrash)
                     {
                         takeoffOffset *= 2f;
                     }
                     takeoffProgress = Mathf.Max(0, takeoffProgress - takeoffOffset);
+
+                    LogOnce(() => "CompTick_Landing_Progress", () => $"takeoffOffset: {takeoffOffset:F4}, new takeoffProgress: {takeoffProgress:F3}, moveWhileLanding: {Props.moveWhileLanding}");
+
                     if (Props.moveWhileLanding)
                     {
                         if (shouldCrash)
@@ -834,13 +898,22 @@ namespace taranchuk_flightcombat
                             MoveFurther(Props.flightSpeedPerTick * takeoffProgress);
                         }
                     }
+
+                    LogOnce(() => "CompTick_Landing_Move", () => $"takeoffProgress: {takeoffProgress:F3}, shouldCrash: {shouldCrash}");
+
                     if (takeoffProgress == 0)
                     {
+                        LogOnce(() => "CompTick", () => "Landing progress reached 0, calling FlightEnd");
                         FlightEnd();
+                    }
+                    else
+                    {
+                        LogOnce(() => "CompTick", () => $"Landing not complete, takeoffProgress: {takeoffProgress:F3}");
                     }
                 }
                 else if (Hovering)
                 {
+                    LogOnce(() => "CompTick", () => "Hovering");
                     Hover();
                 }
                 else if (Flying)
@@ -852,32 +925,40 @@ namespace taranchuk_flightcombat
                 SpawnFlecks();
 
                 var curPositionIntVec = curPosition.ToIntVec3();
-                if (curPositionIntVec != Vehicle.Position && curPositionIntVec.InBounds(Vehicle.Map))
+                if (curPositionIntVec != vehicle.Position && curPositionIntVec.InBounds(vehicle.Map))
                 {
-                    var occupiedRect = Vehicle.OccupiedRect();
-                    if (occupiedRect.MovedBy(curPositionIntVec.ToIntVec2 - Vehicle.Position.ToIntVec2).InBoundsLocal(Vehicle.Map))
+                    var occupiedRect = vehicle.OccupiedRect();
+                    if (occupiedRect.MovedBy(curPositionIntVec.ToIntVec2 - vehicle.Position.ToIntVec2).InBoundsLocal(vehicle.Map))
                     {
                         try
                         {
-                            Vehicle.Position = curPositionIntVec;
-                            Vehicle.vehiclePather.nextCell = curPositionIntVec;
+                            vehicle.positionInt = curPositionIntVec;
+                            vehicle.vehiclePather.nextCell = curPositionIntVec;
                             bool shouldRefreshCosts = false;
-                            foreach (var cell in occupiedRect.ExpandedBy(Vehicle.RotatedSize.x))
+                            foreach (var cell in occupiedRect.ExpandedBy(vehicle.RotatedSize.x))
                             {
-                                if (cell.InBounds(Vehicle.Map))
+                                if (cell.InBounds(vehicle.Map))
                                 {
-                                    var grid = Vehicle.Map.thingGrid.thingGrid[Vehicle.Map.cellIndices.CellToIndex(cell)];
-                                    var vehicle = grid.OfType<VehiclePawn>().Where(x => x == this.Vehicle).FirstOrDefault();
-                                    if (vehicle != null && Vehicle.OccupiedRect().Contains(cell) is false)
+                                    var grid = vehicle.Map.thingGrid.thingGrid[vehicle.Map.cellIndices.CellToIndex(cell)];
+                                    Thing vehicleThing = null;
+                                    foreach (var thing in grid)
                                     {
-                                        grid.Remove(vehicle);
+                                        if (thing is VehiclePawn vp && vp == vehicle)
+                                        {
+                                            vehicleThing = vp;
+                                            break;
+                                        }
+                                    }
+                                    if (vehicleThing != null && vehicle.OccupiedRect().Contains(cell) is false)
+                                    {
+                                        grid.Remove(vehicleThing);
                                         shouldRefreshCosts = true;
                                     }
                                 }
                             }
                             if (shouldRefreshCosts)
                             {
-                                PathingHelper.RecalculateAllPerceivedPathCosts(Vehicle.Map);
+                                PathingHelper.RecalculateAllPerceivedPathCosts(vehicle.Map);
                             }
                         }
                         catch
@@ -891,27 +972,31 @@ namespace taranchuk_flightcombat
                         return;
                     }
                 }
-                UpdateVehicleAngleAndRotation();
+                if (InAir)
+                {
+                    UpdateVehicleAngleAndRotation();
+                }
             }
         }
 
         private void FlightEnd()
         {
+            var vehicle = Vehicle;
             foreach (var turret in VehicleTurrets)
             {
-                turret.parentRotCached = Vehicle.Rotation;
-                turret.parentAngleCached = Vehicle.Angle;
+                turret.parentRotCached = vehicle.Rotation;
+                turret.parentAngleCached = vehicle.Angle;
             }
             if (shouldCrash)
             {
                 shouldCrash = false;
-                var damageAmount = (Vehicle.GetMass() + MassUtility.GearAndInventoryMass(Vehicle)) * 20f;
-                var components = Vehicle.statHandler.components
+                var damageAmount = (vehicle.GetMass() + MassUtility.GearAndInventoryMass(vehicle)) * 20f;
+                var components = vehicle.statHandler.components
                     .Where(x => x.props.depth == VehicleComponent.VehiclePartDepth.External).ToList();
                 damageAmount /= components.Count;
                 foreach (var component in components)
                 {
-                    component.TakeDamage(Vehicle, new DamageInfo(DamageDefOf.Blunt, damageAmount), ignoreArmor: true);
+                    component.TakeDamage(vehicle, new DamageInfo(DamageDefOf.Blunt, damageAmount), ignoreArmor: true);
                 }
             }
         }
@@ -926,64 +1011,76 @@ namespace taranchuk_flightcombat
         }
         private void ProcessRotors()
         {
-            var launcher = Vehicle.CompVehicleLauncher;
+            var vehicle = Vehicle;
+            var launcher = vehicle.CompVehicleLauncher;
             if (launcher != null)
             {
                 var props = launcher.Props.launchProtocol.LaunchProperties as PropellerProtocolProperties;
                 if (props?.angularVelocityPropeller != null)
                 {
                     var rotationRate = props.angularVelocityPropeller.Evaluate(takeoffProgress);
-                    Vehicle.DrawTracker.overlayRenderer?.SetAcceleration(rotationRate);
+                    vehicle.DrawTracker.overlayRenderer?.SetAcceleration(rotationRate);
                 }
             }
         }
 
         private void GotoWorld()
         {
-            var map = Vehicle.Map;
-            Vehicle.Angle = 0;
-            Vehicle.DeSpawn();
-            if (Vehicle.Faction == Faction.OfPlayer)
+            var vehicle = Vehicle;
+            var map = vehicle.Map;
+            vehicle.Angle = 0;
+            vehicle.DeSpawn();
+            if (vehicle.Faction == Faction.OfPlayer)
             {
-                Messages.Message("VF_AerialVehicleLeft".Translate(Vehicle.LabelShort), MessageTypeDefOf.PositiveEvent);
+                Messages.Message("VF_AerialVehicleLeft".Translate(vehicle.LabelShort), MessageTypeDefOf.PositiveEvent);
             }
-            AerialVehicleInFlight aerialVehicle = AerialVehicleInFlight.Create(Vehicle, map.Tile);
+            var aerialVehicle = AerialVehicleInFlight.Create(vehicle, map.Tile);
             aerialVehicle.OrderFlyToTiles(new List<FlightNode>(flightPath), arrivalAction);
             if (orderRecon)
             {
                 aerialVehicle.flightPath.ReconCircleAt(flightPath.LastOrDefault().tile);
             }
 
-            Find.WorldPawns.PassToWorld(Vehicle);
-            foreach (Pawn pawn in Vehicle.AllPawnsAboard)
+            Find.WorldPawns.PassToWorld(vehicle);
+            foreach (var pawn in vehicle.AllPawnsAboard)
             {
                 if (!pawn.IsWorldPawn())
                 {
                     Find.WorldPawns.PassToWorld(pawn);
                 }
             }
-            foreach (Thing thing in Vehicle.inventory.innerContainer)
+            foreach (var thing in vehicle.inventory.innerContainer)
             {
                 if (thing is Pawn pawn && !pawn.IsWorldPawn())
                 {
                     Find.WorldPawns.PassToWorld(pawn);
                 }
             }
-            Vehicle.EventRegistry[VehicleEventDefOf.AerialVehicleLeftMap].ExecuteEvents();
+            vehicle.EventRegistry[VehicleEventDefOf.AerialVehicleLeftMap].ExecuteEvents();
             arrivalAction = null;
             flightPath = null;
         }
 
         private void AITick()
         {
-            LogOnce("AITick", $"target: {target}, faceTarget: {faceTarget}");
+            LogOnce(() => "AITick", () => $"target: {target}, faceTarget: {faceTarget}");
+            if (cachedAmmoTypes == null)
+            {
+                cachedAmmoTypes = new Dictionary<VehicleTurret, ThingDef>();
+            }
+            var vehicle = Vehicle;
             foreach (var turret in VehicleTurrets)
             {
                 if (turret.HasAmmo is false)
                 {
-                    ThingDef ammoType = Vehicle.inventory.innerContainer
-                        .FirstOrDefault(t => turret.def.ammunition.Allows(t)
-                        || turret.def.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
+                    ThingDef ammoType;
+                    if (!cachedAmmoTypes.TryGetValue(turret, out ammoType))
+                    {
+                        ammoType = vehicle.inventory.innerContainer
+                            .FirstOrDefault(t => turret.def.ammunition.Allows(t)
+                            || turret.def.ammunition.Allows(t.def.projectileWhenLoaded))?.def;
+                        cachedAmmoTypes[turret] = ammoType;
+                    }
                     if (ammoType != null)
                     {
                         turret.ReloadInternal(ammoType);
@@ -998,7 +1095,7 @@ namespace taranchuk_flightcombat
                 {
                     if (BombCooldownActive())
                     {
-                        LogOnce("AITick_BombCooldown", "Bomb cooldown active, returning");
+                        LogOnce(() => "AITick_BombCooldown", () => "Bomb cooldown active, returning");
                         return;
                     }
                     var curTarget = GetTarget();
@@ -1009,12 +1106,12 @@ namespace taranchuk_flightcombat
                     }
                     if (target.IsValid)
                     {
-                        if (Vehicle.Position.DistanceTo(curTarget.Cell) < bomberSettings.distanceFromTarget)
+                        if (vehicle.Position.DistanceTo(curTarget.Cell) < bomberSettings.distanceFromTarget)
                         {
                             var bombOption = Props.bombOptions.Where(x => bomberSettings.blacklistedBombs.Contains(x.projectile) is false).RandomElement();
                             if (TryDropBomb(bombOption))
                             {
-                                LogOnce("AITick_DroppedBomb", $"Dropped bomb: {bombOption.projectile}");
+                                LogOnce(() => "AITick_DroppedBomb", () => $"Dropped bomb: {bombOption.projectile}");
                                 return;
                             }
                         }
@@ -1037,7 +1134,7 @@ namespace taranchuk_flightcombat
                     nextTargetSearchTick = Find.TickManager.TicksGame + 60;
 
                     var curTarget = GetTarget();
-                    LogOnce("AITick_curTarget", $"curTarget: {curTarget}{(curTarget.HasThing ? $" (Thing: {curTarget.Thing})" : "")}");
+                    LogOnce(() => "AITick_curTarget", () => $"curTarget: {curTarget}{(curTarget.HasThing ? $" (Thing: {curTarget.Thing})" : "")}");
                     if (curTarget.IsValid && curTarget.HasThing)
                     {
                         Thing previousTargetThing = null;
@@ -1048,7 +1145,7 @@ namespace taranchuk_flightcombat
 
                         if (previousTargetThing != null && previousTargetThing != curTarget.Thing)
                         {
-                            LogAlways("AITick_TargetSwitch", $"Target switched from {previousTargetThing} to {curTarget.Thing}");
+                            LogAlways(() => "AITick_TargetSwitch", () => $"Target switched from {previousTargetThing} to {curTarget.Thing}");
                         }
 
                         if (gunshipSettings.chaseMode == ChaseMode.Hovering)
@@ -1077,8 +1174,9 @@ namespace taranchuk_flightcombat
 
         public LocalTargetInfo GetTarget()
         {
-            var targets = Vehicle.Map.attackTargetsCache.GetPotentialTargetsFor(Vehicle).Select(x => x.Thing)
-                .Concat(Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.PowerTrader));
+            var vehicle = Vehicle;
+            var targets = vehicle.Map.attackTargetsCache.GetPotentialTargetsFor(vehicle).Select(x => x.Thing)
+                .Concat(vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.PowerTrader));
 
             targets = targets.Distinct().Where(x => IsValidTarget(x)).OrderByDescending(x => CombatPoints(x)).Take(5);
 
@@ -1103,7 +1201,8 @@ namespace taranchuk_flightcombat
 
         private bool IsValidTarget(Thing x)
         {
-            if (x.Position.GetRoof(Vehicle.Map) == RoofDefOf.RoofRockThick)
+            var vehicle = Vehicle;
+            if (x.Position.GetRoof(vehicle.Map) == RoofDefOf.RoofRockThick)
             {
                 return false;
             }
@@ -1111,12 +1210,26 @@ namespace taranchuk_flightcombat
             {
                 return false;
             }
-            return x.HostileTo(Vehicle) || x.Faction != null && x.Faction.HostileTo(Vehicle.Faction);
+            return x.HostileTo(vehicle) || x.Faction != null && x.Faction.HostileTo(vehicle.Faction);
         }
+
+        private int nearbyCombatPointsCacheTick = -1;
+        private Dictionary<Thing, float> nearbyCombatPointsCache = new Dictionary<Thing, float>();
 
         private float NearbyAreaCombatPoints(Thing x)
         {
-            return GenRadial.RadialDistinctThingsAround(x.Position, x.Map, 10, true).Where(x => IsValidTarget(x)).Sum(y => CombatPoints(y));
+            if (Find.TickManager.TicksGame != nearbyCombatPointsCacheTick)
+            {
+                nearbyCombatPointsCache.Clear();
+                nearbyCombatPointsCacheTick = Find.TickManager.TicksGame;
+            }
+            if (nearbyCombatPointsCache.TryGetValue(x, out float cachedValue))
+            {
+                return cachedValue;
+            }
+            float value = GenRadial.RadialDistinctThingsAround(x.Position, x.Map, 10, true).Where(t => IsValidTarget(t)).Sum(y => CombatPoints(y));
+            nearbyCombatPointsCache[x] = value;
+            return value;
         }
 
         private float CombatPoints(Thing thing)
@@ -1142,12 +1255,13 @@ namespace taranchuk_flightcombat
 
         private bool TryDropBomb(BombOption bombOption)
         {
+            var vehicle = Vehicle;
             if (HasStuffToBomb(bombOption))
             {
                 foreach (var thingCost in bombOption.costList)
                 {
                     var countToTake = thingCost.count;
-                    foreach (var thing in Vehicle.inventory.GetDirectlyHeldThings().Where(x => x.def == thingCost.thingDef).ToList())
+                    foreach (var thing in vehicle.inventory.GetDirectlyHeldThings().Where(x => x.def == thingCost.thingDef).ToList())
                     {
                         var thingToConsume = thing.SplitOff(Mathf.Min(countToTake, thing.stackCount));
                         countToTake -= thingToConsume.stackCount;
@@ -1158,8 +1272,8 @@ namespace taranchuk_flightcombat
                         }
                     }
                 }
-                var bomb = (Projectile)GenSpawn.Spawn(bombOption.projectile, Vehicle.Position + IntVec3.North, Vehicle.Map);
-                bomb.Launch(Vehicle, Vehicle.Position, Vehicle.Position, ProjectileHitFlags.IntendedTarget, equipment: Vehicle);
+                var bomb = (Projectile)GenSpawn.Spawn(bombOption.projectile, vehicle.Position + IntVec3.North, vehicle.Map);
+                bomb.Launch(vehicle, vehicle.Position, vehicle.Position, ProjectileHitFlags.IntendedTarget, equipment: vehicle);
                 lastBombardmentTick = Find.TickManager.TicksGame;
                 bombingCooldownTicks = bombOption.cooldownTicks;
                 return true;
@@ -1169,7 +1283,8 @@ namespace taranchuk_flightcombat
 
         private bool HasStuffToBomb(BombOption bombOption)
         {
-            return bombOption.costList.All(thingCost => Vehicle.inventory.GetDirectlyHeldThings()
+            var vehicle = Vehicle;
+            return bombOption.costList.All(thingCost => vehicle.inventory.GetDirectlyHeldThings()
                             .Where(invThing => invThing.def == thingCost.thingDef).Sum(invThing => invThing.stackCount) >= thingCost.count);
         }
 
@@ -1195,11 +1310,12 @@ namespace taranchuk_flightcombat
 
         private void ProcessFlecks(List<FlightFleckData> flecks)
         {
+            var vehicle = Vehicle;
             if (flecks != null)
             {
                 foreach (var fleck in flecks)
                 {
-                    if (Vehicle.IsHashIntervalTick(fleck.spawnTickRate))
+                    if (vehicle.IsHashIntervalTick(fleck.spawnTickRate))
                     {
                         SpawnFleck(fleck);
                     }
@@ -1209,12 +1325,13 @@ namespace taranchuk_flightcombat
 
         public void SpawnFleck(FlightFleckData fleckData)
         {
+            var vehicle = Vehicle;
             var fleckPos = fleckData.position.RotatedBy(CurAngle);
             var loc = curPosition - fleckPos;
-            FleckCreationData data = FleckMaker.GetDataStatic(loc, Vehicle.Map, fleckData.fleck, fleckData.scale);
+            var data = FleckMaker.GetDataStatic(loc, vehicle.Map, fleckData.fleck, fleckData.scale);
             if (fleckData.attachToVehicle)
             {
-                data.link = new FleckAttachLink(Vehicle);
+                data.link = new FleckAttachLink(vehicle);
             }
             data.velocityAngle = AngleAdjusted(CurAngle - fleckData.angleOffset);
             data.solidTimeOverride = fleckData.solidTime;
@@ -1227,15 +1344,16 @@ namespace taranchuk_flightcombat
                 data.solidTimeOverride *= takeoffProgress;
             }
             data.velocitySpeed = fleckData.velocitySpeed;
-            Vehicle.Map.flecks.CreateFleck(data);
+            vehicle.Map.flecks.CreateFleck(data);
         }
 
         private void UpdateVehicleAngleAndRotation()
         {
-            Vehicle.Angle = AngleAdjusted(CurAngle + FlightAngleOffset);
-            if (Vehicle.Transform != null)
+            var vehicle = Vehicle;
+            vehicle.Angle = AngleAdjusted(CurAngle + FlightAngleOffset);
+            if (vehicle.Transform != null)
             {
-                Vehicle.Transform.rotation = Vehicle.Angle;
+                vehicle.Transform.rotation = vehicle.Angle;
             }
 
             UpdateRotation();
@@ -1243,8 +1361,9 @@ namespace taranchuk_flightcombat
 
         public List<IntVec3> GetRunwayCells(bool takingOff)
         {
-            var position = Vehicle.Position;
-            var rot = Vehicle.FullRotation;
+            var vehicle = Vehicle;
+            var position = vehicle.Position;
+            var rot = vehicle.FullRotation;
             var angle = InAir ? AngleAdjusted(CurAngle + FlightAngleOffset) : rot.AsAngle;
             return GetRunwayCells(takingOff, position, angle);
         }
@@ -1279,7 +1398,7 @@ namespace taranchuk_flightcombat
             for (var i = 1; i <= width; i++)
             {
                 var pos = CellOffset(position, i, width, angle);
-                pos = AdjustPos(InAir ? rotInAir : Vehicle.FullRotation, pos);
+                pos = AdjustPos(InAir ? rotInAir : vehicle.FullRotation, pos);
                 cells.Add(pos);
                 for (var j = 0; j < distance; j++)
                 {
@@ -1289,6 +1408,57 @@ namespace taranchuk_flightcombat
                 }
             }
             FillGaps(cells);
+            return cells;
+        }
+
+        public List<IntVec3> GetLandingRunwayCells(IntVec3 finalCell, Rot4 finalRotation)
+        {
+            var cells = new List<IntVec3>();
+
+            var distance = 0f;
+
+            if (Props.moveWhileLanding)
+            {
+                var curTakeoffProgress = 1f;
+                while (curTakeoffProgress > 0)
+                {
+                    curTakeoffProgress = Mathf.Max(0, curTakeoffProgress - (1 / (float)Props.landingTicks));
+                    distance += Props.flightSpeedPerTick * curTakeoffProgress;
+                }
+            }
+
+            var angle = finalRotation.AsAngle;
+            var vehicle = Vehicle;
+            var width = vehicle.def.Size.x;
+            var vehicleRot = Rot8.FromAngle(angle);
+
+            var direction = finalRotation.FacingCell.ToVector3();
+            var runwayStartVec = finalCell.ToVector3Shifted() - (direction * distance);
+            var runwayStartPos = runwayStartVec.ToIntVec3();
+
+            var north = IntVec3.North.ToVector3();
+
+            for (var i = 1; i <= width; i++)
+            {
+                var pos = CellOffset(runwayStartPos, i, width, angle);
+                pos = AdjustPos(vehicleRot, pos);
+
+                cells.Add(pos);
+                for (var j = 0; j < distance; j++)
+                {
+                    var offsetRotated = (north * j).RotatedBy(angle);
+                    var cell = pos + offsetRotated.ToIntVec3();
+                    cells.Add(cell);
+                }
+            }
+            FillGaps(cells);
+
+            var finalRect = GenAdj.OccupiedRect(finalCell, finalRotation, vehicle.def.Size);
+            foreach(var c in finalRect)
+            {
+                if(!cells.Contains(c)) cells.Add(c);
+            }
+
             return cells;
         }
 
@@ -1317,17 +1487,18 @@ namespace taranchuk_flightcombat
 
         public List<IntVec3> GetBlockingCells(List<IntVec3> runwayCells)
         {
+            var vehicle = Vehicle;
             var cells = new List<IntVec3>();
             foreach (var cell in runwayCells)
             {
-                if (cell.InBounds(Vehicle.Map))
+                if (cell.InBounds(vehicle.Map))
                 {
-                    var terrain = cell.GetTerrain(Vehicle.Map);
+                    var terrain = cell.GetTerrain(vehicle.Map);
                     if (Props.canFlyInSpace && terrain == TerrainDefOf.Space)
                     {
                         continue;
                     }
-                    if (Vehicle.Drivable(cell) is false || cell.GetThingList(Vehicle.Map).Any(x => x is Plant && x.def.plant.IsTree || x is Building))
+                    if (vehicle.Drivable(cell) is false || cell.GetThingList(vehicle.Map).Any(x => x is Plant && x.def.plant.IsTree || x is Building))
                     {
                         cells.Add(cell);
                     }
@@ -1347,7 +1518,7 @@ namespace taranchuk_flightcombat
         {
             var hoverTargetPos = target.IsValid ? target.CenterVector3 : (faceTarget.IsValid ? faceTarget.CenterVector3 : Vector3.zero);
             var hoverDist = hoverTargetPos != Vector3.zero ? Vector3.Distance(curPosition.Yto0(), hoverTargetPos.Yto0()) : 0f;
-            LogOnce("Hover", $"CurAngle: {CurAngle}, curPosition: {curPosition}, target: {target}, faceTarget: {faceTarget}, reachedInitialTarget: {reachedInitialTarget}, targetPos: {hoverTargetPos}, distance: {hoverDist:F2}");
+            LogOnce(() => "Hover", () => $"CurAngle: {CurAngle}, curPosition: {curPosition}, target: {target}, faceTarget: {faceTarget}, reachedInitialTarget: {reachedInitialTarget}, targetPos: {hoverTargetPos}, distance: {hoverDist:F2}");
 
             if (!reachedInitialTarget || (target.IsValid && target.Cell != Vehicle.Position))
             {
@@ -1356,8 +1527,8 @@ namespace taranchuk_flightcombat
                 {
                     angleDiff = RotateTowards(faceTarget.CenterVector3);
 
-                    float alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
-                    float speed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
+                    var alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
+                    var speed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
 
                     MoveTowards(target.CenterVector3, speed);
                 }
@@ -1365,25 +1536,26 @@ namespace taranchuk_flightcombat
                 {
                     angleDiff = RotateTowards(target.CenterVector3);
 
-                    float alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
-                    float speed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
+                    var alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
+                    var speed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
 
                     MoveFurther(speed);
                 }
             }
             else if (faceTarget.IsValid)
             {
-                float angleDiff = RotateTowards(faceTarget.CenterVector3);
+                var angleDiff = RotateTowards(faceTarget.CenterVector3);
                 if (InAIMode)
                 {
-                    var distance = faceTarget.Cell.DistanceTo(Vehicle.Position);
+                    var vehicle = Vehicle;
+                    var distance = faceTarget.Cell.DistanceTo(vehicle.Position);
                     var targetDist = Props.AISettings.gunshipSettings.distanceFromTarget;
 
-                    float distError = Mathf.Abs(distance - targetDist);
+                    var distError = Mathf.Abs(distance - targetDist);
                     var speedMult = Mathf.Clamp01(distError / 5f);
                     var targetSpeed = Props.flightSpeedTurningPerTick * speedMult;
 
-                    float alignmentFactor = Mathf.Clamp01(1f - ((angleDiff - 15f) / 180f));
+                    var alignmentFactor = Mathf.Clamp01(1f - ((angleDiff - 15f) / 180f));
                     float finalSpeed = targetSpeed * (0.3f + 0.7f * alignmentFactor);
 
                     if (distance > targetDist + 1f)
@@ -1402,51 +1574,54 @@ namespace taranchuk_flightcombat
         {
             if (GoingToWorld)
             {
+                LogOnce(() => "Flight", () => "Going to world");
                 MoveFurther(Props.flightSpeedPerTick);
             }
             else if (runwayStartingSpot.IsValid)
             {
+                LogOnce(() => "Flight", () => "Moving to landing spot");
                 MoveToLandingSpot();
             }
             else if (target.IsValid)
             {
                 if (Find.TickManager.TicksGame < yieldUntilTick)
                 {
+                    LogOnce(() => "Flight", () => "Yielding - waiting");
                     MoveFurther(Props.flightSpeedTurningPerTick);
                     return;
                 }
 
                 if (ShouldYieldToOther())
                 {
+                    LogOnce(() => "Flight", () => "Yielding to other vehicle");
                     yieldUntilTick = Find.TickManager.TicksGame + 30;
                     MoveFurther(Props.flightSpeedTurningPerTick);
                     return;
                 }
 
+                LogOnce(() => "Flight", () => $"Chasing target: {target}");
                 MoveInChaseMode(target);
+            }
+            else
+            {
+                LogOnce(() => "Flight", () => "No flight target - hovering");
             }
         }
 
         private bool ShouldYieldToOther()
         {
-            if (Vehicle.Map is null) return false;
-
-            float myRadius = (Vehicle.def.Size.x + Vehicle.def.Size.z) / 2f;
+            var vehicle = Vehicle;
+            float myRadius = (vehicle.def.Size.x + vehicle.def.Size.z) / 2f;
 
             Vector3 myDir = (Quaternion.AngleAxis(CurAngle, Vector3.up)
                 * Vector3.forward).RotatedBy(FlightAngleOffset).normalized;
 
-            var others = Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.Everything)
-                .OfType<VehiclePawn>()
-                .Where(v => v != Vehicle
-                    && v.GetComp<CompFlightMode>() is CompFlightMode c
-                    && c.InAir
-                    && v.thingIDNumber < Vehicle.thingIDNumber);
+            var others = GetFlightVehicles().Where(c => c.Vehicle.thingIDNumber < vehicle.thingIDNumber).ToList();
 
-            foreach (var other in others)
+            foreach (var otherComp in others)
             {
-                var otherComp = other.GetComp<CompFlightMode>();
-                float otherRadius = (other.def.Size.x + other.def.Size.z) / 2f;
+                var otherVehicle = otherComp.Vehicle;
+                float otherRadius = (otherVehicle.def.Size.x + otherVehicle.def.Size.z) / 2f;
                 float yieldRadius = (myRadius + otherRadius) * 2f;
 
                 Vector3 toOther = otherComp.curPosition.Yto0() - curPosition.Yto0();
@@ -1468,83 +1643,100 @@ namespace taranchuk_flightcombat
 
         private void MoveToLandingSpot()
         {
-            var landingDist = targetForRunway.HasValue ? Vector3.Distance(curPosition.Yto0(), targetForRunway.Value.Yto0()) : 0f;
-            LogOnce("MoveToLandingSpot", $"landingStage: {landingStage}, targetForRunway: {targetForRunway}, curPosition: {curPosition}, distance: {landingDist:F2}");
+            Vector3 runwayDir = (landingSpot.CenterVector3 - runwayStartingSpot.CenterVector3).normalized;
+            if (runwayDir.sqrMagnitude < 0.001f)
+                runwayDir = designatedLandingRotation.HasValue
+                    ? designatedLandingRotation.Value.FacingCell.ToVector3()
+                    : Vector3.forward;
+
+            var targetAngleFlat = runwayDir.AngleFlat();
+            var targetCurAngle = AngleAdjusted(targetAngleFlat - FlightAngleOffset);
+
+            float turnRadius = Props.flightSpeedPerTick / Mathf.Max(Props.turnAnglePerTick * Mathf.Deg2Rad, 0.001f);
+
             if (landingStage == LandingStage.Inactive)
             {
-                if (targetForRunway is null)
-                {
-                    var newTarget = runwayStartingSpot.CenterVector3 + (Quaternion.AngleAxis(CurAngle, Vector3.up)
-                        * (Vector3.forward * (Props.maxDistanceFromTargetElliptical * 2))).RotatedBy(FlightAngleOffset);
-                    targetForRunway = newTarget;
-                    LogOnce("MoveToLandingSpot", $"Set targetForRunway: {targetForRunway}");
-                }
-                float angleDiff = RotateTowards(targetForRunway.Value);
-                float alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
-                float speed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
+                float approachDist = Props.moveWhileLanding
+                    ? Mathf.Max(30f, turnRadius * 3f)
+                    : Mathf.Max(15f, turnRadius * 2f);
+
+                targetForRunway = runwayStartingSpot.CenterVector3 - (runwayDir * approachDist);
+                landingStage = LandingStage.GotoInitialSpot;
+                LogAlways(() => "MoveToLandingSpot", () => $"Calculated approach point: {targetForRunway.Value}. Stage -> GotoInitialSpot.");
+            }
+
+            if (landingStage == LandingStage.GotoInitialSpot)
+            {
+                var distToApproach = Vector3.Distance(curPosition.Yto0(), targetForRunway.Value.Yto0());
+
+                var angleDiff = RotateTowards(targetForRunway.Value);
+                var alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 45f));
+                var speed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
+
                 MoveFurther(speed);
-                if (angleDiff < 2.0f)
+
+                var hitRadius = Mathf.Max(5f, turnRadius * 0.75f);
+
+                if (distToApproach < hitRadius || (distToApproach < hitRadius * 2f && angleDiff > 90f))
                 {
-                    landingStage = LandingStage.GotoInitialSpot;
-                    LogOnce("MoveToLandingSpot", "Stage changed to GotoInitialSpot");
+                    landingStage = LandingStage.GotoRunwayStartSpot;
+                    LogAlways(() => "MoveToLandingSpot", () => "Reached approach point. Stage -> GotoRunwayStartSpot.");
                 }
             }
-            else
+
+            else if (landingStage == LandingStage.GotoRunwayStartSpot)
             {
-                if (landingStage == LandingStage.GotoInitialSpot)
+                var distToStart = Vector3.Distance(curPosition.Yto0(), runwayStartingSpot.CenterVector3.Yto0());
+
+                var angleToSpot = GetAngleFromTarget(runwayStartingSpot.CenterVector3);
+                var angleDiff = RotateTo(angleToSpot, Props.turnAnglePerTick);
+
+                var alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 45f));
+                var baseSpeed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
+                float speed = baseSpeed;
+
+                if (Props.moveWhileLanding)
                 {
-                    bool shouldRotate = ShouldRotate(out bool? clockturn);
-                    if (shouldRotate)
-                    {
-                        if (clockturn.Value)
-                        {
-                            CurAngle += Props.turnAngleCirclingPerTick;
-                        }
-                        else
-                        {
-                            CurAngle -= Props.turnAngleCirclingPerTick;
-                        }
-                        landingStage = LandingStage.GotoRunwayStartSpot;
-                        LogOnce("MoveToLandingSpot", $"Stage changed to GotoRunwayStartSpot, clockturn: {clockturn}");
-                    }
-                    float angleDiff = RotateTowards(runwayStartingSpot.CenterVector3);
-                    float alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
-                    float speed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
-                    MoveFurther(speed);
+                    speed = Mathf.Lerp(Props.flightSpeedPerTick * 0.4f, baseSpeed, Mathf.Clamp01(distToStart / 15f));
                 }
                 else
                 {
-                    if (landingStage == LandingStage.GotoRunwayStartSpot)
-                    {
-                        Vehicle.Map.debugDrawer.FlashCell(runwayStartingSpot.Cell);
-                        Vehicle.Map.debugDrawer.FlashCell(landingSpot.Cell, 0.5f);
-                        Find.TickManager.CurTimeSpeed = TimeSpeed.Paused;
-                        float angleDiff = RotateTowards(runwayStartingSpot.CenterVector3);
-                        float alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
-                        float speed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
-                        MoveFurther(speed);
-                        if (curPosition.ToIntVec3() == runwayStartingSpot.Cell)
-                        {
-                            landingStage = LandingStage.GotoLanding;
-                            LogOnce("MoveToLandingSpot", "Stage changed to GotoLanding");
-                        }
-                    }
-                    else if (landingStage == LandingStage.GotoLanding)
-                    {
-                        float angleDiff = RotateTowards(landingSpot.CenterVector3);
-                        float alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
-                        float speed = Mathf.Lerp(Props.flightSpeedTurningPerTick, Props.flightSpeedPerTick, alignment);
-                        MoveFurther(speed);
-                        takeoffProgress = Mathf.Max(0, takeoffProgress - (1 / (float)Props.landingTicks));
-                        Vehicle.Map.debugDrawer.FlashCell(runwayStartingSpot.Cell);
-                        Vehicle.Map.debugDrawer.FlashCell(landingSpot.Cell, 0.5f);
-                        if (takeoffProgress == 0)
-                        {
-                            SetFlightMode(false);
-                            FlightEnd();
-                            LogOnce("MoveToLandingSpot", "Landing complete");
-                        }
-                    }
+                    speed = Mathf.Lerp(Props.flightSpeedPerTick * 0.2f, baseSpeed, Mathf.Clamp01(distToStart / 8f));
+                }
+
+                MoveFurther(speed);
+
+                float hitRadius = Props.moveWhileLanding ? 3f : 1.5f;
+
+                LogOnce(() => "GotoRunwayStartSpot", () => $"distToStart: {distToStart:F2}, angleToSpot: {angleToSpot:F1}, curAngle: {CurAngle:F1}, angleDiff: {angleDiff:F1}, speed: {speed:F3}");
+
+                if (distToStart < hitRadius || (distToStart < turnRadius && angleDiff > 90f))
+                {
+                    landingStage = LandingStage.GotoLanding;
+                    LogAlways(() => "MoveToLandingSpot", () => "Reached runway start. Stage -> GotoLanding.");
+                }
+            }
+
+            else if (landingStage == LandingStage.GotoLanding)
+            {
+                var angleDiff = RotateTo(targetCurAngle, Props.turnAnglePerTick);
+
+                takeoffProgress = Mathf.Max(0, takeoffProgress - (1f / (float)Props.landingTicks));
+
+                float actualSpeed = Props.moveWhileLanding
+                    ? Props.flightSpeedPerTick * takeoffProgress
+                    : 0f;
+
+                MoveFurther(actualSpeed);
+
+                var distToLanding = Vector3.Distance(curPosition.Yto0(), landingSpot.CenterVector3.Yto0());
+                LogOnce(() => "GotoLanding", () => $"progress: {takeoffProgress:F3}, speed: {actualSpeed:F3}, curAngle: {CurAngle:F1}, targetAngle: {targetCurAngle:F1}, distToLanding: {distToLanding:F2}");
+
+                if (takeoffProgress <= 0)
+                {
+                    SetFlightMode(false);
+                    FlightEnd();
+                    LogAlways(() => "MoveToLandingSpot", () => "Landing complete.");
                 }
             }
         }
@@ -1555,11 +1747,11 @@ namespace taranchuk_flightcombat
             var speedPerTick = Props.flightSpeedPerTick;
             var dist = speedPerTick;
             var curAngle = CurAngle;
-            Quaternion angleAxis = Quaternion.AngleAxis(curAngle, Vector3.up);
+            var angleAxis = Quaternion.AngleAxis(curAngle, Vector3.up);
             var minAngle = float.MinValue;
             var targetAngle = AngleAdjusted((landingSpot.CenterVector3 - runwayStartingSpot.CenterVector3).AngleFlat() - FlightAngleOffset);
 
-            LogOnce("ShouldRotate", $"targetAngle: {targetAngle}, curAngle: {curAngle}");
+            LogOnce(() => "ShouldRotate", () => $"targetAngle: {targetAngle}, curAngle: {curAngle}");
 
             while (true)
             {
@@ -1572,26 +1764,26 @@ namespace taranchuk_flightcombat
                     clockturn = ClockWiseTurn(AngleAdjusted(newRunwayAngle + FlightAngleOffset));
                     if (clockturn is null)
                     {
-                        LogOnce("ShouldRotate", "No rotation needed (clockturn is null)");
+                        LogOnce(() => "ShouldRotate", () => "No rotation needed (clockturn is null)");
                         return false;
                     }
                     else
                     {
                         var turnoffset = clockturn.Value ? Props.turnAnglePerTick : -Props.turnAnglePerTick;
                         var ticksPassedSimulated = (int)(dist / speedPerTick);
-                        LogOnce("ShouldRotate", $"Simulating {ticksPassedSimulated} ticks, turnoffset: {turnoffset}");
+                        LogOnce(() => "ShouldRotate", () => $"Simulating {ticksPassedSimulated} ticks, turnoffset: {turnoffset}");
                         for (var i = 0; i < ticksPassedSimulated; i++)
                         {
                             curAngle = AngleAdjusted(curAngle + turnoffset);
-                            bool angleInRange = AngleInRange(curAngle, AngleAdjusted(targetAngle - Props.turnAnglePerTick), AngleAdjusted(targetAngle + Props.turnAnglePerTick));
+                            var angleInRange = AngleInRange(curAngle, AngleAdjusted(targetAngle - Props.turnAnglePerTick), AngleAdjusted(targetAngle + Props.turnAnglePerTick));
                             if (angleInRange && i >= ticksPassedSimulated - 3)
                             {
-                                LogOnce("ShouldRotate", $"Should rotate at tick {i}, curAngle: {curAngle}");
+                                LogOnce(() => "ShouldRotate", () => $"Should rotate at tick {i}, curAngle: {curAngle}");
                                 return true;
                             }
                         }
                     }
-                    LogOnce("ShouldRotate", "Rotation not possible within simulation");
+                    LogOnce(() => "ShouldRotate", () => "Rotation not possible within simulation");
                     return false;
                 }
                 minAngle = minDiff;
@@ -1607,13 +1799,13 @@ namespace taranchuk_flightcombat
         private bool AngleInRange(float angle, float lower, float upper)
         {
             bool result = (angle - lower) % 360 <= (upper - lower) % 360;
-            LogOnce("AngleInRange", $"angle: {angle}, lower: {lower}, upper: {upper}, result: {result}");
+            LogOnce(() => "AngleInRange", () => $"angle: {angle}, lower: {lower}, upper: {upper}, result: {result}");
             return result;
         }
 
         private void Takeoff()
         {
-            LogOnce("Takeoff", $"takeoffProgress: {takeoffProgress}");
+            LogOnce(() => "Takeoff", () => $"takeoffProgress: {takeoffProgress}");
             takeoffProgress = Mathf.Min(1, takeoffProgress + (1 / (float)Props.takeoffTicks));
             if (Props.moveWhileTakingOff)
             {
@@ -1627,13 +1819,18 @@ namespace taranchuk_flightcombat
             base.PostDrawExtraSelectionOverlays();
         }
 
-        private bool CanLand() => OccupiedRect().All(x => Vehicle.Drivable(x));
+        private bool CanLand()
+        {
+            var vehicle = Vehicle;
+            return OccupiedRect().All(x => vehicle.Drivable(x));
+        }
 
         public void UpdateRotation()
         {
-            if (Vehicle.rotationInt != FlightRotation)
+            var vehicle = Vehicle;
+            if (vehicle.rotationInt != FlightRotation)
             {
-                Vehicle.rotationInt = FlightRotation;
+                vehicle.rotationInt = FlightRotation;
             }
         }
 
@@ -1644,7 +1841,7 @@ namespace taranchuk_flightcombat
                 var vehicle = Vehicle;
                 var angle = AngleAdjusted(CurAngle + FlightAngleOffset);
                 vehicle.rotationInt = Rot8.FromAngle(angle);
-                var cells = Vehicle.VehicleRect().Cells.ToList();
+                var cells = vehicle.VehicleRect().Cells.ToList();
                 UpdateRotation();
                 return cells;
             }
@@ -1665,7 +1862,7 @@ namespace taranchuk_flightcombat
         {
             if (minDistanceFromTarget.HasValue && stopTarget.HasValue)
             {
-                float dist = Vector3.Distance(curPosition.Yto0(), stopTarget.Value.Yto0());
+                var dist = Vector3.Distance(curPosition.Yto0(), stopTarget.Value.Yto0());
                 if (dist < minDistanceFromTarget.Value)
                 {
                     targetSpeed = 0f;
@@ -1676,9 +1873,9 @@ namespace taranchuk_flightcombat
 
             if (currentVelocity.sqrMagnitude > 0.0001f && desiredVelocity.sqrMagnitude > 0.0001f)
             {
-                float maxTurnSpeed = Mathf.Max(Props.turnAnglePerTick * 2f, Mathf.Abs(angularVelocity) * 1.5f);
+                var maxTurnSpeed = Mathf.Max(Props.turnAnglePerTick * 2f, Mathf.Abs(angularVelocity) * 1.5f);
                 float turnSpeedRadians = maxTurnSpeed * Mathf.Deg2Rad;
-                Vector3 rotatedVelocityDir = Vector3.RotateTowards(currentVelocity.normalized, desiredVelocity.normalized, turnSpeedRadians, 0f);
+                var rotatedVelocityDir = Vector3.RotateTowards(currentVelocity.normalized, desiredVelocity.normalized, turnSpeedRadians, 0f);
                 currentVelocity = rotatedVelocityDir * currentVelocity.magnitude;
             }
 
@@ -1689,7 +1886,7 @@ namespace taranchuk_flightcombat
             }
             else if (currentVelocity.sqrMagnitude > 0.001f)
             {
-                float angleShift = Vector3.Angle(currentVelocity.normalized, direction.normalized);
+                var angleShift = Vector3.Angle(currentVelocity.normalized, direction.normalized);
                 acceleration = Mathf.Lerp(0.015f, 0.05f, angleShift / 90f);
             }
 
@@ -1702,20 +1899,20 @@ namespace taranchuk_flightcombat
         private void MoveFurther(float speed, float? minDistanceFromTarget = null, Vector3? stopTarget = null)
         {
             ComputeAvoidance();
-            Vector3 dir = (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.forward).RotatedBy(FlightAngleOffset);
+            var dir = (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.forward).RotatedBy(FlightAngleOffset);
             MoveDirection(dir, speed * cachedAvoidanceSpeedMult, minDistanceFromTarget, stopTarget);
         }
 
         private void MoveBack(float speed, float? minDistanceFromTarget = null, Vector3? stopTarget = null)
         {
-            Vector3 dir = (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.back).RotatedBy(FlightAngleOffset);
+            var dir = (Quaternion.AngleAxis(CurAngle, Vector3.up) * Vector3.back).RotatedBy(FlightAngleOffset);
             MoveDirection(dir, speed, minDistanceFromTarget, stopTarget);
         }
 
         private void MoveTowards(Vector3 to, float targetSpeed, float? minDistanceFromTarget = null, Vector3? stopTarget = null)
         {
-            Vector3 toFlat = to.Yto0();
-            Vector3 curFlat = curPosition.Yto0();
+            var toFlat = to.Yto0();
+            var curFlat = curPosition.Yto0();
             Vector3 diff = toFlat - curFlat;
             float dist = diff.magnitude;
 
@@ -1735,20 +1932,20 @@ namespace taranchuk_flightcombat
         {
             Vector3 toPlane = curPosition.Yto0() - orbitCenter.Yto0();
             float currentDist = toPlane.magnitude;
-            float radiusAngle = toPlane.AngleFlat();
+            var radiusAngle = toPlane.AngleFlat();
 
-            float tangentCW = AngleAdjusted(radiusAngle + 180f);
-            float tangentCCW = AngleAdjusted(radiusAngle);
+            var tangentCW = AngleAdjusted(radiusAngle + 180f);
+            var tangentCCW = AngleAdjusted(radiusAngle);
 
-            float diffCW = Mathf.Abs(Utils.AngleDiff(CurAngle, tangentCW));
-            float diffCCW = Mathf.Abs(Utils.AngleDiff(CurAngle, tangentCCW));
+            var diffCW = Mathf.Abs(Utils.AngleDiff(CurAngle, tangentCW));
+            var diffCCW = Mathf.Abs(Utils.AngleDiff(CurAngle, tangentCCW));
 
             if (Mathf.Abs(diffCW - diffCCW) > 15f)
                 orbitClockwise = diffCW <= diffCCW;
 
             float targetAngle = orbitClockwise ? tangentCW : tangentCCW;
             float distError = currentDist - desiredRadius;
-            float correction = Mathf.Clamp(distError * 0.8f, -25f, 25f);
+            var correction = Mathf.Clamp(distError * 0.8f, -25f, 25f);
 
             targetAngle = orbitClockwise
                 ? AngleAdjusted(targetAngle + correction)
@@ -1758,7 +1955,7 @@ namespace taranchuk_flightcombat
 
             if (flightPattern == FlightPattern.Over)
             {
-                float distToTarget = Vector3.Distance(curPosition.Yto0(), realTarget.Yto0());
+                var distToTarget = Vector3.Distance(curPosition.Yto0(), realTarget.Yto0());
 
                 if (distToTarget < 35f)
                 {
@@ -1770,12 +1967,12 @@ namespace taranchuk_flightcombat
                     }
                     else
                     {
-                        float directAngle = GetAngleFromTarget(realTarget);
-                        float diffToDirect = Utils.AngleDiff(targetAngle, directAngle);
+                        var directAngle = GetAngleFromTarget(realTarget);
+                        var diffToDirect = Utils.AngleDiff(targetAngle, directAngle);
 
                         if (Mathf.Abs(diffToDirect) < 75f)
                         {
-                            float blend = Mathf.Clamp01((35f - distToTarget) / 15f);
+                            var blend = Mathf.Clamp01((35f - distToTarget) / 15f);
                             targetAngle = AngleAdjusted(targetAngle + diffToDirect * blend);
                         }
                     }
@@ -1785,6 +1982,23 @@ namespace taranchuk_flightcombat
             return RotateTo(targetAngle, turnRate, avoidanceStrength);
         }
 
+        private List<CompFlightMode> GetFlightVehicles()
+        {
+            var vehicle = Vehicle;
+            var result = new List<CompFlightMode>();
+            foreach (var def in Utils.flightCapableDefs)
+            {
+                foreach (var thing in vehicle.Map.listerThings.ThingsOfDef(def))
+                {
+                    if (thing is VehiclePawn v && v != vehicle && v.GetComp<CompFlightMode>() is CompFlightMode c && c.InAir)
+                    {
+                        result.Add(c);
+                    }
+                }
+            }
+            return result;
+        }
+
         private void ComputeAvoidance()
         {
             if (avoidanceComputedTick == Find.TickManager.TicksGame) return;
@@ -1792,26 +2006,21 @@ namespace taranchuk_flightcombat
             cachedAvoidanceBias = 0f;
             cachedAvoidanceSpeedMult = 1f;
 
-            if (Vehicle.Map is null) return;
+            var vehicle = Vehicle;
+            var others = GetFlightVehicles();
 
-            var others = Vehicle.Map.listerThings.ThingsInGroup(ThingRequestGroup.Everything)
-                .OfType<VehiclePawn>()
-                .Where(v => v != Vehicle
-                    && v.GetComp<CompFlightMode>() is CompFlightMode c
-                    && c.InAir);
-
-            float myRadius = (Vehicle.def.Size.x + Vehicle.def.Size.z) / 2f;
+            float myRadius = (vehicle.def.Size.x + vehicle.def.Size.z) / 2f;
             const float LookaheadTicks = 60f;
 
             float worstStrength = 0f;
 
-            foreach (var other in others)
+            foreach (var otherComp in others)
             {
-                if (target.IsValid && target.HasThing && other == target.Thing) continue;
-                if (faceTarget.IsValid && faceTarget.HasThing && other == faceTarget.Thing) continue;
+                var otherVehicle = otherComp.Vehicle;
+                if (target.IsValid && target.HasThing && otherVehicle == target.Thing) continue;
+                if (faceTarget.IsValid && faceTarget.HasThing && otherVehicle == faceTarget.Thing) continue;
 
-                var otherComp = other.GetComp<CompFlightMode>();
-                float otherRadius = (other.def.Size.x + other.def.Size.z) / 2f;
+                float otherRadius = (otherVehicle.def.Size.x + otherVehicle.def.Size.z) / 2f;
                 float dangerRadius = (myRadius + otherRadius) * 3f;
 
                 Vector3 relPos = curPosition.Yto0() - otherComp.curPosition.Yto0();
@@ -1868,13 +2077,13 @@ namespace taranchuk_flightcombat
         private float RotateTo(float targetAngle, float turnRate, float avoidanceStrength = 1.0f)
         {
             ComputeAvoidance();
-            float adjustedTarget = AngleAdjusted(targetAngle + cachedAvoidanceBias * avoidanceStrength);
+            var adjustedTarget = AngleAdjusted(targetAngle + cachedAvoidanceBias * avoidanceStrength);
 
-            float diff = Utils.AngleDiff(CurAngle, adjustedTarget);
-            float absDiff = Mathf.Abs(diff);
+            var diff = Utils.AngleDiff(CurAngle, adjustedTarget);
+            var absDiff = Mathf.Abs(diff);
 
             float proportionalSpeed = diff * 0.3f;
-            float desiredAngularVelocity = Mathf.Clamp(proportionalSpeed, -turnRate, turnRate);
+            var desiredAngularVelocity = Mathf.Clamp(proportionalSpeed, -turnRate, turnRate);
             float acceleration = turnRate * 0.5f;
             angularVelocity = Mathf.MoveTowards(angularVelocity, desiredAngularVelocity, acceleration);
             CurAngle += angularVelocity;
@@ -1884,7 +2093,7 @@ namespace taranchuk_flightcombat
 
         private float RotateTowards(Vector3 target, float turnRateOverride = -1f)
         {
-            float targetAngle = GetAngleFromTarget(target);
+            var targetAngle = GetAngleFromTarget(target);
             float rate = turnRateOverride > 0f ? turnRateOverride : Props.turnAnglePerTick;
             return RotateTo(targetAngle, rate);
         }
@@ -1894,14 +2103,14 @@ namespace taranchuk_flightcombat
             float radius = Props.maxDistanceFromTargetCircle;
             if (InAIMode && Props.AISettings?.gunshipSettings != null)
                 radius = Props.AISettings.gunshipSettings.distanceFromTarget;
-            LogOnce("GetOrbitRadius", $"radius: {radius}, InAIMode: {InAIMode}");
+            LogOnce(() => "GetOrbitRadius", () => $"radius: {radius}, InAIMode: {InAIMode}");
             return radius;
         }
 
-        private void GetEllipseAxes(out float a, out float b)
+        private (float a, float b) GetEllipseAxes()
         {
-            a = Props.ellipseMajorAxis;
-            b = Props.ellipseMinorAxis;
+            var a = Props.ellipseMajorAxis;
+            var b = Props.ellipseMinorAxis;
 
             float maxRadius = Props.maxDistanceFromTargetElliptical;
 
@@ -1918,13 +2127,15 @@ namespace taranchuk_flightcombat
             if (a <= 0) a = 10f;
             if (b <= 0) b = 5f;
 
-            LogOnce("GetEllipseAxes", $"a: {a}, b: {b}, maxRadius: {maxRadius}, originalMajorAxis: {Props.ellipseMajorAxis}, originalMinorAxis: {Props.ellipseMinorAxis}");
+            LogOnce(() => "GetEllipseAxes", () => $"a: {a}, b: {b}, maxRadius: {maxRadius}, originalMajorAxis: {Props.ellipseMajorAxis}, originalMinorAxis: {Props.ellipseMinorAxis}");
+
+            return (a, b);
         }
 
         private void InitOrbit(Vector3 targetPos)
         {
-            Vector3 cur2D = curPosition.Yto0();
-            Vector3 tgt2D = targetPos.Yto0();
+            var cur2D = curPosition.Yto0();
+            var tgt2D = targetPos.Yto0();
             Vector3 toTarget = tgt2D - cur2D;
             float dist = toTarget.magnitude;
             Vector3 approachDir = dist > 0.001f ? toTarget / dist : Vector3.forward;
@@ -1932,35 +2143,33 @@ namespace taranchuk_flightcombat
             float approachAngle = Mathf.Atan2(approachDir.x, approachDir.z) * Mathf.Rad2Deg;
             if (approachAngle < 0f) approachAngle += 360f;
 
-            LogOnce("InitOrbit_start", $"targetPos: {targetPos}, curPos: {cur2D}, curPosition: {curPosition}, dist: {dist}, approachAngle: {approachAngle}");
+            LogOnce(() => "InitOrbit_start", () => $"targetPos: {targetPos}, curPos: {cur2D}, curPosition: {curPosition}, dist: {dist}, approachAngle: {approachAngle}");
 
             if (currentChaseMode == ChaseMode.Circling && flightPattern == FlightPattern.Over)
             {
-                Vector3 perpCW  = new Vector3( approachDir.z, 0f, -approachDir.x);
-                Vector3 perpCCW = new Vector3(-approachDir.z, 0f,  approachDir.x);
-                Vector3 chosenPerp = PickUnoccupiedSide(targetPos, perpCW, perpCCW, GetOrbitRadius());
+                var perpCW  = new Vector3( approachDir.z, 0f, -approachDir.x);
+                var perpCCW = new Vector3(-approachDir.z, 0f,  approachDir.x);
+                var chosenPerp = PickUnoccupiedSide(targetPos, perpCW, perpCCW, GetOrbitRadius());
                 orbitOffsetDir = chosenPerp;
                 orbitPerpOffset = chosenPerp * GetOrbitRadius();
-                LogOnce("InitOrbit", $"Circling/Over: orbitOffsetDir: {orbitOffsetDir}, orbitPerpOffset: {orbitPerpOffset}, orbitRadius: {GetOrbitRadius()}");
+                LogOnce(() => "InitOrbit", () => $"Circling/Over: orbitOffsetDir: {orbitOffsetDir}, orbitPerpOffset: {orbitPerpOffset}, orbitRadius: {GetOrbitRadius()}");
             }
             else if (currentChaseMode == ChaseMode.Elliptical && flightPattern == FlightPattern.Over)
             {
-                GetEllipseAxes(out float a, out float b);
+                var (a, b) = GetEllipseAxes();
 
-                // RACETRACK PATTERN: Align major axis with approach to create a long straight attack run over the target
                 orbitOrientAngle = approachAngle;
 
-                // Offset center by 'b' so the target lies perfectly on the flat straightaway
-                Vector3 perp = new Vector3(approachDir.z, 0f, -approachDir.x);
+                var perp = new Vector3(approachDir.z, 0f, -approachDir.x);
                 orbitPerpOffset = perp * b;
 
-                LogOnce("InitOrbit", $"Elliptical/Over: orbitPerpOffset: {orbitPerpOffset}, orbitOrientAngle: {orbitOrientAngle}, a: {a}, b: {b}");
+                LogOnce(() => "InitOrbit", () => $"Elliptical/Over: orbitPerpOffset: {orbitPerpOffset}, orbitOrientAngle: {orbitOrientAngle}, a: {a}, b: {b}");
             }
             else if (currentChaseMode == ChaseMode.Elliptical && flightPattern == FlightPattern.Around)
             {
                 orbitPerpOffset = Vector3.zero;
                 orbitOrientAngle = approachAngle + 90f;
-                LogOnce("InitOrbit", $"Elliptical/Around: orbitOrientAngle: {orbitOrientAngle}");
+                LogOnce(() => "InitOrbit", () => $"Elliptical/Around: orbitOrientAngle: {orbitOrientAngle}");
             }
 
             orbitInitialized = true;
@@ -1969,35 +2178,35 @@ namespace taranchuk_flightcombat
         private void DoEllipseOrbit(Vector3 worldCenter, float a, float b, float orientDeg, Vector3 realTarget)
         {
             float baseSpeed = Props.flightSpeedCirclingPerTick ?? Props.flightSpeedTurningPerTick;
-            float minCurveRadius = Mathf.Max((b * b) / Mathf.Max(a, 0.001f), 1f);
+            var minCurveRadius = Mathf.Max((b * b) / Mathf.Max(a, 0.001f), 1f);
             float requiredTurnRate = (baseSpeed * 180f) / (Mathf.PI * minCurveRadius) * 1.5f;
             float configuredTurnRate = Props.turnAngleCirclingPerTick > 0f ? Props.turnAngleCirclingPerTick : Props.turnAnglePerTick;
-            float turnRate = Mathf.Max(configuredTurnRate, requiredTurnRate);
+            var turnRate = Mathf.Max(configuredTurnRate, requiredTurnRate);
 
             float oRad = orientDeg * Mathf.Deg2Rad;
-            Vector3 mj = new Vector3(Mathf.Sin(oRad), 0f, Mathf.Cos(oRad));
-            Vector3 mn = new Vector3(Mathf.Cos(oRad), 0f, -Mathf.Sin(oRad));
+            var mj = new Vector3(Mathf.Sin(oRad), 0f, Mathf.Cos(oRad));
+            var mn = new Vector3(Mathf.Cos(oRad), 0f, -Mathf.Sin(oRad));
 
-            Vector3 cur2D = curPosition.Yto0();
-            Vector3 c2D = new Vector3(worldCenter.x, 0f, worldCenter.z);
+            var cur2D = curPosition.Yto0();
+            var c2D = new Vector3(worldCenter.x, 0f, worldCenter.z);
             Vector3 d = cur2D - c2D;
 
-            float localA = Vector3.Dot(d, mj);
-            float localB = Vector3.Dot(d, mn);
-            float theta = Mathf.Atan2(localB / b, localA / a);
+            var localA = Vector3.Dot(d, mj);
+            var localB = Vector3.Dot(d, mn);
+            var theta = Mathf.Atan2(localB / b, localA / a);
 
             Vector3 ellipsePoint = c2D + (a * Mathf.Cos(theta)) * mj + (b * Mathf.Sin(theta)) * mn;
 
             float tangentAngleFlat = Mathf.Atan2((-a * Mathf.Sin(theta) * mj + b * Mathf.Cos(theta) * mn).normalized.x, (-a * Mathf.Sin(theta) * mj + b * Mathf.Cos(theta) * mn).normalized.z) * Mathf.Rad2Deg;
-            float curAngleCW = AngleAdjusted(tangentAngleFlat + 90f);
-            float curAngleCCW = AngleAdjusted(curAngleCW + 180f);
+            var curAngleCW = AngleAdjusted(tangentAngleFlat + 90f);
+            var curAngleCCW = AngleAdjusted(curAngleCW + 180f);
 
             if (Mathf.Abs(Mathf.Abs(Utils.AngleDiff(CurAngle, curAngleCW)) - Mathf.Abs(Utils.AngleDiff(CurAngle, curAngleCCW))) > 15f)
                 orbitClockwise = Mathf.Abs(Utils.AngleDiff(CurAngle, curAngleCW)) <= Mathf.Abs(Utils.AngleDiff(CurAngle, curAngleCCW));
 
             float targetAngle = orbitClockwise ? curAngleCW : curAngleCCW;
             float distError = d.magnitude - (ellipsePoint - c2D).magnitude;
-            float correction = Mathf.Clamp(distError * 0.8f, -25f, 25f);
+            var correction = Mathf.Clamp(distError * 0.8f, -25f, 25f);
 
             targetAngle = orbitClockwise ? AngleAdjusted(targetAngle + correction) : AngleAdjusted(targetAngle - correction);
 
@@ -2005,7 +2214,7 @@ namespace taranchuk_flightcombat
 
             if (flightPattern == FlightPattern.Over)
             {
-                float distToTarget = Vector3.Distance(curPosition.Yto0(), realTarget.Yto0());
+                var distToTarget = Vector3.Distance(curPosition.Yto0(), realTarget.Yto0());
 
                 if (distToTarget < 35f)
                 {
@@ -2017,34 +2226,34 @@ namespace taranchuk_flightcombat
                     }
                     else
                     {
-                        float directAngle = GetAngleFromTarget(realTarget);
-                        float diffToDirect = Utils.AngleDiff(targetAngle, directAngle);
+                        var directAngle = GetAngleFromTarget(realTarget);
+                        var diffToDirect = Utils.AngleDiff(targetAngle, directAngle);
 
                         if (Mathf.Abs(diffToDirect) < 75f)
                         {
-                            float blend = Mathf.Clamp01((35f - distToTarget) / 15f);
+                            var blend = Mathf.Clamp01((35f - distToTarget) / 15f);
                             targetAngle = AngleAdjusted(targetAngle + diffToDirect * blend);
                         }
                     }
                 }
             }
 
-            float angleDiff = RotateTo(targetAngle, turnRate, avoidanceStrength);
+            var angleDiff = RotateTo(targetAngle, turnRate, avoidanceStrength);
 
             float maxPhysicalSpeed = (turnRate * Mathf.PI * minCurveRadius) / 180f;
-            float baseSpeedLimit = Mathf.Min(baseSpeed, maxPhysicalSpeed);
-            float alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
-            float finalSpeed = Mathf.Lerp(Mathf.Min(Props.flightSpeedTurningPerTick, baseSpeedLimit), baseSpeedLimit, alignment);
+            var baseSpeedLimit = Mathf.Min(baseSpeed, maxPhysicalSpeed);
+            var alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
+            var finalSpeed = Mathf.Lerp(Mathf.Min(Props.flightSpeedTurningPerTick, baseSpeedLimit), baseSpeedLimit, alignment);
 
             MoveFurther(finalSpeed);
         }
 
         private void MoveInChaseMode(LocalTargetInfo chaseTarget)
         {
-            Vector3 targetPos = chaseTarget.CenterVector3.Yto0();
+            var targetPos = chaseTarget.CenterVector3.Yto0();
             var distToTarget = Vector3.Distance(curPosition.Yto0(), targetPos);
 
-            LogOnce("MoveInChaseMode", $"chaseMode: {currentChaseMode}, flightPattern: {flightPattern}, targetPos: {targetPos}, distToTarget: {distToTarget:F2}, curPosition: {curPosition}");
+            LogOnce(() => "MoveInChaseMode", () => $"chaseMode: {currentChaseMode}, flightPattern: {flightPattern}, targetPos: {targetPos}, distToTarget: {distToTarget:F2}, curPosition: {curPosition}");
 
             if (!orbitInitialized)
             {
@@ -2055,15 +2264,14 @@ namespace taranchuk_flightcombat
             {
                 case ChaseMode.Direct:
                     {
-                        float angleToTarget = GetAngleFromTarget(target.CenterVector3);
+                        var angleToTarget = GetAngleFromTarget(target.CenterVector3);
                         float turnRate = Props.turnAnglePerTick > 0f ? Props.turnAnglePerTick : 1f;
                         float turnSpeed = Props.flightSpeedTurningPerTick > 0f ? Props.flightSpeedTurningPerTick : Props.flightSpeedPerTick;
 
                         float minTurnRadius = (turnSpeed * 180f) / (Mathf.PI * turnRate);
-                        float angleDiff = Mathf.Abs(Utils.AngleDiff(CurAngle, angleToTarget));
+                        var angleDiff = Mathf.Abs(Utils.AngleDiff(CurAngle, angleToTarget));
 
-                        // Avoidance yields when ship needs a big turn - scales from full at 0° diff to zero at 90°+
-                        float avoidanceStrength = Mathf.Clamp01(1f - (angleDiff / 90f));
+                        var avoidanceStrength = Mathf.Clamp01(1f - (angleDiff / 90f));
 
                         float rotateDiff = 0f;
                         if (!(distToTarget < minTurnRadius * 2.5f && angleDiff > 90f))
@@ -2071,8 +2279,8 @@ namespace taranchuk_flightcombat
                             rotateDiff = RotateTo(angleToTarget, turnRate, avoidanceStrength);
                         }
 
-                        float alignment = Mathf.Clamp01(1f - ((rotateDiff - 15f) / 45f));
-                        float finalSpeed = Mathf.Lerp(turnSpeed, Props.flightSpeedPerTick, alignment);
+                        var alignment = Mathf.Clamp01(1f - ((rotateDiff - 15f) / 45f));
+                        var finalSpeed = Mathf.Lerp(turnSpeed, Props.flightSpeedPerTick, alignment);
 
                         MoveFurther(finalSpeed);
                         break;
@@ -2080,25 +2288,24 @@ namespace taranchuk_flightcombat
 
                 case ChaseMode.Circling:
                     {
-                        float orbitRadius = GetOrbitRadius();
+                        var orbitRadius = GetOrbitRadius();
                         Vector3 orbitCenter = flightPattern == FlightPattern.Around
                             ? targetPos
                             : targetPos + orbitOffsetDir * orbitRadius;
 
                         float baseSpeed = Props.flightSpeedCirclingPerTick ?? Props.flightSpeedTurningPerTick;
                         float requiredTurnRate = (baseSpeed * 180f) / (Mathf.PI * Mathf.Max(orbitRadius, 1f)) * 1.5f;
-                        float turnRate = Mathf.Max(Props.turnAngleCirclingPerTick > 0f ? Props.turnAngleCirclingPerTick : Props.turnAnglePerTick, requiredTurnRate);
+                        var turnRate = Mathf.Max(Props.turnAngleCirclingPerTick > 0f ? Props.turnAngleCirclingPerTick : Props.turnAnglePerTick, requiredTurnRate);
 
-                        LogOnce("CirclingChase", $"orbitRadius: {orbitRadius}, orbitCenter: {orbitCenter}, baseSpeed: {baseSpeed}, turnRate: {turnRate}");
+                        LogOnce(() => "CirclingChase", () => $"orbitRadius: {orbitRadius}, orbitCenter: {orbitCenter}, baseSpeed: {baseSpeed}, turnRate: {turnRate}");
 
-                        // Pass the real targetPos into RotatePerperticular
-                        float angleDiff = RotatePerperticular(orbitCenter, orbitRadius, turnRate, targetPos);
+                        var angleDiff = RotatePerperticular(orbitCenter, orbitRadius, turnRate, targetPos);
 
                         float maxPhysicalSpeed = (turnRate * Mathf.PI * Mathf.Max(orbitRadius, 1f)) / 180f;
-                        float baseSpeedLimit = Mathf.Min(baseSpeed, maxPhysicalSpeed);
+                        var baseSpeedLimit = Mathf.Min(baseSpeed, maxPhysicalSpeed);
 
-                        float alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
-                        float finalSpeed = Mathf.Lerp(Mathf.Min(Props.flightSpeedTurningPerTick, baseSpeedLimit), baseSpeedLimit, alignment);
+                        var alignment = Mathf.Clamp01(1f - ((angleDiff - 15f) / 30f));
+                        var finalSpeed = Mathf.Lerp(Mathf.Min(Props.flightSpeedTurningPerTick, baseSpeedLimit), baseSpeedLimit, alignment);
 
                         MoveFurther(finalSpeed);
                         break;
@@ -2106,7 +2313,7 @@ namespace taranchuk_flightcombat
 
                 case ChaseMode.Elliptical:
                     {
-                        GetEllipseAxes(out float a, out float b);
+                        var (a, b) = GetEllipseAxes();
                         orbitPerpOffset = orbitOffsetDir * b;
 
                         Vector3 orbitCenter = flightPattern == FlightPattern.Around
@@ -2114,9 +2321,8 @@ namespace taranchuk_flightcombat
                             : targetPos + orbitPerpOffset;
                         var distToCenter = Vector3.Distance(curPosition.Yto0(), orbitCenter.Yto0());
 
-                        LogOnce("EllipticalChase", $"a: {a}, b: {b}, orbitCenter: {orbitCenter}, distToCenter: {distToCenter}");
+                        LogOnce(() => "EllipticalChase", () => $"a: {a}, b: {b}, orbitCenter: {orbitCenter}, distToCenter: {distToCenter}");
 
-                        // Pass the real targetPos into DoEllipseOrbit
                         DoEllipseOrbit(orbitCenter, a, b, orbitOrientAngle, targetPos);
                         break;
                     }
@@ -2127,26 +2333,27 @@ namespace taranchuk_flightcombat
         {
             if (new FloatRange(targetAngle - Props.turnAnglePerTick, targetAngle + Props.turnAnglePerTick).Includes(CurAngle))
             {
-                LogOnce("ClockWiseTurn", $"targetAngle: {targetAngle}, CurAngle: {CurAngle}, result: null (already aligned)");
+                LogOnce(() => "ClockWiseTurn", () => $"targetAngle: {targetAngle}, CurAngle: {CurAngle}, result: null (already aligned)");
                 return null;
             }
             float diff = targetAngle - CurAngle;
             if (diff > 0 ? diff > 180f : diff >= -180f)
             {
-                LogOnce("ClockWiseTurn", $"targetAngle: {targetAngle}, CurAngle: {CurAngle}, diff: {diff}, result: false (counter-clockwise)");
+                LogOnce(() => "ClockWiseTurn", () => $"targetAngle: {targetAngle}, CurAngle: {CurAngle}, diff: {diff}, result: false (counter-clockwise)");
                 return false;
             }
-            LogOnce("ClockWiseTurn", $"targetAngle: {targetAngle}, CurAngle: {CurAngle}, diff: {diff}, result: true (clockwise)");
+            LogOnce(() => "ClockWiseTurn", () => $"targetAngle: {targetAngle}, CurAngle: {CurAngle}, diff: {diff}, result: true (clockwise)");
             return true;
         }
 
         private Vector3 PickUnoccupiedSide(Vector3 targetPos, Vector3 perpCW, Vector3 perpCCW, float offsetDist)
         {
+            var vehicle = Vehicle;
             Vector3 posCW = targetPos + perpCW * offsetDist;
             Vector3 posCCW = targetPos + perpCCW * offsetDist;
 
-            IntVec3 cellCW = posCW.ToIntVec3();
-            IntVec3 cellCCW = posCCW.ToIntVec3();
+            var cellCW = posCW.ToIntVec3();
+            var cellCCW = posCCW.ToIntVec3();
 
             int occupiedCW = 0;
             int occupiedCCW = 0;
@@ -2156,13 +2363,13 @@ namespace taranchuk_flightcombat
                 for (int z = -1; z <= 1; z++)
                 {
                     IntVec3 checkCell = cellCW + new IntVec3(x, 0, z);
-                    if (checkCell.InBounds(Vehicle.Map) && Vehicle.Map.thingGrid.ThingsAt(checkCell).Any(t => t is Pawn || t is Building))
+                    if (checkCell.InBounds(vehicle.Map) && vehicle.Map.thingGrid.ThingsAt(checkCell).Any(t => t is Pawn || t is Building))
                     {
                         occupiedCW++;
                     }
 
                     checkCell = cellCCW + new IntVec3(x, 0, z);
-                    if (checkCell.InBounds(Vehicle.Map) && Vehicle.Map.thingGrid.ThingsAt(checkCell).Any(t => t is Pawn || t is Building))
+                    if (checkCell.InBounds(vehicle.Map) && vehicle.Map.thingGrid.ThingsAt(checkCell).Any(t => t is Pawn || t is Building))
                     {
                         occupiedCCW++;
                     }
@@ -2176,26 +2383,27 @@ namespace taranchuk_flightcombat
         {
             var rawAngle = (curPosition.Yto0() - target.Yto0()).AngleFlat();
             var targetAngle = rawAngle + FlightAngleOffset;
-            var adjustedAngle = AngleAdjusted(targetAngle);
-            LogOnce("GetAngleFromTarget", $"target: {target}, rawAngle: {rawAngle}, targetAngle: {targetAngle}, adjustedAngle: {adjustedAngle}");
-            return adjustedAngle;
+            return AngleAdjusted(targetAngle);
         }
 
         private void LogData(string prefix)
         {
-            Log.Message(this.Vehicle + " - " + prefix + " - Vehicle.Position: " + Vehicle.Position + " - takeoffProgress: " + takeoffProgress
+            var vehicle = Vehicle;
+            Log.Message(vehicle + " - " + prefix + " - Vehicle.Position: " + vehicle.Position + " - takeoffProgress: " + takeoffProgress
                 + " - IsFlying: " + Flying + " - IsTakingOff: " + TakingOff + " - IsDescending: " + Landing
-                + " - CurAngle: " + CurAngle + " - Vehicle.Angle: " + Vehicle.Angle
-                + " - FullRotation: " + Vehicle.FullRotation.ToStringNamed() + " - Rotation: " + Vehicle.Rotation.ToStringHuman()
+                + " - CurAngle: " + CurAngle + " - Vehicle.Angle: " + vehicle.Angle
+                + " - FullRotation: " + vehicle.FullRotation.ToStringNamed() + " - Rotation: " + vehicle.Rotation.ToStringHuman()
                 + " - reachedInitialTarget: " + reachedInitialTarget + " - target: " + target + " - faceTarget: " + faceTarget);
         }
 
-        private void LogOnce(string key, string message)
+        public void LogOnce(Func<string> keyFunc, Func<string> messageFunc)
         {
-            if (!detailedLoggingMode)
+            if (!loggingMode)
             {
                 return;
             }
+            var key = keyFunc();
+            var message = messageFunc();
             var fullMessage = $"{key} - {message}";
             if (lastLoggedMessages.TryGetValue(key, out string lastMessage))
             {
@@ -2206,28 +2414,31 @@ namespace taranchuk_flightcombat
             }
             lastLoggedMessages[key] = message;
             Log.Message(fullMessage);
+            Log.ResetMessageCount();
         }
 
-        private void LogAlways(string key, string message)
+        public void LogAlways(Func<string> keyFunc, Func<string> messageFunc)
         {
-            if (!detailedLoggingMode)
+            if (!loggingMode)
             {
                 return;
             }
-            Log.Message($"{key} - {message}");
+            Log.Message($"{keyFunc()} - {messageFunc()}");
+            Log.ResetMessageCount();
         }
 
         public override void PostDestroy(DestroyMode mode, Map previousMap)
         {
             base.PostDestroy(mode, previousMap);
             DestroyFlightGraphic();
+            var vehicle = Vehicle;
             foreach (var cell in previousMap.AllCells)
             {
                 var grid = previousMap.thingGrid.thingGrid[previousMap.cellIndices.CellToIndex(cell)];
-                var vehicle = grid.OfType<VehiclePawn>().Where(x => x == this.Vehicle).FirstOrDefault();
-                if (vehicle != null)
+                var vehiclePawn = grid.OfType<VehiclePawn>().Where(x => x == vehicle).FirstOrDefault();
+                if (vehiclePawn != null)
                 {
-                    grid.Remove(vehicle);
+                    grid.Remove(vehiclePawn);
                 }
             }
             PathingHelper.RecalculateAllPerceivedPathCosts(previousMap);
@@ -2239,17 +2450,18 @@ namespace taranchuk_flightcombat
             if (InAir && shadowMaterial != null && FlightGraphic != null && drawThisFrame != Time.frameCount)
             {
                 drawThisFrame = Time.frameCount;
+                var vehicle = Vehicle;
                 Vector3 drawPos = curPosition;
-                drawPos.y = Vehicle.DrawPos.y - 1;
+                drawPos.y = vehicle.DrawPos.y - 1;
                 drawPos.z -= 3f * takeoffProgress;
 
                 Vector2 size = FlightGraphic.drawSize;
-                Vector3 scale = new Vector3(size.x, 1f, size.y);
+                var scale = new Vector3(size.x, 1f, size.y);
 
-                float visualAngle = AngleAdjusted(CurAngle + FlightAngleOffset);
-                Quaternion rot = Quaternion.AngleAxis(visualAngle, Vector3.up);
+                var visualAngle = AngleAdjusted(CurAngle + FlightAngleOffset);
+                var rot = Quaternion.AngleAxis(visualAngle, Vector3.up);
 
-                Matrix4x4 matrix = Matrix4x4.TRS(drawPos, rot, scale);
+                var matrix = Matrix4x4.TRS(drawPos, rot, scale);
 
                 Graphics.DrawMesh(MeshPool.plane10, matrix, shadowMaterial, 0);
             }
@@ -2263,6 +2475,7 @@ namespace taranchuk_flightcombat
 
         private Graphic_Vehicle CreateFlightGraphic(IMaterialCacheTarget cacheTarget, GraphicDataRGB copyGraphicData)
         {
+            var vehicle = Vehicle;
             var graphicData = new GraphicDataRGB();
             graphicData.CopyFrom(copyGraphicData);
             Graphic_Vehicle graphic;
@@ -2270,9 +2483,9 @@ namespace taranchuk_flightcombat
             {
 
             }
-            if (Vehicle.patternData != null)
+            if (vehicle.patternData != null)
             {
-                graphicData.CopyDrawData(Vehicle.patternData);
+                graphicData.CopyDrawData(vehicle.patternData);
             }
             else
             {
@@ -2312,6 +2525,7 @@ namespace taranchuk_flightcombat
             Scribe_Values.Look(ref reachedInitialTarget, "reachedInitialTarget", false);
             Scribe_TargetInfo.Look(ref landingSpot, "landingSpot", LocalTargetInfo.Invalid);
             Scribe_TargetInfo.Look(ref runwayStartingSpot, "runwayStartingSpot", LocalTargetInfo.Invalid);
+            Scribe_Values.Look(ref designatedLandingRotation, "designatedLandingRotation");
             Scribe_Values.Look(ref targetForRunway, "targetForRunway");
             Scribe_Values.Look(ref landingStage, "landingStage");
             Scribe_Values.Look(ref orbitClockwise, "orbitClockwise", true);
@@ -2332,7 +2546,7 @@ namespace taranchuk_flightcombat
             Scribe_Collections.Look(ref flightPath, "flightPath");
             Scribe_Values.Look(ref orderRecon, "orderRecon");
             Scribe_Values.Look(ref shouldCrash, "shouldCrash");
-            Scribe_Values.Look(ref detailedLoggingMode, "detailedLoggingMode");
+            Scribe_Values.Look(ref loggingMode, "loggingMode");
             Scribe_Values.Look(ref yieldUntilTick, "yieldUntilTick");
         }
     }

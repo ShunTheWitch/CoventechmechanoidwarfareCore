@@ -11,7 +11,7 @@ namespace taranchuk_flightcombat
         public static void Prefix(VehicleTurret __instance, TransformData transformData, ref float rotation)
         {
             var comp = __instance.vehicle.GetComp<CompFlightMode>();
-            if (comp != null && __instance.vehicle.InFlightModeOrNonStandardAngle(comp))
+            if (comp != null && comp.InAir)
             {
                 rotation -= transformData.rotation;
             }
