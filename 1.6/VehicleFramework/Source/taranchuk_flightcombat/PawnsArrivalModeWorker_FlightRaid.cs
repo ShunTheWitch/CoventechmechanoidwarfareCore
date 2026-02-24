@@ -19,9 +19,12 @@ namespace taranchuk_flightcombat
             return true;
         }
 
+        public static bool spawningFlightRaid = false;
+
         public override void Arrive(List<Pawn> pawns, IncidentParms parms)
         {
             Map map = (Map)parms.target;
+            spawningFlightRaid = true;
             
             var flyingVehicles = new List<Pawn>();
             var otherPawns = new List<Pawn>();
@@ -70,6 +73,8 @@ namespace taranchuk_flightcombat
             {
                 PawnsArrivalModeWorkerUtility.DropInDropPodsNearSpawnCenter(parms, otherPawns);
             }
+
+            spawningFlightRaid = false;
         }
     }
 }

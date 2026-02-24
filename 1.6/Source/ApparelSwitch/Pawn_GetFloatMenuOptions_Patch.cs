@@ -10,7 +10,7 @@ namespace ApparelSwitch
     {
         public static void Postfix(Pawn __instance, Pawn selPawn, ref IEnumerable<FloatMenuOption> __result)
         {
-            if (__instance.IsColonistPlayerControlled && selPawn == __instance)
+            if (__instance.apparel != null && __instance.IsColonistPlayerControlled && selPawn == __instance)
             {
                 List<FloatMenuOption> list = __result.ToList();
                 foreach (var apparel in __instance.apparel.WornApparel)
