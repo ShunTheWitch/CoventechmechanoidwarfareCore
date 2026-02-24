@@ -1,5 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Defs>
+
+  <PawnsArrivalModeDef>
+    <defName>CVN_FlightArrival</defName>
+    <workerClass>taranchuk_flightcombat.PawnsArrivalModeWorker_FlightRaid</workerClass>
+    <textEnemy>A squadron of {0} from {1} are entering the airspace.</textEnemy>
+    <textFriendly>A friendly squadron of {0} from {1} are entering the airspace to assist.</textFriendly>
+    <textWillArrive>{0_pawnsPluralDef} will arrive by air.</textWillArrive>
+    <minTechLevel>Industrial</minTechLevel>
+    <walkIn>false</walkIn>
+    <layerWhitelist>
+      <li>Surface</li>
+      <li>Orbit</li>
+    </layerWhitelist>
+    <selectionWeightCurve>
+      <points>
+        <li>(0, 1)</li>
+      </points>
+    </selectionWeightCurve>
+  </PawnsArrivalModeDef>
+
   <RaidStrategyDef>
     <defName>CVN_FlightAttack</defName>
     <workerClass>taranchuk_flightcombat.RaidStrategyWorker_FlightCombatAttack</workerClass>
@@ -14,7 +34,7 @@
       </points>
     </pointsFactorCurve>
     <arriveModes>
-      <li>EdgeWalkIn</li>
+      <li>CVN_FlightArrival</li>
     </arriveModes>
     <letterLabelEnemy>Raid</letterLabelEnemy>
     <arrivalTextEnemy>They are attacking immediately.</arrivalTextEnemy>
