@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld;
 using System.Linq;
 using UnityEngine;
@@ -9,6 +9,7 @@ namespace taranchuk_projectiletrails
     public class RocketExtension : DefModExtension
     {
         public float archHeightMultiplier = 1f;
+        public Color trailColor = Color.white;
     }
     [DefOf]
     public static class TPT_DefOf
@@ -66,6 +67,7 @@ namespace taranchuk_projectiletrails
             dataStatic.rotationRate = Rand.Range(-30f, 30f);
             dataStatic.velocityAngle = angle;
             dataStatic.velocitySpeed = Rand.Range(0.008f, 0.012f);
+            dataStatic.instanceColor = def.GetModExtension<RocketExtension>()?.trailColor;
             map.flecks.CreateFleck(dataStatic);
         }
 
