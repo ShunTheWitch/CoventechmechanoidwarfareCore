@@ -22,6 +22,14 @@ namespace ApparelSwitch
 	{
 		public List<ApparelSwitchOption> apparelToSwitch;
 
+		public bool allowRightClick = true;
+
+		public bool allowGizmo = false;
+
+		public string description;
+
+		public string texPath;
+
 		public CompProperties_SwitchApparel()
 		{
 			compClass = typeof(CompSwitchApparel);
@@ -122,6 +130,39 @@ namespace ApparelSwitch
 			pawn.apparel.Remove(parent as Apparel);
 			pawn.apparel.Wear(newApparel as Apparel);
 			newApparel.Notify_ColorChanged();
+		}
+
+		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+		{
+			if (Props.allowGizmo)
+			{
+				foreach (var apparelSwitchOption in Props.apparelToSwitch)
+				{
+					var apparelDef = apparelSwitchOption.apparel;
+					var icon = !string.IsNullOrEmpty(Props.texPath) ? ContentFinder<Texture2D>.Get(Props.texPath) : apparelDef.uiIcon;
+					var label = apparelSwitchOption.label ?? apparelDef.LabelCap;
+					var desc = Props.description ?? label;
+					
+					yield return new Command_Action
+					{
+						icon = icon,
+						defaultLabel = label,
+						defaultDesc = desc,
+						action = delegate
+						{
+							if (apparelSwitchOption.ticksToSwitchApparel > 0)
+							{
+								curApparelSwitchOption = apparelSwitchOption;
+								Pawn.jobs.TryTakeOrderedJob(JobMaker.MakeJob(ApparelSwitchMod.AS_SwitchApparel, this.parent));
+							}
+							else
+							{
+								SwitchApparel(apparelSwitchOption);
+							}
+						}
+					};
+				}
+			}
 		}
 
 		public override void PostExposeData()

@@ -78,7 +78,7 @@ namespace taranchuk_flightcombat
 
                             if (pawn.RaceProps.Humanlike || pawn.RaceProps.IsMechanoid)
                             {
-                                if (passengerHandler.AreSlotsAvailable)
+                                if (passengerHandler != null && passengerHandler.AreSlotsAvailable)
                                 {
                                     pawn.DeSpawn();
                                     passengerHandler.GetDirectlyHeldThings().TryAddOrTransfer(pawn);
