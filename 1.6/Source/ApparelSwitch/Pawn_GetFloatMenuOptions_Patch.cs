@@ -16,7 +16,7 @@ namespace ApparelSwitch
                 foreach (var apparel in __instance.apparel.WornApparel)
                 {
                     var compSwitchApparel = apparel.TryGetComp<CompSwitchApparel>();
-                    if (compSwitchApparel != null && compSwitchApparel.Props.allowRightClick)
+                    if (compSwitchApparel != null)
                     {
                         list.AddRange(compSwitchApparel.GetFloatMenuOptions());
                     }

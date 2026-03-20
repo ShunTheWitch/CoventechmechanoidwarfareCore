@@ -9,26 +9,27 @@ namespace ApparelSwitch
 	public class ApparelSwitchOption : IExposable
 	{
 		public string label;
+		public string description;
+		public string texPath;
 		public ThingDef apparel;
 		public int ticksToSwitchApparel;
+		public bool allowRightClick = true;
+		public bool allowGizmo = false;
+
 		public void ExposeData()
 		{
 			Scribe_Defs.Look(ref apparel, "apparel");
 			Scribe_Values.Look(ref ticksToSwitchApparel, "ticksToSwitchApparel");
+			Scribe_Values.Look(ref allowRightClick, "allowRightClick");
+			Scribe_Values.Look(ref allowGizmo, "allowGizmo");
+			Scribe_Values.Look(ref description, "description");
+			Scribe_Values.Look(ref texPath, "texPath");
 		}
 	}
 
 	public class CompProperties_SwitchApparel : CompProperties
 	{
 		public List<ApparelSwitchOption> apparelToSwitch;
-
-		public bool allowRightClick = true;
-
-		public bool allowGizmo = false;
-
-		public string description;
-
-		public string texPath;
 
 		public CompProperties_SwitchApparel()
 		{
@@ -62,18 +63,26 @@ namespace ApparelSwitch
 		{
 			foreach (var apparelSwitchOption in Props.apparelToSwitch)
 			{
-				yield return new FloatMenuOption(apparelSwitchOption.label ?? apparelSwitchOption.apparel.LabelCap, delegate
+				if (apparelSwitchOption.allowRightClick)
 				{
-					if (apparelSwitchOption.ticksToSwitchApparel > 0)
+					yield return new FloatMenuOption(apparelSwitchOption.label ?? apparelSwitchOption.apparel.LabelCap, delegate
 					{
-						curApparelSwitchOption = apparelSwitchOption;
-						Pawn.jobs.TryTakeOrderedJob(JobMaker.MakeJob(ApparelSwitchMod.AS_SwitchApparel, this.parent));
-					}
-					else
-					{
-						SwitchApparel(apparelSwitchOption);
-					}
-				});
+						TrySwitchApparel(apparelSwitchOption);
+					});
+				}
+			}
+		}
+
+		public void TrySwitchApparel(ApparelSwitchOption apparelSwitchOption)
+		{
+			if (apparelSwitchOption.ticksToSwitchApparel > 0)
+			{
+				curApparelSwitchOption = apparelSwitchOption;
+				Pawn.jobs.TryTakeOrderedJob(JobMaker.MakeJob(ApparelSwitchMod.AS_SwitchApparel, this.parent));
+			}
+			else
+			{
+				SwitchApparel(apparelSwitchOption);
 			}
 		}
 
@@ -134,34 +143,27 @@ namespace ApparelSwitch
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Props.allowGizmo)
+			foreach (var apparelSwitchOption in Props.apparelToSwitch)
 			{
-				foreach (var apparelSwitchOption in Props.apparelToSwitch)
+				if (!apparelSwitchOption.allowGizmo)
 				{
-					var apparelDef = apparelSwitchOption.apparel;
-					var icon = !string.IsNullOrEmpty(Props.texPath) ? ContentFinder<Texture2D>.Get(Props.texPath) : apparelDef.uiIcon;
-					var label = apparelSwitchOption.label ?? apparelDef.LabelCap;
-					var desc = Props.description ?? label;
-					
-					yield return new Command_Action
-					{
-						icon = icon,
-						defaultLabel = label,
-						defaultDesc = desc,
-						action = delegate
-						{
-							if (apparelSwitchOption.ticksToSwitchApparel > 0)
-							{
-								curApparelSwitchOption = apparelSwitchOption;
-								Pawn.jobs.TryTakeOrderedJob(JobMaker.MakeJob(ApparelSwitchMod.AS_SwitchApparel, this.parent));
-							}
-							else
-							{
-								SwitchApparel(apparelSwitchOption);
-							}
-						}
-					};
+					continue;
 				}
+				var apparelDef = apparelSwitchOption.apparel;
+				var icon = !string.IsNullOrEmpty(apparelSwitchOption.texPath) ? ContentFinder<Texture2D>.Get(apparelSwitchOption.texPath) : apparelDef.uiIcon;
+				var label = string.IsNullOrEmpty(apparelSwitchOption.label) ? (string)apparelDef.LabelCap : apparelSwitchOption.label;
+				var desc = string.IsNullOrEmpty(apparelSwitchOption.description) ? label : apparelSwitchOption.description;
+
+				yield return new Command_Action
+				{
+					icon = icon,
+					defaultLabel = label,
+					defaultDesc = desc,
+					action = delegate
+					{
+						TrySwitchApparel(apparelSwitchOption);
+					}
+				};
 			}
 		}
 
