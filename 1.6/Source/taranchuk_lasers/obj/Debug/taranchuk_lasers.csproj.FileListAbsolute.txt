@@ -1,0 +1,5 @@
+L:\SteamLibrary\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore-main\1.6\Assemblies\taranchuk_lasers.dll
+L:\SteamLibrary\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore-main\1.6\Source\taranchuk_lasers\obj\Debug\taranchuk_lasers.csproj.AssemblyReference.cache
+L:\SteamLibrary\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore-main\1.6\Source\taranchuk_lasers\obj\Debug\taranchuk_lasers.GeneratedMSBuildEditorConfig.editorconfig
+L:\SteamLibrary\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore-main\1.6\Source\taranchuk_lasers\obj\Debug\taranchuk_lasers.csproj.CoreCompileInputs.cache
+L:\SteamLibrary\steamapps\common\RimWorld\Mods\CoventechmechanoidwarfareCore-main\1.6\Source\taranchuk_lasers\obj\Debug\taranchuk_lasers.dll

@@ -27,5 +27,17 @@ namespace taranchuk_lasers
         public SoundDef sustainerSoundDef;
         public int sustainerTickPeriod;
         public SoundDef trailSoundDef;
+
+        public int maxChainTargets = 0;
+        public float chainRange = 5f;
+        public float chainDamageFalloff = 0.2f;
+        public int chainDelayTicks = 3;
+        public bool chainToAnything = false;
+        public bool chainAllowFriendlyFire;
+        public float branchChance = 0f;
+        public int maxBranches = 1; 
+        public bool branchToSameTargets = false;
+        public int chainArcLifetime => lifetimeTicks;
+
     }
 }

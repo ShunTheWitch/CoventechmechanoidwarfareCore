@@ -44,7 +44,7 @@ namespace taranchuk_lasers
                 if (thing is Vehicles.VehiclePawn vehiclePawn)
                 {
                     var comp = vehiclePawn.GetComp<taranchuk_flightcombat.CompFlightMode>();
-                    if (comp != null && taranchuk_flightcombat.VehiclePawn_UpdateRotation_Patch.InFlightModeOrNonStandardAngle(vehiclePawn, comp))
+                    if (comp != null && comp.InAir)
                     {
                         angle = comp.CurAngle;
                         return true;

@@ -23,8 +23,88 @@ namespace taranchuk_lasers
         private Sustainer activeSustainer;
         private int sustainerStartTick;
 
-        public override void Launch(Thing launcher, Vector3 origin, LocalTargetInfo usedTarget, 
-            LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, bool preventFriendlyFire = false, 
+        private int remainingChains;
+        private HashSet<Thing> chainedTargets = new HashSet<Thing>();
+        private int nextChainTick;
+        private bool isChaining;
+        private Thing currentChainTarget;
+        private Vector3 chainStartPos;
+        private List<ChainArc> activeArcs = new List<ChainArc>();
+        private bool chainStarted;
+
+        private List<BranchArc> activeBranches = new List<BranchArc>();
+        private HashSet<Thing> branchedTargets = new HashSet<Thing>();
+        private List<PendingBranchChain> pendingBranchChains = new List<PendingBranchChain>();
+
+        private class ChainArc
+        {
+            public Vector3 start;
+            public Vector3 end;
+            public Thing target;
+            public int chainIndex;
+            public int lifetimeTicks;
+            public int maxLifetime;
+            public int nextDamageTick;
+
+            public ChainArc(Vector3 start, Vector3 end, Thing target, int chainIndex, int lifetimeTicks = 60)
+            {
+                this.start = start;
+                this.end = end;
+                this.target = target;
+                this.chainIndex = chainIndex;
+                this.maxLifetime = lifetimeTicks;
+                this.lifetimeTicks = 0;
+                this.nextDamageTick = 0;
+            }
+
+            public void Update()
+            {
+                lifetimeTicks++;
+            }
+
+            public bool IsExpired => lifetimeTicks >= maxLifetime;
+        }
+
+        private class BranchArc
+        {
+            public Vector3 start;
+            public Vector3 end;
+            public Thing target;
+            public int chainIndex;
+            public int lifetimeTicks;
+            public int maxLifetime;
+            public int nextDamageTick;
+            public Thing parentTarget;
+
+            public BranchArc(Vector3 start, Vector3 end, Thing target, int chainIndex, int lifetimeTicks = 60, Thing parentTarget = null)
+            {
+                this.start = start;
+                this.end = end;
+                this.target = target;
+                this.chainIndex = chainIndex;
+                this.maxLifetime = lifetimeTicks;
+                this.lifetimeTicks = 0;
+                this.nextDamageTick = 0;
+                this.parentTarget = parentTarget;
+            }
+
+            public void Update()
+            {
+                lifetimeTicks++;
+            }
+
+            public bool IsExpired => lifetimeTicks >= maxLifetime;
+        }
+
+        private class PendingBranchChain
+        {
+            public Thing target;
+            public int chainIndex;
+            public int processTick;
+        }
+
+        public override void Launch(Thing launcher, Vector3 origin, LocalTargetInfo usedTarget,
+            LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, bool preventFriendlyFire = false,
             Thing equipment = null, ThingDef targetCoverDef = null)
         {
             base.Launch(launcher, origin, usedTarget, intendedTarget, hitFlags, preventFriendlyFire, equipment, targetCoverDef);
@@ -35,8 +115,16 @@ namespace taranchuk_lasers
             launcherPosOld = launcher.DrawPos;
             launcherAngleOld = Utilities.GetBodyAngle(launcher);
             originOld = origin;
+
+            remainingChains = LaserProperties.maxChainTargets;
+            isChaining = false;
+            chainedTargets.Clear();
+            activeArcs.Clear();
+            activeBranches.Clear();
+            branchedTargets.Clear();
+            pendingBranchChains.Clear();
         }
-        
+
         private float GetAngleFromTarget(Vector3 target)
         {
             var targetAngle = (origin.Yto0() - target.Yto0()).AngleFlat() - 180f;
@@ -57,6 +145,7 @@ namespace taranchuk_lasers
         }
 
         private Vector2 textureScroll;
+
         public override void DrawAt(Vector3 drawLoc, bool flip = false)
         {
             var num = this.ArcHeightFactor * GenMath.InverseParabola(DistanceCoveredFraction);
@@ -70,8 +159,27 @@ namespace taranchuk_lasers
             {
                 mat.SetTextureOffset("_MainTex", textureScroll);
             }
+            foreach (var arc in activeArcs)
+            {
+                DrawChainArc(arc.start, arc.end);
+            }
+            foreach (var branch in activeBranches)
+            {
+                DrawChainArc(branch.start, branch.end);
+            }
             Graphics.DrawMesh(MeshPool.GridPlane(new(LaserProperties.beamWidth * LaserProperties.beamWidthDrawScale,
                 distanceSize)), position, ExactRotation, DrawMat, 0);
+        }
+
+        private void DrawChainArc(Vector3 start, Vector3 end)
+        {
+            var distance = Vector3.Distance(start.Yto0(), end.Yto0());
+            var drawPos = Vector3.Lerp(start, end, 0.5f);
+            drawPos.y += 1f;
+            var rotation = Quaternion.LookRotation(end - start);
+            var mat = DrawMat;
+            Graphics.DrawMesh(MeshPool.GridPlane(new(LaserProperties.beamWidth * LaserProperties.beamWidthDrawScale * 0.7f,
+                distance)), drawPos, rotation, mat, 0);
         }
 
         public override void Impact(Thing hitThing, bool blockedByShield = false)
@@ -79,18 +187,45 @@ namespace taranchuk_lasers
 
         }
 
+        private void TryStartChain(Thing hitThing)
+        {
+            if (chainStarted) return;
+            if (LaserProperties.maxChainTargets <= 0) return;
+            if (hitThing == null) return;
+
+            chainStarted = true;
+            isChaining = true;
+            chainedTargets.Add(hitThing);
+            currentChainTarget = hitThing;
+            chainStartPos = ExactPosition;
+            remainingChains = LaserProperties.maxChainTargets - 1;
+
+            var mainArc = new ChainArc(origin, hitThing.DrawPos, hitThing, 0, LaserProperties.lifetimeTicks);
+            mainArc.nextDamageTick = int.MaxValue;
+            activeArcs.Add(mainArc);
+
+            TryCreateBranches(hitThing, 0);
+
+            if (remainingChains > 0)
+            {
+                nextChainTick = Find.TickManager.TicksGame + LaserProperties.chainDelayTicks;
+            }
+        }
+
         protected void ImpactOverride(Thing hitThing, bool blockedByShield = false)
         {
-            Map map = base.Map;
-            IntVec3 position = base.Position;
+            Map map = Map;
+            IntVec3 position = Position;
             BattleLogEntry_RangedImpact battleLogEntry_RangedImpact = new BattleLogEntry_RangedImpact(launcher, hitThing, intendedTarget.Thing, equipmentDef, def, targetCoverDef);
             Find.BattleLog.Add(battleLogEntry_RangedImpact);
-            if (hitThing != null)
+
+            if (hitThing != null && !blockedByShield)
             {
                 bool instigatorGuilty = !(launcher is Pawn pawn) || !pawn.Drafted;
                 DamageInfo dinfo = new DamageInfo(def.projectile.damageDef, DamageAmount, ArmorPenetration, ExactRotation.eulerAngles.y, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing, instigatorGuilty);
                 dinfo.SetWeaponQuality(equipmentQuality);
                 hitThing.TakeDamage(dinfo).AssociateWithLog(battleLogEntry_RangedImpact);
+
                 Pawn pawn2 = hitThing as Pawn;
                 if (def.projectile.extraDamages != null)
                 {
@@ -103,10 +238,13 @@ namespace taranchuk_lasers
                         }
                     }
                 }
-                if (Rand.Chance(base.DamageDef.igniteCellChance))
+
+                if (Rand.Chance(DamageDef.igniteCellChance))
                 {
-                    FireUtility.TryStartFireIn(base.Position, map, Rand.Range(0.55f, 0.85f), launcher);
+                    FireUtility.TryStartFireIn(Position, map, Rand.Range(0.55f, 0.85f), launcher);
                 }
+
+                TryStartChain(hitThing);
             }
         }
 
@@ -125,15 +263,366 @@ namespace taranchuk_lasers
             }
         }
 
+        private Thing GetNextChainTarget()
+        {
+            if (remainingChains <= 0) return null;
+
+            var currentPos = currentChainTarget != null ? currentChainTarget.DrawPos : ExactPosition;
+            var bestTarget = (Thing)null;
+            var bestDistance = float.MaxValue;
+
+            var allThings = new List<Thing>();
+            var rect = CellRect.CenteredOn(currentPos.ToIntVec3(), Mathf.CeilToInt(LaserProperties.chainRange));
+
+            for (int x = rect.minX; x <= rect.maxX; x++)
+            {
+                for (int z = rect.minZ; z <= rect.maxZ; z++)
+                {
+                    var cell = new IntVec3(x, 0, z);
+                    if (cell.InBounds(Map))
+                    {
+                        allThings.AddRange(cell.GetThingList(Map));
+                    }
+                }
+            }
+
+            foreach (var thing in allThings)
+            {
+                if (chainedTargets.Contains(thing)) continue;
+                if (thing == launcher) continue;
+                if (!IsDamagable(thing)) continue;
+                if (!LaserProperties.chainToAnything && !(thing is Pawn)) continue;
+                if (!LaserProperties.chainAllowFriendlyFire && IsFriendly(thing)) continue;
+
+                var distance = Vector3.Distance(currentPos, thing.DrawPos);
+                if (distance <= LaserProperties.chainRange && distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    bestTarget = thing;
+                }
+            }
+
+            return bestTarget;
+        }
+
+        private bool IsFriendly(Thing thing)
+        {
+            if (launcher is Pawn launcherPawn && thing is Pawn targetPawn)
+            {
+                return !launcherPawn.HostileTo(targetPawn);
+            }
+            return false;
+        }
+
+        private void ExecuteChain()
+        {
+            if (!isChaining || remainingChains <= 0) return;
+
+            var nextTarget = GetNextChainTarget();
+            if (nextTarget == null)
+            {
+                isChaining = false;
+                return;
+            }
+
+            Vector3 arcStart = currentChainTarget != null ? currentChainTarget.DrawPos : chainStartPos;
+
+            var chainIndex = LaserProperties.maxChainTargets - remainingChains;
+            var damageMultiplier = Mathf.Pow(LaserProperties.chainDamageFalloff, chainIndex);
+            var chainDamage = DamageAmount * damageMultiplier;
+            var chainArmorPen = ArmorPenetration * damageMultiplier;
+
+            var chainArc = new ChainArc(arcStart, nextTarget.DrawPos, nextTarget, chainIndex, LaserProperties.chainArcLifetime);
+            chainArc.nextDamageTick = Find.TickManager.TicksGame;
+            activeArcs.Add(chainArc);
+
+            chainedTargets.Add(nextTarget);
+            currentChainTarget = nextTarget;
+            remainingChains--;
+
+            TryCreateBranches(currentChainTarget, chainIndex);
+
+            if (remainingChains > 0)
+            {
+                nextChainTick = Find.TickManager.TicksGame + LaserProperties.chainDelayTicks;
+            }
+            else
+            {
+                isChaining = false;
+            }
+        }
+
+        private void TryCreateBranches(Thing fromTarget, int currentChainIndex)
+        {
+            if (LaserProperties.branchChance <= 0) return;
+
+            if (currentChainIndex >= LaserProperties.maxChainTargets) return;
+
+            var possibleBranchTargets = GetPossibleBranchTargets(fromTarget);
+            int branchesCreated = 0;
+
+            foreach (var target in possibleBranchTargets)
+            {
+                if (Rand.Chance(LaserProperties.branchChance))
+                {
+                    if (branchesCreated >= LaserProperties.maxBranches) break;
+
+                    if (!LaserProperties.branchToSameTargets &&
+                        (chainedTargets.Contains(target) || branchedTargets.Contains(target)))
+                        continue;
+
+                    CreateBranch(fromTarget, target, currentChainIndex + 1);
+                    branchesCreated++;
+                    branchedTargets.Add(target);
+                }
+            }
+        }
+
+        private List<Thing> GetPossibleBranchTargets(Thing fromTarget)
+        {
+            var potentialTargets = new List<Thing>();
+            var currentPos = fromTarget.DrawPos;
+            var rect = CellRect.CenteredOn(currentPos.ToIntVec3(), Mathf.CeilToInt(LaserProperties.chainRange));
+
+            for (int x = rect.minX; x <= rect.maxX; x++)
+            {
+                for (int z = rect.minZ; z <= rect.maxZ; z++)
+                {
+                    var cell = new IntVec3(x, 0, z);
+                    if (cell.InBounds(Map))
+                    {
+                        foreach (var thing in cell.GetThingList(Map))
+                        {
+                            if (IsValidBranchTarget(thing, fromTarget))
+                            {
+                                potentialTargets.Add(thing);
+                            }
+                        }
+                    }
+                }
+            }
+
+            potentialTargets.Sort((a, b) =>
+                Vector3.Distance(currentPos, a.DrawPos)
+                    .CompareTo(Vector3.Distance(currentPos, b.DrawPos)));
+
+            return potentialTargets;
+        }
+
+        private bool IsValidBranchTarget(Thing target, Thing fromTarget)
+        {
+            if (target == fromTarget) return false;
+            if (target == launcher) return false;
+            if (!IsDamagable(target)) return false;
+            if (!LaserProperties.chainToAnything && !(target is Pawn)) return false;
+            if (!LaserProperties.chainAllowFriendlyFire && IsFriendly(target)) return false;
+
+            var distance = Vector3.Distance(fromTarget.DrawPos, target.DrawPos);
+            if (distance > LaserProperties.chainRange) return false;
+
+            return true;
+        }
+
+        private void CreateBranch(Thing fromTarget, Thing toTarget, int chainIndex)
+        {
+            if (chainIndex >= LaserProperties.maxChainTargets) return;
+
+            var damageMultiplier = Mathf.Pow(LaserProperties.chainDamageFalloff, chainIndex);
+            var branchArc = new BranchArc(
+                fromTarget.DrawPos,
+                toTarget.DrawPos,
+                toTarget,
+                chainIndex,
+                LaserProperties.chainArcLifetime,
+                fromTarget
+            );
+            branchArc.nextDamageTick = Find.TickManager.TicksGame;
+
+            activeBranches.Add(branchArc);
+
+            if (chainIndex + 1 < LaserProperties.maxChainTargets)
+            {
+                ScheduleBranchChaining(toTarget, chainIndex);
+            }
+        }
+
+        private void ScheduleBranchChaining(Thing target, int currentChainIndex)
+        {
+            pendingBranchChains.Add(new PendingBranchChain
+            {
+                target = target,
+                chainIndex = currentChainIndex,
+                processTick = Find.TickManager.TicksGame + LaserProperties.chainDelayTicks
+            });
+        }
+
+        private void ProcessPendingBranches()
+        {
+            for (int i = pendingBranchChains.Count - 1; i >= 0; i--)
+            {
+                var pending = pendingBranchChains[i];
+                if (Find.TickManager.TicksGame >= pending.processTick)
+                {
+                    TryCreateBranches(pending.target, pending.chainIndex);
+                    pendingBranchChains.RemoveAt(i);
+                }
+            }
+        }
+
+        private void DamageChainTargets()
+        {
+            if (LaserProperties.damageTickRate <= 0) return;
+
+            foreach (var arc in activeArcs)
+            {
+                if (arc.chainIndex == 0) continue;
+                if (arc.target == null || arc.target.Destroyed) continue;
+
+                if (Find.TickManager.TicksGame >= arc.nextDamageTick)
+                {
+                    var chainIndex = arc.chainIndex;
+                    var damageMultiplier = Mathf.Pow(LaserProperties.chainDamageFalloff, chainIndex);
+                    var chainDamage = DamageAmount * damageMultiplier;
+                    var chainArmorPen = ArmorPenetration * damageMultiplier;
+                    bool instigatorGuilty = !(launcher is Pawn pawn) || !pawn.Drafted;
+
+                    var dinfo = new DamageInfo(
+                        def.projectile.damageDef,
+                        (int)chainDamage,
+                        chainArmorPen,
+                        (arc.target.DrawPos - arc.start).AngleFlat(),
+                        launcher,
+                        null,
+                        equipmentDef,
+                        DamageInfo.SourceCategory.ThingOrUnknown,
+                        intendedTarget.Thing,
+                        !LaserProperties.chainAllowFriendlyFire
+                    );
+
+                    arc.target.TakeDamage(dinfo);
+
+                    if (def.projectile.extraDamages != null)
+                    {
+                        foreach (ExtraDamage extraDamage in def.projectile.extraDamages)
+                        {
+                            if (Rand.Chance(extraDamage.chance))
+                            {
+                                DamageInfo dinfo2 = new DamageInfo(
+                                    extraDamage.def,
+                                    (int)(extraDamage.amount * damageMultiplier),
+                                    extraDamage.AdjustedArmorPenetration() * damageMultiplier,
+                                    (arc.target.DrawPos - arc.start).AngleFlat(),
+                                    launcher,
+                                    null,
+                                    equipmentDef,
+                                    DamageInfo.SourceCategory.ThingOrUnknown,
+                                    intendedTarget.Thing,
+                                    !LaserProperties.chainAllowFriendlyFire
+                                );
+                                arc.target.TakeDamage(dinfo2);
+                            }
+                        }
+                    }
+
+                    if (Rand.Chance(DamageDef.igniteCellChance))
+                    {
+                        FireUtility.TryStartFireIn(arc.target.Position, Map, Rand.Range(0.55f, 0.85f), launcher);
+                    }
+
+                    arc.nextDamageTick = Find.TickManager.TicksGame + LaserProperties.damageTickRate;
+                }
+            }
+
+            foreach (var branch in activeBranches)
+            {
+                if (branch.target == null || branch.target.Destroyed) continue;
+
+                if (Find.TickManager.TicksGame >= branch.nextDamageTick)
+                {
+                    var damageMultiplier = Mathf.Pow(LaserProperties.chainDamageFalloff, branch.chainIndex);
+                    var chainDamage = DamageAmount * damageMultiplier;
+                    var chainArmorPen = ArmorPenetration * damageMultiplier;
+                    bool instigatorGuilty = !(launcher is Pawn pawn) || !pawn.Drafted;
+
+                    var dinfo = new DamageInfo(
+                        def.projectile.damageDef,
+                        (int)chainDamage,
+                        chainArmorPen,
+                        (branch.target.DrawPos - branch.start).AngleFlat(),
+                        launcher,
+                        null,
+                        equipmentDef,
+                        DamageInfo.SourceCategory.ThingOrUnknown,
+                        intendedTarget.Thing,
+                        !LaserProperties.chainAllowFriendlyFire
+                    );
+
+                    branch.target.TakeDamage(dinfo);
+
+                    if (def.projectile.extraDamages != null)
+                    {
+                        foreach (ExtraDamage extraDamage in def.projectile.extraDamages)
+                        {
+                            if (Rand.Chance(extraDamage.chance))
+                            {
+                                DamageInfo dinfo2 = new DamageInfo(
+                                    extraDamage.def,
+                                    (int)(extraDamage.amount * damageMultiplier),
+                                    extraDamage.AdjustedArmorPenetration() * damageMultiplier,
+                                    (branch.target.DrawPos - branch.start).AngleFlat(),
+                                    launcher,
+                                    null,
+                                    equipmentDef,
+                                    DamageInfo.SourceCategory.ThingOrUnknown,
+                                    intendedTarget.Thing,
+                                    !LaserProperties.chainAllowFriendlyFire
+                                );
+                                branch.target.TakeDamage(dinfo2);
+                            }
+                        }
+                    }
+
+                    if (Rand.Chance(DamageDef.igniteCellChance))
+                    {
+                        FireUtility.TryStartFireIn(branch.target.Position, Map, Rand.Range(0.55f, 0.85f), launcher);
+                    }
+
+                    branch.nextDamageTick = Find.TickManager.TicksGame + LaserProperties.damageTickRate;
+                }
+            }
+        }
+
         public override void Tick()
         {
             base.Tick();
+
+            for (int i = activeArcs.Count - 1; i >= 0; i--)
+            {
+                activeArcs[i].Update();
+                if (activeArcs[i].IsExpired)
+                {
+                    activeArcs.RemoveAt(i);
+                }
+            }
+
+            for (int i = activeBranches.Count - 1; i >= 0; i--)
+            {
+                activeBranches[i].Update();
+                if (activeBranches[i].IsExpired)
+                {
+                    activeBranches.RemoveAt(i);
+                }
+            }
+
             LockOnCaster();
             textureScroll += LaserProperties.textureScrollOffsetPerTick;
+
             if (LaserProperties.damageTickRate > 0 && this.IsHashIntervalTick(LaserProperties.damageTickRate))
             {
                 DamageThings();
+                DamageChainTargets();
             }
+
             if (LaserProperties.sweepRatePerTick > 0)
             {
                 DoSweep();
@@ -190,7 +679,14 @@ namespace taranchuk_lasers
                 }
             }
 
-            if (Find.TickManager.TicksGame > launchTick + LaserProperties.lifetimeTicks) 
+            if (isChaining && Find.TickManager.TicksGame >= nextChainTick)
+            {
+                ExecuteChain();
+            }
+
+            ProcessPendingBranches();
+
+            if (Find.TickManager.TicksGame > launchTick + LaserProperties.lifetimeTicks)
             {
                 Explode();
                 shouldBeDestroyed = true;
@@ -258,10 +754,10 @@ namespace taranchuk_lasers
 
         private Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Vector3 angles)
         {
-            var dir = point - pivot; // get point direction relative to pivot
-            dir = Quaternion.Euler(angles) * dir; // rotate it
-            point = dir + pivot; // calculate rotated point
-            return point; // return it
+            var dir = point - pivot;
+            dir = Quaternion.Euler(angles) * dir;
+            point = dir + pivot;
+            return point;
         }
 
         private void DamageThings()
@@ -284,7 +780,7 @@ namespace taranchuk_lasers
             {
                 if (IsDamagable(thing))
                 {
-                    ImpactOverride(thing);
+                    ImpactOverride(thing, false);
                 }
             }
         }
@@ -313,7 +809,7 @@ namespace taranchuk_lasers
 
         private bool IsDamagable(Thing thing)
         {
-            return (thing is Pawn || thing.def.useHitPoints) && thing != launcher 
+            return (thing is Pawn || thing.def.useHitPoints) && thing != launcher
                 && thing is not Projectile && thing is not Filth && thing is not Mote;
         }
 
@@ -322,11 +818,11 @@ namespace taranchuk_lasers
             if (LaserProperties.explosionOnEnd != null)
             {
                 IntVec3 position = origin.ToIntVec3();
-                var cells = LaserProperties.sweepRatePerTick > 0 ? GetSweepCells() 
+                var cells = LaserProperties.sweepRatePerTick > 0 ? GetSweepCells()
                     : GetImpactCells(LaserProperties.damageThingsAcrossBeamLine).ToList();
-                GenExplosion.DoExplosion(center: position, map: Map, radius: 0f, 
-                    damType: LaserProperties.explosionOnEnd, 
-                    instigator: launcher, 
+                GenExplosion.DoExplosion(center: position, map: Map, radius: 0f,
+                    damType: LaserProperties.explosionOnEnd,
+                    instigator: launcher,
                     overrideCells: cells, propagationSpeed: LaserProperties.explosionSpeed);
             }
         }
@@ -341,6 +837,11 @@ namespace taranchuk_lasers
             Scribe_Values.Look(ref launcherPosOld, "launcherPosOld");
             Scribe_Values.Look(ref launcherAngleOld, "launcherAngleOld");
             Scribe_Values.Look(ref sustainerStartTick, "sustainerStartTick");
+
+            Scribe_Values.Look(ref remainingChains, "remainingChains");
+            Scribe_Values.Look(ref nextChainTick, "nextChainTick");
+            Scribe_Values.Look(ref isChaining, "isChaining");
+            Scribe_Collections.Look(ref chainedTargets, "chainedTargets", LookMode.Reference);
         }
     }
 }
