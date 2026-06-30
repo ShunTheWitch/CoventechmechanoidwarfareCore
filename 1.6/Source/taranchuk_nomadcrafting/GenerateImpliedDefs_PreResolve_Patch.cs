@@ -19,6 +19,7 @@ namespace taranchuk_nomadcrafting
         {
             foreach (var recipe in DefDatabase<RecipeDef>.AllDefs.ToList())
             {
+                if(!typeof(Pawn).IsAssignableFrom(recipe.ProducedThingDef.thingClass)) continue;
                 if (recipe.mechResurrection)
                 {
                     var newRecipe = CloneRecipe(recipe);
